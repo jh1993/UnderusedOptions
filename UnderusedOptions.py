@@ -2096,43 +2096,65 @@ def modify_class(cls):
 
         def cast(self, x, y):
 
-            eligible = [Tags.Living, Tags.Nature]
-            if self.get_stat("spiriteater"):
-                eligible.extend([Tags.Holy, Tags.Demon, Tags.Undead, Tags.Arcane])
-
-            rot = self.get_stat("rot")
-            damage = self.get_stat("damage")
             unit = self.caster.level.get_unit_at(x, y)
             if not unit:
                 return
 
-            arcane_dealt = self.caster.level.deal_damage(x, y, damage, Tags.Arcane, self)
-            if rot and arcane_dealt and not unit.is_alive():
-                void_imp = VoidImp()
-                apply_minion_bonuses(self, void_imp)
-                self.summon(void_imp, target=unit, radius=5)
-                insanity_imp = InsanityImp()
-                apply_minion_bonuses(self, insanity_imp)
-                self.summon(insanity_imp, target=unit, radius=5)
+            # Queue all these effects to make them check for HP thresholds after redeals
+            arcane_dealt = unit.deal_damage(self.get_stat("damage"), Tags.Arcane, self)
+            if self.get_stat("rot") and arcane_dealt:
+                self.caster.level.queue_spell(arcane_summon(self, unit))
             
-            if [tag for tag in eligible if tag in unit.tags]:
-                dark_dealt = 0
-                if unit.cur_hp / unit.max_hp < .5:
-                    for _ in range(3):
-                        yield
-                    dark_dealt = self.caster.level.deal_damage(x, y, damage, Tags.Dark, self)
-                elif self.get_stat("gouge"):
-                    for _ in range(3):
-                        yield
-                    dark_dealt = self.caster.level.deal_damage(x, y, damage//2, Tags.Dark, self)
-                if rot and dark_dealt and not unit.is_alive():
-                    rot_imp = RotImp()
-                    apply_minion_bonuses(self, rot_imp)
-                    self.summon(rot_imp, target=unit, radius=5)
+            self.caster.level.queue_spell(dark_damage(self, unit))
 
-            if self.get_stat('gluttony') and not unit.is_alive():
-                self.cur_charges += 1
-                self.cur_charges = min(self.cur_charges, self.get_stat('max_charges'))
+            yield
+
+        def arcane_summon(self, unit):
+            if unit.is_alive():
+                return
+            void_imp = VoidImp()
+            apply_minion_bonuses(self, void_imp)
+            self.summon(void_imp, target=unit, radius=5)
+            insanity_imp = InsanityImp()
+            apply_minion_bonuses(self, insanity_imp)
+            self.summon(insanity_imp, target=unit, radius=5)
+            yield
+
+        def dark_damage(self, unit):
+
+            eligible = [Tags.Living, Tags.Nature]
+            if self.get_stat("spiriteater"):
+                eligible.extend([Tags.Holy, Tags.Demon, Tags.Undead, Tags.Arcane])
+
+            dark_dealt = 0
+            if [tag for tag in eligible if tag in unit.tags]:
+                if unit.cur_hp/unit.max_hp < .5:
+                    dark_dealt = unit.deal_damage(self.get_stat("damage"), Tags.Dark, self)
+                elif self.get_stat("gouge"):
+                    dark_dealt = unit.deal_damage(self.get_stat("damage")//2, Tags.Dark, self)
+
+            if self.get_stat("rot") and dark_dealt:
+                self.caster.level.queue_spell(dark_summon(self, unit))
+
+            if self.get_stat('gluttony'):
+                self.caster.level.queue_spell(recover_charge(self, unit))
+
+            yield
+
+        def dark_summon(self, unit):
+            if unit.is_alive():
+                return
+            rot_imp = RotImp()
+            apply_minion_bonuses(self, rot_imp)
+            self.summon(rot_imp, target=unit, radius=5)
+            yield
+
+        def recover_charge(self, unit):
+            if unit.is_alive():
+                return
+            self.cur_charges += 1
+            self.cur_charges = min(self.cur_charges, self.get_stat('max_charges'))
+            yield
 
     if cls is Dominate:
 

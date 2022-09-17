@@ -109,6 +109,7 @@ Darkness:
 - Dark Echoes (6 SP): While Darkness is active, if you are blind, your demon and undead minions redeal half of all their damage as the original damage type.
 
 Devour Mind:
+- All of the HP threshold effects are now calculated after redeals, to make the spell more forgiving.
 - Now also works on nature units by default.
 - Spirit Eater upgrade now also lets it work on holy and undead units.
 - Mind Gouge (3 SP): If the target is over 50% HP after taking arcane damage, instead deal half dark damage to it.
