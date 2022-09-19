@@ -1,3 +1,5 @@
+PLEASE CHECK THE DISCORD THREAD FOR UPDATE NOTICES, AND RE-DOWNLOAD THE MOD WHENEVER THERE'S AN UPDATE.
+
 This mod requires my Bugs and Scams mod: https://github.com/jh1993/BugsAndScams
 
 To install this mod, click on the green "Code" button on this page, then "Download ZIP". Please rename the "UnderusedOptions-main" folder to "UnderusedOptions" before putting it into your mods folder.
