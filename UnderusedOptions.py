@@ -1727,7 +1727,7 @@ def modify_class(cls):
             self.upgrades['damage'] = (9, 2)
             self.upgrades['duration'] = (1, 2)
             self.upgrades["blood"] = (1, 3, "Blood Savagery", "Now also affects [nature] and [demon] units.")
-            self.upgrades["stampede"] = (1, 5, "Stampede", "If no melee targets are available, each ally will instead try to perform a charge attack with a range of [6_tiles:range].\nThis attack does not stun.")
+            self.upgrades["stampede"] = (1, 5, "Stampede", "If no melee targets are available, each ally will instead try to perform a charge attack with a range of [6_tiles:range].\nThis attack benefits from bonuses to [minion_range:minion_range], and does not stun.")
 
         def get_impacted_tiles(self, x, y):
             return [u for u in self.caster.level.units if u is not self.caster and not are_hostile(u, self.caster) and (Tags.Living in u.tags or (self.get_stat("blood") and (Tags.Nature in u.tags or Tags.Demon in u.tags)))]
@@ -1737,6 +1737,7 @@ def modify_class(cls):
             damage = self.get_stat("damage")
             duration = self.get_stat("duration")
             stampede = self.get_stat("stampede")
+            minion_range = self.get_stat("minion_range", base=6)
 
             eligible = [Tags.Living, Tags.Nature, Tags.Demon] if self.get_stat("blood") else [Tags.Living]
 
@@ -1748,7 +1749,7 @@ def modify_class(cls):
                     continue
 
                 melee = SimpleMeleeAttack(damage=damage, buff=Stun, buff_duration=duration)
-                charge = LeapAttack(damage=damage, range=99, is_ghost=True) if stampede else None
+                charge = LeapAttack(damage=damage, range=minion_range, is_leap=False) if stampede else None
 
                 melee.statholder = unit
                 melee.caster = unit

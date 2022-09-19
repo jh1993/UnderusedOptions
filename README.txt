@@ -70,7 +70,7 @@ Hungry Maw:
 Invoke Savagery:
 - As per my No More Scams mod, no longer tries to attack physical-immune targets unless the minion doing the attack has physical redeals.
 - Blood Savagery (3 SP): Now also affects nature and demon units.
-- Stampede (5 SP): If no melee targets are available, each ally will instead try to perform a charge attack with a range of 6 tiles. This attack does not stun.
+- Stampede (5 SP): If no melee targets are available, each ally will instead try to perform a charge attack with a range of 6 tiles. This attack benefits from bonuses to minion range, and does not stun.
 
 Melt:
 - As per my No More Scams mod, debuffs are now permanent.
