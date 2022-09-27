@@ -835,6 +835,11 @@ class FrostbiteBuff(Buff):
         self.buff_type = BUFF_TYPE_CURSE
         self.damage = self.upgrade.get_stat("damage")
     
+    def on_pre_advance(self):
+        freeze = self.owner.get_buff(FrozenBuff)
+        if freeze:
+            self.turns_left = max(self.turns_left, freeze.turns_left)
+
     def on_advance(self):
         self.owner.deal_damage(self.damage, Tags.Dark, self.upgrade)
 
@@ -4919,7 +4924,8 @@ def modify_class(cls):
             self.global_triggers[EventOnBuffApply] = lambda evt: on_buff_apply(self, evt)
 
         def get_description(self):
-            return "Whenever an enemy is [frozen:freeze], inflict Frostbite for the same duration, which deals [{damage}_dark:dark] damage per turn.".format(**self.fmt_dict())
+            return ("Whenever an enemy is [frozen:freeze], inflict Frostbite for the same duration, which deals [{damage}_dark:dark] damage per turn.\n"
+                    "Whenever the remaining duration of [freeze] on an enemy is refreshed or extended, the remaining duration of frostbite will be lengthened to match if it is shorter.").format(**self.fmt_dict())
 
         def on_buff_apply(self, evt):
             if not isinstance(evt.buff, FrozenBuff):

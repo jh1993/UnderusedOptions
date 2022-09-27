@@ -384,7 +384,7 @@ Bone Guard:
 - Now also summons a bone archer, and all summoned units have +1 reincarnation.
 
 Frostbite:
-- Now instead inflicts a Frostbite debuff equal to the duration of the freeze inflicted, which persists after unfreezing.
+- Now instead inflicts a Frostbite debuff equal to the duration of the freeze inflicted, which persists after unfreezing. If freeze duration is refreshed or extended, frostbite duration will be adjusted to match if shorter.
 - SP cost reduced to 5.
 
 Inferno Engines:
