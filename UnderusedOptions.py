@@ -1782,14 +1782,20 @@ def modify_class(cls):
             self.max_charges = 15
             self.name = "Melt"
             self.damage = 22
-            self.element = Tags.Fire
             self.range = 6
-
-            self.can_target_empty = False
 
             self.upgrades['damage'] = (16, 2)
             self.upgrades['max_charges'] = 10
             self.upgrades['fire_resist'] = (1, 4, "Fire Penetration", "Melt also reduces [fire] resist by 100")
+
+        def cast_instant(self, x, y):
+            unit = self.caster.level.get_unit_at(x, y)
+            if unit:
+                unit.apply_buff(MeltBuff(self), self.get_stat('duration'))
+            self.caster.level.deal_damage(x, y, self.get_stat('damage'), Tags.Fire, self)
+
+        def get_description(self):
+            return "Target unit loses [100_physical:physical] resist and takes [{damage}_fire:fire] damage.".format(**self.fmt_dict())
 
     if cls is MeltBuff:
 

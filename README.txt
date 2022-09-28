@@ -76,6 +76,7 @@ Melt:
 - As per my No More Scams mod, debuffs are now permanent.
 - Now also an enchantment spell.
 - Since the Absolute Zero upgrade for Freeze now exists, the ice resistance reduction upgrade is changed to fire resistance reduction instead, and increases cost to 4 SP.
+- Can now target empty tiles, and now reduces resistances before dealing damage.
 
 Petrify:
 - Stone Curse (6 SP): Whenever an enemy is inflicted with petrify or glassify, inflict Stone Curse to it, which reduces holy, dark, arcane, and poison resistances by 50. This has a 50% chance to consume a charge from Petrify, and Stone Curse will not be inflicted if it tries but fails to consume a charge.
