@@ -178,8 +178,10 @@ Seal Fate:
 Shrapnel Blast:
 - The initial fire explosion is removed, because it's superfluous and not relevant in most uses.
 - The Puncturing Shards upgrade, which actually lets the shards pass through walls, is rolled into the base spell.
-- The Magnetized Shards upgrade now makes it so that if there are no enemies in the area, no more shards will be fired. If it's smart enough to seek enemies, it should be smart enough to not hit allies. Not compatible with the new Particle Surge upgrade below.
+- Now has a chance to refund a charge on cast, equal to half the number of shards that miss divided by the total number of shards.
+- The Magnetized Shards upgrade now makes it so that if there are no enemies in the area, no more shards will be fired; shards not fired do not count as shards missed. If it's smart enough to seek enemies, it should be smart enough to not hit allies. Not compatible with the new Particle Surge upgrade below.
 - Particle Surge (7 SP): Shrapnel Blast becomes a channeled spell, and no longer destroys the target wall. Each shard now deals damage in a beam between the target tile and its destination. Not compatible with Magnetized Shards.
+- Unearth (4 SP): This spell can now be cast on chasms.
 
 Suspend Mortality:
 - Eternity (7 SP): Suspend Mortality now adds reincarnations as a passive buff, which is permanent and cannot be dispelled.
