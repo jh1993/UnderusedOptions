@@ -2876,6 +2876,69 @@ def modify_class(cls):
                         target = random.choice(possible_targets)
                         target.apply_buff(SealedFateBuff(self.spell), self.delay)
 
+    if cls is ShrapnelBlast:
+
+        def on_init(self):
+            self.name = "Shrapnel Blast"
+
+            self.tags = [Tags.Fire, Tags.Metallic, Tags.Sorcery]
+            self.level = 3
+            self.max_charges = 6
+            self.radius = 4
+            self.range = 7
+            self.damage = 12
+            self.requires_los = False
+            self.num_targets = 16
+
+            self.upgrades['num_targets'] = (12, 3, "More Shrapnel", "[12:num_targets] more shrapnel shards are shot.")
+            self.upgrades["channel"] = (1, 7, "Particle Surge", "Shrapnel Blast becomes a channeled spell, and no longer destroys the target wall.\nEach shard now deals damage in a beam between the target tile and its destination.", "behavior")
+            self.upgrades['homing'] = (1, 7, "Magnetized Shards", "The shrapnel shards now only target enemies.\nIf no enemies are in the affected area, no more shards will be fired.", "behavior")
+
+        def get_description(self):
+            return ("Detonate target wall tile.\n"
+                    "The explosion fires [{num_targets}_shards:num_targets] at random tiles in a [{radius}_tile:radius] radius.\n"
+                    "Each shard deals [{damage}_physical:physical] damage.").format(**self.fmt_dict())
+
+        def cast(self, x, y, channel_cast=False):
+
+            channel = self.get_stat('channel')
+            if channel and not channel_cast:
+                self.caster.apply_buff(ChannelBuff(self.cast, Point(x, y)))
+                return
+            
+            damage = self.get_stat('damage')
+            homing = self.get_stat("homing")
+
+            possible_targets = list(self.caster.level.get_points_in_ball(x, y, self.get_stat('radius')))
+
+            for _ in range(self.get_stat('num_targets')):
+                targets = possible_targets
+
+                if homing:
+                    def can_home(t):
+                        u = self.caster.level.get_unit_at(t.x, t.y)
+                        if not u:
+                            return False
+                        return are_hostile(self.caster, u)
+                    targets = [t for t in possible_targets if can_home(t)]
+
+                if targets:
+                    target = random.choice(targets)
+                    if channel:
+                        for point in Bolt(self.caster.level, Point(x, y), target, find_clear=False):
+                            self.caster.level.deal_damage(point.x, point.y, damage, Tags.Physical, self)
+                            yield
+                    else:
+                        self.caster.level.deal_damage(target.x, target.y, damage, Tags.Physical, self)
+                    yield
+
+            if not channel:
+                self.caster.level.make_floor(x, y)
+            return
+
+        def get_impacted_tiles(self, x, y):
+            return list(self.caster.level.get_points_in_ball(x, y, self.get_stat('radius')))
+
     if cls is BestowImmortality:
 
         def on_init(self):
@@ -4969,5 +5032,5 @@ def modify_class(cls):
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, PoisonSting, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, Darkness, MindDevour, Dominate, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, BestowImmortality, UnderworldPortal, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, BallLightning, CantripCascade, IceWind, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, KnightBuff, SummonKnights, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, HolyWater, UnholyAlliance, WhiteFlame, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, Boneguard, Frostbite, InfernoEngines]:
+for cls in [DeathBolt, FireballSpell, PoisonSting, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, Darkness, MindDevour, Dominate, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, BallLightning, CantripCascade, IceWind, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, KnightBuff, SummonKnights, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, HolyWater, UnholyAlliance, WhiteFlame, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, Boneguard, Frostbite, InfernoEngines]:
     modify_class(cls)
