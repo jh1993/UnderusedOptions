@@ -367,6 +367,10 @@ Word of Ice:
 Arcane Accounting:
 - Now instead lasts 2 turns (starting from the next turn) with only 50% chance to refund 1 spell charge. Duration can be extended by Permanence.
 
+Hibernation:
+- Now also works on nature minions.
+- If an eligible minion has more than 100 ice resistance, it instead has a chance to heal for 15 HP each turn equal to the percentage of its ice resistance above 100, to a maximum of 100%.
+
 Holy Water:
 - Affected allies also deal 2 holy or ice damage once to all enemies in a radius equal to the number of SH they have, even if their SH are maxed out. Holy damage from this skill cannot trigger itself. Cost increased to 5 SP.
 
