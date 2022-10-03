@@ -125,7 +125,7 @@ Dominate:
 - Recruitment Bonus (3 SP): The target is now healed to full HP after being dominated, and all of its debuffs are dispelled.
 
 Flame Burst:
-- Bright Flame upgrade replaced by Healing Flame, which costs 4 SP and heals allies instead of damaging them, and does not change the damage type. This makes it a natural extension of the base spell while providing additional healing with Pyrophilia, instead of changing the damage type to holy and losing out on all fire synergies.
+- Bright Flame upgrade replaced by Phoenix Flame, which costs 4 SP and heals allies instead of damaging them, and does not change the damage type. This makes it a natural extension of the base spell while providing additional healing with Pyrophilia, instead of changing the damage type to holy and losing out on all fire synergies.
 
 Frostfire Hydra:
 - Beams now benefit from both minion damage and breath damage bonuses.
@@ -264,6 +264,12 @@ Pyrostatic Pulse:
 
 Searing Seal:
 - Purefire Seal (6 SP): Holy and arcane damage can now also fuel Searing Seal, but with half the efficiency of fire damage.
+
+Siege Golems:
+- Cannons now benefit from minion health bonuses. Golems' repair ability changed to heal for the cannon's max HP divided by 9, rounded up, which makes it unchanged without any minion health bonuses.
+- Phoenix Ashes (6 SP): Each inferno cannon's attack and self-destruct will now heal allies instead of damaging them. The wizard and inferno cannons will not be healed, but will also not take damage.
+- Wall Demolition (4 SP): Each inferno cannon's attack and self-destruct will now destroy walls.
+- Phase Operator (2 SP): Siege golems gain the ability to teleport next to nearby inferno cannons.
 
 Sight of Blood:
 - Completely overhauled, because the original is thematically redundant with Eye of Rage while being too situational. Is now also an eye and conjuration spell. Every 3 turns, summon a blood vulture (same stats as thunderbird) near the target. Uses shot cooldown, but is not an eye buff. Lasts 15 turns.

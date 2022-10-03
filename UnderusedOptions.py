@@ -996,6 +996,96 @@ class IceWallForcefulConstruction(Upgrade):
         self.spell_bonuses[IceWall]["forceful"] = 1
         self.description = "Wall of Ice no longer requires line of sight to cast.\nWall and chasm tiles in the affected area are converted to floor tiles before summoning the ice elementals.\nUnits in the affected area take [22_ice:ice] damage and are [frozen] for [3_turns:duration], which benefit from stat bonuses. If a unit is killed then an ice elemental is summoned in its tile."
 
+class InfernoCannonBlast(SimpleRangedAttack):
+
+    def __init__(self, damage, range, radius, heal, demo):
+        SimpleRangedAttack.__init__(self, name="Fire Blast", damage=damage, damage_type=Tags.Fire, range=range, radius=radius)
+        self.description = "Must be at full HP to fire.\nLoses half max HP on firing."
+        self.heal = heal
+        if heal:
+            self.description += "\nHeals allies."
+        self.demo = demo
+        if demo:
+            self.description += "\nDestroys walls."
+    
+    def cast(self, x, y):
+        self.caster.cur_hp -= self.caster.max_hp//2
+        for point in Bolt(self.caster.level, self.caster, Point(x, y), find_clear=False):
+            self.caster.level.show_effect(point.x, point.y, self.damage_type, minor=True)
+        for stage in Burst(self.caster.level, Point(x, y), self.get_stat('radius'), ignore_walls=self.demo):
+            for point in stage:
+                self.hit(point.x, point.y)
+            yield
+
+    def hit(self, x, y):
+        damage = self.get_stat("damage")
+        unit = self.caster.level.get_unit_at(x, y)
+        if self.heal and unit and not are_hostile(unit, self.caster):
+            if not unit.is_player_controlled and unit.name != "Inferno Cannon":
+                unit.deal_damage(-damage, Tags.Heal, self)
+            self.caster.level.show_effect(x, y, self.damage_type)
+        else:
+            self.caster.level.deal_damage(x, y, damage, self.damage_type, self)
+        if self.demo and self.caster.level.tiles[x][y].is_wall():
+            self.caster.level.make_floor(x, y)
+
+class InfernoCannonExplosion(DeathExplosion):
+
+    def __init__(self, damage, radius, heal, demo):
+        DeathExplosion.__init__(self, damage, radius, Tags.Fire)
+        self.description += "."
+        self.heal = heal
+        if heal:
+            self.description += " Allies are healed instead."
+        self.demo = demo
+        if demo:
+            self.description += " Walls are destroyed."
+
+    def explode(self, level, x, y):
+        for stage in Burst(self.owner.level, self.owner, self.radius, ignore_walls=self.demo):
+            for point in stage:
+                unit = self.owner.level.get_unit_at(point.x, point.y)
+                if self.heal and unit and not are_hostile(unit, self.owner):
+                    if not unit.is_player_controlled and unit.name != "Inferno Cannon":
+                        unit.deal_damage(-self.damage, Tags.Heal, self)
+                    self.owner.level.show_effect(point.x, point.y, self.damage_type)
+                else:
+                    self.owner.level.deal_damage(point.x, point.y, self.damage, self.damage_type, self)
+                if self.demo and self.owner.level.tiles[point.x][point.y].is_wall():
+                    self.owner.level.make_floor(point.x, point.y)
+            yield
+
+class SiegeGolemTeleport(Spell):
+
+    def __init__(self, range):
+        Spell.__init__(self)
+        self.range = range
+        self.name = "Teleport"
+        self.description = "Teleport next to an inferno cannon."
+        self.requires_los = False
+    
+    def get_dest_points(self, x, y):
+        return list(self.caster.level.get_adjacent_points(Point(x, y), check_unit=True))
+
+    def can_cast(self, x, y):
+        return Spell.can_cast(self, x, y) and bool(self.get_dest_points(x, y))
+
+    def get_ai_target(self):
+        potentials = [u for u in self.caster.level.units if not are_hostile(u, self.caster) and u.name == "Inferno Cannon"]
+        # Filter LOS, range
+        potentials = [u for u in potentials if self.can_cast(u.x, u.y)]
+        if not potentials:
+            return None
+        return random.choice(potentials)
+
+    def cast_instant(self, x, y):
+        points = self.get_dest_points(x, y)
+        if not points:
+            return
+        target = random.choice(points)
+        self.caster.level.show_effect(self.caster.x, self.caster.y, Tags.Translocation)
+        self.caster.level.act_move(self.caster, target.x, target.y, teleport=True)
+
 def modify_class(cls):
 
     if cls is DeathBolt:
@@ -2231,7 +2321,7 @@ def modify_class(cls):
             self.upgrades['max_charges'] = (3, 2)
 
             self.upgrades['meltflame'] = (1, 4, "Melting Flame", "Melt walls adjacent to the blast", "flame")
-            self.upgrades['healflame'] = (1, 4, "Healing Flame", "Flame Burst heals allied units instead of damaging them.", "flame")
+            self.upgrades['healflame'] = (1, 4, "Phoenix Flame", "Flame Burst heals allied units instead of damaging them.\nThe wizard cannot be healed this way.", "flame")
             self.upgrades['spreadflame'] = (1, 7, "Spreading Flame", "Each cast of flame burst consumes all remaining charges.\nFor each charge consumed, flame burst gets +1 radius and +1 damage.\nSlain enemies create additional explosions with half radius and damage.", "flame")
 
         def cast(self, x, y, secondary=False, last_radius=None, last_damage=None):
@@ -2270,7 +2360,9 @@ def modify_class(cls):
 
                     unit = self.caster.level.get_unit_at(p.x, p.y)
                     if heal and unit and not are_hostile(unit, self.caster):
-                        unit.deal_damage(-damage, Tags.Heal, self)
+                        self.caster.level.show_effect(p.x, p.y, Tags.Fire)
+                        if not unit.is_player_controlled:
+                            unit.deal_damage(-damage, Tags.Heal, self)
                     else:
                         self.caster.level.deal_damage(p.x, p.y, damage, Tags.Fire, self)
                         if unit and are_hostile(unit, self.caster) and not unit.is_alive():
@@ -3670,6 +3762,60 @@ def modify_class(cls):
                 self.charges += evt.damage
             if self.spell.get_stat("purefire") and evt.damage_type in [Tags.Holy, Tags.Arcane]:
                 self.charges += evt.damage//2
+
+    if cls is SummonSiegeGolemsSpell:
+
+        def on_init(self):
+            self.name = "Siege Golems"
+            self.tags = [Tags.Fire, Tags.Conjuration, Tags.Metallic]
+            self.level = 4
+            self.max_charges = 3
+            self.range = 5
+
+            self.minion_damage = 30
+            self.minion_range = 15
+            self.radius = 3
+
+            self.minion_health = 25
+            self.num_summons = 3
+
+            self.upgrades['radius'] = (2, 4)
+            self.upgrades['num_summons'] = (3, 3)
+            self.upgrades['minion_range'] = (7, 2)
+            self.upgrades["heal"] = (1, 6, "Phoenix Ashes", "Each inferno cannon's attack and self-destruct will now heal allies instead of damaging them.\nThe wizard and inferno cannons will not be healed, but will also not take damage.")
+            self.upgrades["demo"] = (1, 4, "Wall Demolition", "Each inferno cannon's attack and self-destruct will now destroy walls.")
+            self.upgrades["phase"] = (1, 2, "Phase Operator", "Siege golems gain the ability to teleport next to nearby inferno cannons.")
+
+        def cannon(self):
+            unit = Unit()
+            unit.tags = [Tags.Construct, Tags.Metallic, Tags.Fire]
+            unit.name = "Inferno Cannon"
+            unit.stationary = True
+
+            unit.resists[Tags.Physical] = 50
+            unit.resists[Tags.Fire] = -100
+
+            unit.spells = [InfernoCannonBlast(damage=self.get_stat('minion_damage'), range=self.get_stat('minion_range'), radius=self.get_stat('radius'), heal=self.get_stat("heal"), demo=self.get_stat("demo"))]
+
+            unit.buffs.append(InfernoCannonExplosion(damage=self.get_stat('minion_damage'), radius=self.get_stat('radius'), heal=self.get_stat("heal"), demo=self.get_stat("demo")))
+
+            unit.max_hp = self.get_stat("minion_health", base=18)
+            return unit
+
+        def golem(self):
+            golem = SiegeOperator(self.cannon)
+            golem.spells[2].range = 3
+            if self.get_stat("phase"):
+                golem.spells[2] = SiegeGolemTeleport(3)
+            golem.spells[1].heal = math.ceil(self.get_stat("minion_health", base=18)/9)
+            golem.spells[1].description = "Repair %d damage to a %s" % (golem.spells[1].heal, golem.spells[1].siege_name)
+            golem.name = "Golem Siege Mechanic"
+            golem.asset_name = "golem_siege"
+            golem.max_hp = 25
+            golem.tags = [Tags.Metallic, Tags.Construct]
+            apply_minion_bonuses(self, golem)
+
+            return golem
 
     if cls is FeedingFrenzySpell:
 
@@ -5073,5 +5219,5 @@ def modify_class(cls):
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, PoisonSting, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, Darkness, MindDevour, Dominate, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, BallLightning, CantripCascade, IceWind, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, KnightBuff, SummonKnights, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, Boneguard, Frostbite, InfernoEngines]:
+for cls in [DeathBolt, FireballSpell, PoisonSting, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, Darkness, MindDevour, Dominate, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, BallLightning, CantripCascade, IceWind, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, KnightBuff, SummonKnights, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, Boneguard, Frostbite, InfernoEngines]:
     modify_class(cls)
