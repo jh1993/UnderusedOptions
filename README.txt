@@ -88,7 +88,7 @@ Soul Swap:
 Touch of Death:
 - All the damage type upgrades now do the same amount of damage as dark damage done, but are increased to 2 SP. Now also has a lightning damage upgrade.
 - Damage (4 SP): +200 damage.
-- Touch of the Raven and Touch of the Vampire removed. Touch of the Reaper now has the reapers use your Touch of Death as well.
+- Touch of the Raven and Touch of the Vampire removed. Touch of the Reaper now has the reapers use your Touch of Death as well; its duration is increased to 10 turns and it's no longer limited to living enemies.
 
 Toxic Spores:
 - Red mushboom self-destruct now benefit from minion damage bonuses. All other mushbooms now benefit from duration bonuses.
