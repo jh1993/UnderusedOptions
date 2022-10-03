@@ -1969,7 +1969,7 @@ def modify_class(cls):
             self.upgrades['fire'] = (1, 2, "Flametouch", "Touch of Death also deals [fire] damage.")
             self.upgrades["lightning"] = (1, 2, "Thundertouch", "Touch of Death also deals [lightning] damage.")
             self.upgrades['physical'] = (1, 2, "Wrathtouch", "Touch of Death also deals [physical] damage.")
-            self.upgrades['raise']= (1, 6, 'Touch of the Reaper', 'When a target dies to touch of death, it is raise as a friendly Reaper for [10_turns:duration], which benefits from [minion_duration:minion_duration] bonuses.\nThe Reaper can cast Touch of Death with the same upgrades and bonuses as your own.')
+            self.upgrades['raise']= (1, 6, 'Touch of the Reaper', 'When a target dies to touch of death, it is raise as a friendly Reaper for [6_turns:duration], which benefits from [minion_duration:minion_duration] bonuses.\nThe Reaper can cast Touch of Death with the same upgrades and bonuses as your own.')
 
         def cast_instant(self, x, y):
             unit = self.caster.level.get_unit_at(x, y)
@@ -1987,7 +1987,7 @@ def modify_class(cls):
 
             if unit and not unit.is_alive() and self.get_stat("raise"):
                 reaper = Reaper()
-                reaper.turns_to_death = self.get_stat('minion_duration', base=10)
+                reaper.turns_to_death = self.get_stat('minion_duration', base=6)
                 spell = TouchOfDeath()
                 spell.max_charges = 0
                 spell.cur_charges = 0
