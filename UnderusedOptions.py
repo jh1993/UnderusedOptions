@@ -3800,6 +3800,7 @@ def modify_class(cls):
             unit.buffs.append(InfernoCannonExplosion(damage=self.get_stat('minion_damage'), radius=self.get_stat('radius'), heal=self.get_stat("heal"), demo=self.get_stat("demo")))
 
             unit.max_hp = self.get_stat("minion_health", base=18)
+            unit.source = self
             return unit
 
         def golem(self):

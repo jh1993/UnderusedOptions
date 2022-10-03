@@ -125,7 +125,7 @@ Dominate:
 - Recruitment Bonus (3 SP): The target is now healed to full HP after being dominated, and all of its debuffs are dispelled.
 
 Flame Burst:
-- Bright Flame upgrade replaced by Phoenix Flame, which costs 4 SP and heals allies instead of damaging them, and does not change the damage type. This makes it a natural extension of the base spell while providing additional healing with Pyrophilia, instead of changing the damage type to holy and losing out on all fire synergies.
+- Bright Flame upgrade replaced by Phoenix Flame, which costs 4 SP and heals allies (except the wizard) instead of damaging them, and does not change the damage type. This makes it a natural extension of the base spell while providing additional healing with Pyrophilia, instead of changing the damage type to holy and losing out on all fire synergies.
 
 Frostfire Hydra:
 - Beams now benefit from both minion damage and breath damage bonuses.
