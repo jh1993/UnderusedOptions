@@ -18,6 +18,10 @@ Fireball:
 Poison Sting:
 - Torment (5 SP): Deal 1 extra damage per 10 turns of poison on the target, and 1 extra damage per turn of every other debuff on the target.
 
+Wolf:
+- Ice hounds are now nature units.
+- Wolf Pack cost reduced to 7, because I don't think anything should cost more than 7 SP; 7 SP should be enough for this upgrade anyways. It also counts as casting the spell twice, to make you not lose out on Thorn Garden and Icy Spriggan shrine procs.
+
 Annihilate:
 - Can now target empty tiles.
 - Cascade upgrade description changed to clarify that the cascade works if the original target is an empty tile, and that it ignores line of sight.
@@ -136,7 +140,7 @@ Frostfire Hydra:
 Giant Bear:
 - Max Charges upgrade removed and its benefits folded into the base spell.
 - Armored Bear upgrade removed.
-- Polar Bear (5 SP): Summons a polar bear instead of a giant bear. Polar bears are resistant to ice damage, can freeze units around itself, and gains regeneration and an ice aura while frozen. Not compatible with other bear species upgrades.
+- Polar Bear (5 SP): Summons a polar bear instead of a giant bear. Polar bears are resistant to ice damage, can freeze units around itself, and gains regeneration and an ice aura while frozen. If the polar bear's ice resistance is above 100, the regeneration and ice aura have a chance to activate each turn equal to the percentage of the bear's ice resistance above 100. Not compatible with other bear species upgrades.
 - Roar (4 SP): The bear gains a roar with a cooldown of 3 turns that stuns enemies in a 7 range cone for 3 turns. The venom bear's roar will also poison enemies for 5 turns and give regeneration to allies for the same duration. The blood bear's roar will instead berserk enemies and give allies a stack of bloodlust for 10 turns. The polar bear's roar will instead freeze enemies and heal allies for an amount equal to its regeneration when frozen.
 
 Holy Fire:

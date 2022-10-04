@@ -249,7 +249,7 @@ class PolarBearAura(DamageAuraBuff):
         self.color = Tags.Ice.color
     
     def on_advance(self):
-        if not self.owner.has_buff(FrozenBuff):
+        if not self.owner.has_buff(FrozenBuff) and (self.owner.resists[Tags.Ice] <= 100 or random.random() >= (self.owner.resists[Tags.Ice] - 100)/100):
             return
         self.owner.deal_damage(-self.heal, Tags.Heal, self)
         DamageAuraBuff.on_advance(self)
@@ -1215,6 +1215,82 @@ def modify_class(cls):
                 if damage and self.get_stat('antigen'):
                     unit.apply_buff(Acidified())
                 unit.apply_buff(Poison(), self.get_stat('duration'))
+
+    if cls is SummonWolfSpell:
+
+        def on_init(self):
+            self.max_charges = 12
+            self.name = "Wolf"
+            self.minion_health = 11
+            self.minion_damage = 5
+            self.upgrades['leap_range'] = (4, 3, "Pounce", "Summoned wolves gain a leap attack")
+            self.upgrades['minion_damage'] = 4
+            self.upgrades['minion_health'] = (12, 3)
+
+            self.upgrades['blood_hound'] = (1, 3, "Blood Hound", "Summon blood hounds instead of wolves.", "hound")
+            self.upgrades['ice_hound'] = (1, 3, "Ice Hound", "Summon ice hounds instead of wolves.", "hound")
+            self.upgrades['clay_hound'] = (1, 6, "Clay Hound", "Summon clay hounds instead of wolves.", "hound")
+            self.upgrades['wolf_pack'] = (1, 7, "Wolf Pack", "Each cast of wolf consumes 2 charges and summons 4 wolves.\nThis counts as casting the spell twice.")
+
+
+            self.tags = [Tags.Nature, Tags.Conjuration]
+            self.level = 1
+
+            self.must_target_walkable = True
+            self.must_target_empty = True
+
+        def make_wolf(self):
+            wolf = Unit()
+            wolf.max_hp = self.get_stat('minion_health')
+            wolf.spells.append(SimpleMeleeAttack(self.get_stat('minion_damage')))
+            wolf.tags = [Tags.Living, Tags.Nature]
+
+            if self.get_stat('leap_range'):
+                wolf.spells.append(LeapAttack(damage=self.get_stat('minion_damage'), damage_type=Tags.Physical, range=self.get_stat('leap_range')))
+
+            if self.get_stat('blood_hound'):
+                wolf.name = "Blood Hound"
+                wolf.asset_name = "blood_wolf"
+
+                wolf.spells[0].onhit = bloodrage(2)
+                wolf.spells[0].name = "Frenzy Bite"
+                wolf.spells[0].description = "Gain +2 damage for 10 turns with each attack"
+                
+                wolf.tags = [Tags.Demon, Tags.Nature]
+                wolf.resists[Tags.Dark] = 75
+
+            elif self.get_stat('ice_hound'):
+                for s in wolf.spells:
+                    s.damage_type = Tags.Ice
+                wolf.resists[Tags.Ice] = 100
+                wolf.resists[Tags.Fire] = -50
+                wolf.resists[Tags.Dark] = 50
+                wolf.name = "Ice Hound"
+                wolf.tags = [Tags.Demon, Tags.Ice, Tags.Nature]
+                wolf.buffs.append(Thorns(4, Tags.Ice))
+
+            elif self.get_stat('clay_hound'):
+                wolf.name = "Clay Hound"
+                wolf.asset_name = "earth_hound"
+
+                wolf.resists[Tags.Physical] = 50
+                wolf.resists[Tags.Fire] = 50
+                wolf.resists[Tags.Lightning] = 50
+                wolf.buffs.append(RegenBuff(3))
+                
+            return wolf
+
+        def cast(self, x, y):
+            num_wolves = 1
+            if self.get_stat('wolf_pack'):
+                num_wolves = 4
+                self.cur_charges -= 1
+                self.cur_charges = max(self.cur_charges, 0)
+                self.caster.level.event_manager.raise_event(EventOnSpellCast(self, self.caster, x, y), self.caster)
+            for i in range(num_wolves):
+                wolf = self.make_wolf()
+                self.summon(wolf, Point(x, y))
+                yield
 
     if cls is AnnihilateSpell:
 
@@ -2492,7 +2568,7 @@ def modify_class(cls):
             self.upgrades['minion_attacks'] = (1, 3)
             self.upgrades['venom'] = (1, 4, "Venom Bear", "Summons a venom bear instead of a giant bear.\nVenom Bears have a poison bite, and heal whenever an enemy takes poison damage.", "species")
             self.upgrades['blood'] = (1, 5, "Blood Bear", "Summons a blood bear instead of a giant bear.\nBlood bears are resistant to dark damage, and deal increasing damage with each attack.", "species")
-            self.upgrades["polar"] = (1, 5, "Polar Bear", "Summons a polar bear instead of a giant bear.\nPolar bears are resistant to ice damage, can freeze units around itself, and gains regeneration and an ice aura while frozen.", "species")
+            self.upgrades["polar"] = (1, 5, "Polar Bear", "Summons a polar bear instead of a giant bear.\nPolar bears are resistant to ice damage, can freeze units around itself, and gains regeneration and an ice aura while frozen.\nIf the polar bear's [ice] resistance is above 100, the regeneration and ice aura have a chance to activate each turn equal to the percentage of the bear's [ice] resistance above 100.", "species")
             self.upgrades["roar"] = (1, 4, "Roar", "The bear gains a roar with a cooldown of 3 turns that stuns enemies in a [7_range:range] cone for [3_turns:duration].\nThe venom bear's roar will also [poison] enemies for [5_turns:duration] and give regeneration to allies for the same duration.\nThe blood bear's roar will instead [berserk] enemies and give allies a stack of bloodlust for [10_turns:duration].\nThe polar bear's roar will instead [freeze] enemies and heal allies for an amount equal to its regeneration when frozen.")
 
             self.must_target_walkable = True
@@ -2523,7 +2599,7 @@ def modify_class(cls):
                 bear.asset_name = "polar_bear"
                 bear.resists[Tags.Ice] = 50
                 bear.resists[Tags.Fire] = -50
-                bear.tags = [Tags.Ice, Tags.Living]
+                bear.tags = [Tags.Ice, Tags.Living, Tags.Nature]
                 bear.buffs = [PolarBearAura()]
 
             elif self.get_stat('blood'):
@@ -5220,5 +5296,5 @@ def modify_class(cls):
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, PoisonSting, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, Darkness, MindDevour, Dominate, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, BallLightning, CantripCascade, IceWind, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, KnightBuff, SummonKnights, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, Boneguard, Frostbite, InfernoEngines]:
+for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, Darkness, MindDevour, Dominate, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, BallLightning, CantripCascade, IceWind, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, KnightBuff, SummonKnights, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, Boneguard, Frostbite, InfernoEngines]:
     modify_class(cls)
