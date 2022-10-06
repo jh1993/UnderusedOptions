@@ -754,7 +754,7 @@ class SlimeFormAdvancedSlimes(Upgrade):
     # Make sure it works for slimes summoned by Slime Form + Boon shrine
     def can_redeal(self, target, source, damage_type):
         if source.owner and isinstance(source.owner.source, SlimeformSpell):
-            return hasattr(source, "buff") and source.buff is Acidified and damage_type == Tags.Poison and target.resists[Tags.Poison] < 200
+            return hasattr(source, "buff") and source.buff is Acidified and damage_type == Tags.Poison and target.resists[Tags.Poison] < 200 and not target.has_buff(Acidified)
         return False
 
 class UnholyAllianceMinionBuff(Buff):
