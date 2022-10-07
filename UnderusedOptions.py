@@ -1241,6 +1241,7 @@ def modify_class(cls):
 
         def make_wolf(self):
             wolf = Unit()
+            wolf.name = "Wolf"
             wolf.max_hp = self.get_stat('minion_health')
             wolf.spells.append(SimpleMeleeAttack(self.get_stat('minion_damage')))
             wolf.tags = [Tags.Living, Tags.Nature]
