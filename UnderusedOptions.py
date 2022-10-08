@@ -3144,17 +3144,45 @@ def modify_class(cls):
             self.range = 8
 
             self.upgrades['lives'] = (3, 2)
+            self.upgrades["additive"] = (1, 4, "Additive", "If the target already has reincarnations, you can now cast this spell on the target to add its number of lives to said reincarnations.")
             self.upgrades["eternity"] = (1, 7, "Eternity", "Suspend Mortality now adds reincarnations as a passive buff, which is permanent and cannot be dispelled.")
 
-        def cast_instant(self, x, y):
+        def can_cast(self, x, y):
+            if not Spell.can_cast(self, x, y):
+                return False
             unit = self.caster.level.get_unit_at(x, y)
-            if unit:
-                buff = ReincarnationBuff(self.get_stat('lives'))
-                duration = self.get_stat("duration")
-                if self.get_stat("eternity"):
-                    buff.buff_type = BUFF_TYPE_PASSIVE
-                    duration = 0
-                unit.apply_buff(buff, duration)
+            if not unit:
+                return False
+            return not unit.has_buff(ReincarnationBuff) or self.get_stat("additive")
+
+        def get_description(self):
+            return ("Target unit gains the ability to reincarnate on death [{lives}_times:holy] for [{duration}_turns:duration].\n"
+                    "Cannot be cast on targets that already have reincarnations.").format(**self.fmt_dict())
+
+        def cast_instant(self, x, y):
+
+            unit = self.caster.level.get_unit_at(x, y)
+            if not unit:
+                return
+            
+            existing = unit.get_buff(ReincarnationBuff)
+            if existing:
+                if self.get_stat("additive"):
+                    existing.lives += self.get_stat('lives')
+                    existing.name = "Reincarnation %i" % existing.lives
+                    if self.get_stat("eternity"):
+                        existing.buff_type = BUFF_TYPE_PASSIVE
+                        existing.turns_left = 0
+                    elif existing.turns_left > 0:
+                        existing.turns_left = max(existing.turns_left, self.get_stat("duration"))
+                return
+            
+            buff = ReincarnationBuff(self.get_stat('lives'))
+            duration = self.get_stat("duration")
+            if self.get_stat("eternity"):
+                buff.buff_type = BUFF_TYPE_PASSIVE
+                duration = 0
+            unit.apply_buff(buff, duration)
 
     if cls is UnderworldPortal:
 

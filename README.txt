@@ -188,6 +188,8 @@ Shrapnel Blast:
 - Unearth (4 SP): This spell can now be cast on chasms.
 
 Suspend Mortality:
+- Can no longer be cast on units that already have reincarnations, unless you have the Additive upgrade (see below).
+- Additive (4 SP): If the target already has reincarnations, you can now cast this spell on the target to add its number of lives to said reincarnations.
 - Eternity (7 SP): Suspend Mortality now adds reincarnations as a passive buff, which is permanent and cannot be dispelled.
 
 Underworld Passage:
