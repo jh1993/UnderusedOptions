@@ -347,7 +347,7 @@ class ChimeraFamiliarSpellConduit(Spell):
     def on_init(self):
         self.name = "Spell Conduit"
         self.range = 0
-        self.description = "Casts %i of the wizard's %s%s%s%s or chaos sorcery spells with the highest max charges that can be cast from this tile, consuming a charge from them." % (self.casts, "fire" if self.fire else "", ", " if self.fire and self.lightning else "", "lightning" if self.lightning else "", "," if self.fire and self.lightning else "")
+        self.description = "Casts %i of the wizard's %s%s%s%s or chaos sorcery spells with the highest max charges that can be cast from this tile, consuming a charge from them and also counting as the wizard casting them." % (self.casts, "fire" if self.fire else "", ", " if self.fire and self.lightning else "", "lightning" if self.lightning else "", "," if self.fire and self.lightning else "")
     
     def copy_spell(self, spell):
         spell_copy = type(spell)()
@@ -383,6 +383,7 @@ class ChimeraFamiliarSpellConduit(Spell):
                 continue
             spell.cur_charges -= 1
             self.caster.level.act_cast(self.caster, spell_copy, target.x, target.y, pay_costs=False)
+            self.caster.level.event_manager.raise_event(EventOnSpellCast(spell, self.owner.source.caster, target.x, target.y), self.owner.source.caster)
             casts_left -= 1
             if not casts_left:
                 return
@@ -3423,7 +3424,7 @@ def modify_class(cls):
 
         def get_description(self):
             return ("Summon a Chimera Familiar, which has [{minion_health}_HP:minion_health], and [{minion_resists}:damage] resistance to [fire], [lightning], and [physical].\n"
-                    "Each turn, the chimera will cast [{casts}:num_targets] of your [fire], [lightning], or [chaos] [sorcery] spells that can be cast from its tile, preferring spells with the highest [max_charges:max_charges], consuming 1 charge from the spells copied.\n"
+                    "Each turn, the chimera will cast [{casts}:num_targets] of your [fire], [lightning], or [chaos] [sorcery] spells that can be cast from its tile, preferring spells with the highest [max_charges:max_charges], consuming 1 charge from the spells copied. This also counts as you casting the spell.\n"
                     "If the chimera cannot cast your spells, it will use [fire] and [lightning] ranged attacks with [{minion_damage}:minion_damage] damage and [{minion_range}:minion_range] range.").format(**self.fmt_dict())
 
         def get_lion(self):

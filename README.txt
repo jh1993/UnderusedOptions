@@ -212,7 +212,7 @@ Bone Barrage:
 - If you have Cursed Bones, the assembled bone shambler also deals dark damage with its melee.
 
 Chimera Familiar:
-- Overhauled. Instead of copying spells when you cast them, the chimera now copies an eligible spell every turn with its action, choosing the spell with the highest max charges and draining a charge of that spell. This counts as you casting the spell.
+- Overhauled. Instead of copying spells when you cast them, the chimera now copies an eligible spell every turn with its action, choosing the spell with the highest max charges and draining a charge of that spell. This also counts as you casting the spell.
 - Max Charges upgrade removed and folded into the base spell.
 - The chimera's base HP is increased to 26, the same as those of enemy chaos chimeras. Its default attacks have 5 damage and 5 range.
 - The chimera now starts with 50% physical resistance, and the Minion Resists upgrade affects physical resistance as well.
