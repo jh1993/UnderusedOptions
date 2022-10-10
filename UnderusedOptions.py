@@ -2214,6 +2214,101 @@ def modify_class(cls):
             return ("Whenever an enemy unit targets you with a spell or attack, that unit is [petrified] for [{petrify_duration}_turns:duration].\n"
                     "Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
 
+    if cls is AngelSong:
+
+        def on_init(self):
+            self.name = "Sing"
+            self.description = "Living and holy units are healed, undead, demons, and dark units take holy and fire damage."
+            self.radius = 5
+            self.damage = 2
+            self.heal = 1
+            self.range = 0
+            self.pragmatic = False
+
+        def cast_instant(self, x, y):
+            heal = self.get_stat('heal')
+            damage = self.get_stat('damage')
+            for unit in self.caster.level.get_units_in_ball(Point(x, y), self.get_stat('radius')):
+                if unit.is_player_controlled:
+                    continue
+                if (Tags.Living in unit.tags or Tags.Holy in unit.tags) and unit.cur_hp < unit.max_hp:
+                    if self.pragmatic and are_hostile(unit, self.caster):
+                        continue
+                    unit.deal_damage(-heal, Tags.Heal, self)
+                if Tags.Dark in unit.tags or Tags.Undead in unit.tags or Tags.Demon in unit.tags:
+                    if self.pragmatic and not are_hostile(unit, self.caster):
+                        continue
+                    unit.deal_damage(damage, Tags.Fire, self)
+                    unit.deal_damage(damage, Tags.Holy, self)
+
+        def get_ai_target(self):
+            units = self.caster.level.get_units_in_ball(self.caster, self.get_stat('radius'))
+            for unit in units:
+                if unit.is_player_controlled:
+                    continue
+                if (Tags.Living in unit.tags or Tags.Holy in unit.tags) and unit.cur_hp < unit.max_hp:
+                    if self.pragmatic and are_hostile(unit, self.caster):
+                        continue
+                    return self.caster
+                if Tags.Undead in unit.tags or Tags.Demon in unit.tags or Tags.Dark in unit.tags:
+                    if self.pragmatic and not are_hostile(unit, self.caster):
+                        continue
+                    return self.caster
+            return None
+
+    if cls is AngelicChorus:
+
+        def on_init(self):
+            self.name = "Choir of Angels"
+
+            self.minion_health = 10
+            self.shields = 1
+            self.minion_duration = 10
+            self.num_summons = 3
+            self.heal = 1
+            self.minion_damage = 2
+            self.radius = 5
+
+            self.range = 7
+
+            self.tags = [Tags.Holy, Tags.Conjuration]
+            self.level = 3
+
+            self.max_charges = 5
+
+            self.upgrades['shields'] = (2, 2)
+            self.upgrades['num_summons'] = (3, 4)
+            self.upgrades['minion_duration'] = (10, 2)
+            self.upgrades['heal'] = (2, 3)
+            self.upgrades["pragmatic"] = (1, 3, "Pragmatic Faith", "The angels will no longer damage [undead] and [demon] allies, or heal [living] and [holy] enemies.")
+
+        def cast(self, x, y):
+
+            for _ in range(self.get_stat('num_summons')):
+                angel = Unit()
+                angel.name = "Angelic Singer"
+                angel.max_hp = self.get_stat('minion_health')
+                angel.shields = self.get_stat('shields')
+                
+                song = AngelSong()
+                song.damage = self.get_stat('minion_damage')
+                song.heal = self.get_stat('heal')
+                song.radius = self.get_stat('radius')
+                song.pragmatic = self.get_stat("pragmatic")
+                
+                angel.spells.append(song)
+
+                angel.flying = True
+                angel.tags = [Tags.Holy]
+                angel.resists[Tags.Holy] = 50
+                angel.resists[Tags.Fire] = 50
+                angel.resists[Tags.Dark] = 100
+
+                angel.turns_to_death = self.get_stat('minion_duration')
+
+                self.summon(angel, Point(x, y))
+                yield
+
     if cls is Darkness:
 
         def on_init(self):
@@ -5382,5 +5477,5 @@ def modify_class(cls):
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, BallLightning, CantripCascade, IceWind, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, KnightBuff, SummonKnights, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, Boneguard, Frostbite, InfernoEngines]:
+for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, BallLightning, CantripCascade, IceWind, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, KnightBuff, SummonKnights, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, Boneguard, Frostbite, InfernoEngines]:
     modify_class(cls)

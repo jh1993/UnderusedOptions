@@ -110,6 +110,9 @@ Basilisk Armor:
 - Freezing Armor (2 SP): Basilisk Armor inflicts freeze instead of petrify. Only one armor upgrade allowed.
 - Glassifying Armor (2 SP): Basilisk Armor inflicts glassify instead of petrify. Only one armor upgrade allowed.
 
+Choir of Angels:
+- Pragmatic Faith (3 SP): The angels will no longer damage undead and demon allies, or heal living and holy enemies.
+
 Darkness:
 - Max Charges upgrade removed.
 - Dark Horizon (3 SP): Hostile demon and undead units have a 5% chance to be blinded per tile away from you.
