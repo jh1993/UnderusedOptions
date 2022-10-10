@@ -4755,7 +4755,7 @@ def modify_class(cls):
                     if damage:
                         self.caster.level.deal_damage(x, y, damage, Tags.Poison, self)
                 elif rank == 1:
-                    if not unit:
+                    if not unit and self.caster.level.tiles[p.x][p.y].can_walk:
                         if aether:
                             spider = PhaseSpider()
                         elif steel:
@@ -4765,14 +4765,14 @@ def modify_class(cls):
                         spider.spells[0].damage = self.get_stat('minion_damage', base=spider.spells[0].damage)
                         spider.max_hp = self.get_stat('minion_health', base=spider.max_hp)
                         self.summon(spider, p)
-                    else:
+                    if unit:
                         unit.apply_buff(Poison(), duration)
                 else:
-                    if not unit:
+                    if not unit and not self.caster.level.tiles[p.x][p.y].is_wall():
                         cloud = SpiderWeb()
                         cloud.owner = self.caster
                         self.caster.level.add_obj(cloud, *p)
-                    else:
+                    if unit:
                         unit.apply_buff(Stun(), 1)
                 yield
 
