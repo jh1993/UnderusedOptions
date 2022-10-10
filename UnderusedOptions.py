@@ -882,10 +882,14 @@ class ConjureMemoriesBuff(Buff):
     def on_unit_added(self, evt):
         if are_hostile(self.owner, evt.unit) or evt.unit.is_player_controlled or evt.unit in self.allies:
             return
-        self.allies.append(evt.unit)
-        evt.unit.memorized_max_hp = evt.unit.max_hp
-        evt.unit.memorized_shields = evt.unit.shields
-        evt.unit.memorized_turns_to_death = evt.unit.turns_to_death
+        self.owner.level.queue_spell(self.memorize_unit(evt.unit))
+
+    def memorize_unit(self, unit):
+        self.allies.append(unit)
+        unit.memorized_max_hp = unit.max_hp
+        unit.memorized_shields = unit.shields
+        unit.memorized_turns_to_death = unit.turns_to_death
+        yield
 
     def on_advance(self):
         if all(unit.team == TEAM_PLAYER for unit in self.owner.level.units):
@@ -911,6 +915,7 @@ class ConjureMemoriesBuff(Buff):
                 if buff.buff_type != BUFF_TYPE_PASSIVE:
                     unit.buffs.remove(buff)
             unit.killed = False
+            self.owner.level.show_effect(target.x, target.y, Tags.Translocation)
             self.owner.level.add_obj(unit, target.x, target.y, trigger_summon_event=False)
 
 class RecentMemory(Upgrade):
