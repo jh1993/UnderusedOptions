@@ -63,6 +63,8 @@ class StoneCurseUpgrade(Upgrade):
     def on_buff_apply(self, evt):
         if not are_hostile(self.owner, evt.unit) or (not isinstance(evt.buff, PetrifyBuff) and not isinstance(evt.buff, GlassPetrifyBuff)):
             return
+        if evt.unit.has_buff(StoneCurseBuff):
+            return
         if random.random() >= 0.5:
             if self.prereq.cur_charges > 0:
                 self.prereq.cur_charges -= 1
