@@ -760,51 +760,16 @@ class SlimeFormAdvancedSlimes(Upgrade):
             return hasattr(source, "buff") and source.buff is Acidified and damage_type == Tags.Poison and target.resists[Tags.Poison] < 200 and not target.has_buff(Acidified)
         return False
 
-class UnholyAllianceMinionBuff(Buff):
-
-    def __init__(self, upgrade, unholy):
-        self.upgrade = upgrade
-        self.unholy = unholy
-        Buff.__init__(self)
-    
-    def on_applied(self,owner):
-        self.on_advance()
-
+class UnholyAllianceHolyBuff(Buff):
     def on_init(self):
         self.buff_type = BUFF_TYPE_PASSIVE
-        self.stack_type = STACK_INTENSITY
-        self.active = False
-        self.buffed_spells = []
-    
-    def modify_minion(self):
-        self.active = True
-        if self.unholy:
-            self.owner.resists[Tags.Holy] += 100
-        buffed_spells = list(self.buffed_spells)
-        for spell in self.owner.spells:
-            if hasattr(spell, "damage") and spell not in buffed_spells:
-                spell.damage += 7
-                self.buffed_spells.append(spell)
-    
-    def unmodify_minion(self):
-        self.active = False
-        if self.unholy:
-            self.owner.resists[Tags.Holy] -= 100
-        for spell in list(self.buffed_spells):
-            spell.damage -= 7
-            self.buffed_spells.remove(spell)
+        self.global_bonuses["damage"] = 7
 
-    def on_advance(self):
-        if self.active:
-            if self.unholy and not self.upgrade.holy_minions:
-                self.unmodify_minion()
-            if not self.unholy and not self.upgrade.unholy_minions:
-                self.unmodify_minion()
-        else:
-            if self.unholy and self.upgrade.holy_minions:
-                self.modify_minion()
-            if not self.unholy and self.upgrade.unholy_minions:
-                self.modify_minion()
+class UnholyAllianceUnholyBuff(Buff):
+    def on_init(self):
+        self.buff_type = BUFF_TYPE_PASSIVE
+        self.global_bonuses["damage"] = 7
+        self.resists[Tags.Holy] = 100
 
 class WhiteFlameDebuff(Buff):
     def on_init(self):
@@ -4215,7 +4180,9 @@ def modify_class(cls):
 
         def cast(self, x, y):
             damage = self.get_stat('damage')
+            damage_bonus = damage - self.damage
             duration = self.get_stat('duration')
+            duration_bonus = duration - self.duration
             clouds = self.get_stat('clouds')
             for stage in Burst(self.caster.level, self.caster, self.get_stat('radius')):
                 for p in stage:
@@ -4230,8 +4197,13 @@ def modify_class(cls):
                         if lightning_dealt:
                             unit.apply_buff(Stun(), duration)
                     if clouds:
-                        cloud_type = random.choice([BlizzardCloud, StormCloud])
-                        cloud = cloud_type(self.caster)
+                        if random.choice([True, False]):
+                            cloud = BlizzardCloud(self.caster)
+                            cloud.damage += damage_bonus
+                        else:
+                            cloud = StormCloud(self.caster)
+                            cloud.damage += 2*damage_bonus
+                        cloud.duration += duration_bonus
                         cloud.source = self
                         self.caster.level.add_obj(cloud, p.x, p.y)
                 yield
@@ -5272,17 +5244,30 @@ def modify_class(cls):
             self.unholy_minions = []
 
         def on_advance(self):
+
             self.holy_minions = []
             self.unholy_minions = []
-            for unit in [unit for unit in self.owner.level.units if not are_hostile(self.owner, unit)]:
+            units = [unit for unit in self.owner.level.units if not are_hostile(unit, self.owner)]
+            for unit in units:
                 if Tags.Holy in unit.tags:
                     self.holy_minions.append(unit)
-                    if not [buff for buff in unit.buffs if isinstance(buff, UnholyAllianceMinionBuff) and not buff.unholy]:
-                        unit.apply_buff(UnholyAllianceMinionBuff(self, unholy=False))
                 if Tags.Undead in unit.tags or Tags.Demon in unit.tags:
                     self.unholy_minions.append(unit)
-                    if not [buff for buff in unit.buffs if isinstance(buff, UnholyAllianceMinionBuff) and buff.unholy]:
-                        unit.apply_buff(UnholyAllianceMinionBuff(self, unholy=True))
+
+            for unit in units:
+                if Tags.Holy in unit.tags:
+                    buff = unit.get_buff(UnholyAllianceHolyBuff)
+                    if buff and not self.unholy_minions:
+                        unit.remove_buff(buff)
+                    elif self.unholy_minions and not buff:
+                        unit.apply_buff(UnholyAllianceHolyBuff())
+                if Tags.Undead in unit.tags or Tags.Demon in unit.tags:
+                    buff = unit.get_buff(UnholyAllianceUnholyBuff)
+                    if buff and not self.holy_minions:
+                        unit.remove_buff(buff)
+                    elif self.holy_minions and not buff:
+                        unit.apply_buff(UnholyAllianceUnholyBuff())
+
 
     if cls is WhiteFlame:
 
@@ -5404,6 +5389,42 @@ def modify_class(cls):
         def can_redeal(self, u, source, damage_type):
             return damage_type == Tags.Physical and source.owner and (source.owner.shields > 0 or source.owner.has_buff(PureGraceBuff)) and (u.resists[Tags.Holy] < 100 or u.resists[Tags.Arcane] < 100)
 
+    if cls is StormCaller:
+
+        def on_damage(self, evt):
+            if not are_hostile(self.owner, evt.unit):
+                return
+
+            if evt.damage_type not in [Tags.Ice, Tags.Lightning]:
+                return
+
+            bonus = self.get_stat("damage")
+            if random.choice([True, False]):
+                cloud = BlizzardCloud(self.owner)
+                cloud.damage += bonus
+            else:
+                cloud = StormCloud(self.owner)
+                cloud.damage += 2*bonus
+            cloud.duration = self.get_stat("duration")
+            cloud.source = self
+
+            if not self.owner.level.tiles[evt.unit.x][evt.unit.y].cloud:
+                self.owner.level.add_obj(cloud, evt.unit.x, evt.unit.y)
+            else:
+                possible_points = self.owner.level.get_points_in_ball(evt.unit.x, evt.unit.y, 1, diag=True)
+                def can_cloud(p):
+                    tile = self.owner.level.tiles[p.x][p.y]
+                    if tile.cloud:
+                        return False
+                    if tile.is_wall():
+                        return False
+                    return True
+
+                possible_points = [p for p in possible_points if can_cloud(p)]
+                if possible_points:
+                    point = random.choice(possible_points)
+                    self.owner.level.add_obj(cloud, point.x, point.y)
+
     if cls is Boneguard:
 
         def on_init(self):
@@ -5484,5 +5505,5 @@ def modify_class(cls):
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, BallLightning, CantripCascade, IceWind, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, KnightBuff, SummonKnights, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, Boneguard, Frostbite, InfernoEngines]:
+for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, BallLightning, CantripCascade, IceWind, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, KnightBuff, SummonKnights, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines]:
     modify_class(cls)

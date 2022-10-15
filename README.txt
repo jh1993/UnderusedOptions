@@ -297,7 +297,8 @@ Siphon Shields:
 - Shield Mirage (4 SP): If you already have 20 SH, then every additional 3 SH stolen will summon a shield mirage near you. Shield mirages are stationary, flying arcane minions with fixed 1 HP, 3 SH:shields, and no resistances.
 
 Storm Burst:
-- Damage is halved but now deals both ice and lightning damage. Cloud Nova chooses cloud type randomly.
+- Damage is halved but now deals both ice and lightning damage.
+- Cloud Nova chooses cloud type randomly. The clouds now benefit from damage and duration bonuses; thunderstorm clouds benefit doubly from damage.
 
 Storm Drake:
 - Drake Swap and Cloudform upgrades removed.
@@ -411,6 +412,9 @@ Purestrike:
 - As per my No More Scams mod, no longer harms allies, and is based on damage pre-resistances.
 - Now has a grace period of 1 turn where a unit can be unshielded but still benefit. The grace period is fixed.
 - Cost increased to 6 SP.
+
+Storm Caller:
+- Thunderstorm clouds now benefit doubly from damage bonuses.
 
 Bone Guard:
 - Now also summons a bone archer, and all summoned units have +1 reincarnation.
