@@ -1015,7 +1015,7 @@ class InfernoCannonExplosion(DeathExplosion):
             self.description += " Walls are destroyed."
 
     def explode(self, level, x, y):
-        for stage in Burst(self.owner.level, self.owner, self.radius, ignore_walls=self.demo):
+        for stage in Burst(self.owner.level, Point(self.owner.x, self.owner.y), self.radius, ignore_walls=self.demo):
             for point in stage:
                 unit = self.owner.level.get_unit_at(point.x, point.y)
                 if self.heal and unit and not are_hostile(unit, self.owner):
@@ -4184,7 +4184,7 @@ def modify_class(cls):
             duration = self.get_stat('duration')
             duration_bonus = duration - self.duration
             clouds = self.get_stat('clouds')
-            for stage in Burst(self.caster.level, self.caster, self.get_stat('radius')):
+            for stage in Burst(self.caster.level, Point(self.caster.x, self.caster.y), self.get_stat('radius')):
                 for p in stage:
                     if (p.x, p.y) == (self.caster.x, self.caster.y):
                         continue
