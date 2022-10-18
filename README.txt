@@ -147,7 +147,7 @@ Frostfire Hydra:
 Giant Bear:
 - Max Charges upgrade removed and its benefits folded into the base spell.
 - Armored Bear upgrade removed.
-- Polar Bear (5 SP): Summons a polar bear instead of a giant bear. Polar bears are resistant to ice damage, can freeze units around itself, and gains regeneration and an ice aura while frozen. If the polar bear's ice resistance is above 100, the regeneration and ice aura have a chance to activate each turn equal to the percentage of the bear's ice resistance above 100. Not compatible with other bear species upgrades.
+- Polar Bear (5 SP): Summons a polar bear instead of a giant bear. Polar bears are resistant to ice damage, can freeze units around itself, and gains regeneration and an ice aura while frozen. For every 100 ice resistance the polar bear has above 100, the self-healing and ice aura activate once per turn. An excess of less than 100 instead has a chance to activate these effects. Not compatible with other bear species upgrades.
 - Roar (4 SP): The bear gains a roar with a cooldown of 3 turns that stuns enemies in a 7 range cone for 3 turns. The venom bear's roar will also poison enemies for 5 turns and give regeneration to allies for the same duration. The blood bear's roar will instead berserk enemies and give allies a stack of bloodlust for 10 turns. The polar bear's roar will instead freeze enemies and heal allies for an amount equal to its regeneration when frozen.
 
 Holy Fire:
@@ -373,7 +373,8 @@ Searing Orb:
 - Safety (2 SP): Searing Orb no longer damages your minions.
 
 Knightly Oath:
-- Shared Burden (4 SP): When a knight dies, the recoil damage is split evenly among the caster and all remaining knights.
+- Instead of damaging the caster on death, a knight now deals 40 damage to the caster when about to take fatal damage to fully heal self, restore SH, and remove all debuffs.
+- Promotion (6 SP): Each non-champion knight will be promoted to a champion after 20 turns.
 
 Multicast:
 - Adaptive Copy (6 SP): Level 5 and 4 spells are now copied 1 additional time. Level 3 and 2 spells are now copied 2 additional times. Level 1 spells are now copied 3 additional times.
@@ -389,7 +390,7 @@ Arcane Accounting:
 
 Hibernation:
 - Now also works on nature minions.
-- If an eligible minion has more than 100 ice resistance, it instead has a chance to heal for 15 HP each turn equal to the percentage of its ice resistance above 100, to a maximum of 100%.
+- For every 100 ice resistance a minion has above 100, it will be healed each turn for the same amount. An excess of less than 100 instead has a chance to heal the minion.
 
 Holy Water:
 - Affected allies also deal 2 holy or ice damage once to all enemies in a radius equal to the number of SH they have, even if their SH are maxed out. Holy damage from this skill cannot trigger itself. Cost increased to 5 SP.

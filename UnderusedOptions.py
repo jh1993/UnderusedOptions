@@ -245,16 +245,22 @@ class PolarBearAura(DamageAuraBuff):
         DamageAuraBuff.__init__(self, 1, Tags.Ice, 4)
         self.heal = 10
         self.description = "While frozen, heals for %i HP per turn and deals %i ice damage to all enemies in a %i radius." % (self.heal, self.damage, self.radius)
-    
-    def on_init(self):
         self.name = "Icy Body"
         self.color = Tags.Ice.color
     
     def on_advance(self):
-        if not self.owner.has_buff(FrozenBuff) and (self.owner.resists[Tags.Ice] <= 100 or random.random() >= (self.owner.resists[Tags.Ice] - 100)/100):
-            return
-        self.owner.deal_damage(-self.heal, Tags.Heal, self)
-        DamageAuraBuff.on_advance(self)
+        if self.owner.has_buff(FrozenBuff):
+            self.owner.deal_damage(-self.heal, Tags.Heal, self)
+            DamageAuraBuff.on_advance(self)
+        elif self.owner.resists[Tags.Ice] > 100:
+            amount = self.owner.resists[Tags.Ice] - 100
+            while amount > 100:
+                self.owner.deal_damage(-self.heal, Tags.Heal, self)
+                DamageAuraBuff.on_advance(self)
+                amount -= 100
+            if random.random() < amount/100:
+                self.owner.deal_damage(-self.heal, Tags.Heal, self)
+                DamageAuraBuff.on_advance(self)
     
     def get_tooltip(self):
         return self.description
@@ -2693,7 +2699,7 @@ def modify_class(cls):
             self.upgrades['minion_attacks'] = (1, 3)
             self.upgrades['venom'] = (1, 4, "Venom Bear", "Summons a venom bear instead of a giant bear.\nVenom Bears have a poison bite, and heal whenever an enemy takes poison damage.", "species")
             self.upgrades['blood'] = (1, 5, "Blood Bear", "Summons a blood bear instead of a giant bear.\nBlood bears are resistant to dark damage, and deal increasing damage with each attack.", "species")
-            self.upgrades["polar"] = (1, 5, "Polar Bear", "Summons a polar bear instead of a giant bear.\nPolar bears are resistant to ice damage, can freeze units around itself, and gains regeneration and an ice aura while frozen.\nIf the polar bear's [ice] resistance is above 100, the regeneration and ice aura have a chance to activate each turn equal to the percentage of the bear's [ice] resistance above 100.", "species")
+            self.upgrades["polar"] = (1, 5, "Polar Bear", "Summons a polar bear instead of a giant bear.\nPolar bears are resistant to ice damage, can freeze units around itself, and gains regeneration and an ice aura while frozen.\nFor every [100_ice:ice] resistance the polar bear has above 100, the self-healing and ice aura activate once per turn. An excess of less than 100 instead has a chance to activate these effects.", "species")
             self.upgrades["roar"] = (1, 4, "Roar", "The bear gains a roar with a cooldown of 3 turns that stuns enemies in a [7_range:range] cone for [3_turns:duration].\nThe venom bear's roar will also [poison] enemies for [5_turns:duration] and give regeneration to allies for the same duration.\nThe blood bear's roar will instead [berserk] enemies and give allies a stack of bloodlust for [10_turns:duration].\nThe polar bear's roar will instead [freeze] enemies and heal allies for an amount equal to its regeneration when frozen.")
 
             self.must_target_walkable = True
@@ -4953,19 +4959,25 @@ def modify_class(cls):
                 u.deal_damage(damage, Tags.Fire, self)
 
     if cls is KnightBuff:
-        def __init__(self, summoner, shared=False):
-            Buff.__init__(self)
-            self.summoner = summoner
-            self.shared = shared
-        def on_death(self, evt):
-            if not self.shared:
+        
+        def on_applied(self, owner):
+            self.max_hp = self.owner.max_hp
+            self.shields = self.owner.shields
+
+        def on_init(self):
+            self.name = "Bound Knight"
+            self.owner_triggers[EventOnDamaged] = lambda evt: on_damaged(self, evt)
+
+        def on_damaged(self, evt):
+            if self.owner.cur_hp <= 0:
+                self.owner.cur_hp = 1
+                for buff in list(self.owner.buffs):
+                    if buff.buff_type == BUFF_TYPE_CURSE:
+                        self.owner.remove_buff(buff)
+                self.owner.max_hp = max(self.owner.max_hp, self.max_hp)
+                self.owner.shields = max(self.owner.shields, self.shields)
+                self.owner.deal_damage(-self.owner.max_hp, Tags.Heal, self)
                 self.summoner.deal_damage(40, Tags.Holy, self)
-                return
-            knights = [unit for unit in self.owner.level.units if isinstance(unit.source, SummonKnights) and unit.is_alive()]
-            damage = 40//(len(knights) + 1)
-            self.summoner.deal_damage(damage, Tags.Holy, self)
-            for knight in knights:
-                knight.deal_damage(damage, Tags.Holy, self)
 
     if cls is SummonKnights:
 
@@ -4982,28 +4994,48 @@ def modify_class(cls):
             self.range = 0
             
             # Purely for shrine bonuses
-            self.minion_range = 3
+            self.minion_range = 6
 
             self.upgrades['void_court'] = (1, 5, "Void Court", "Summon only void knights.  Summon a void champion as well.", "court")
             self.upgrades['storm_court'] = (1, 5, "Storm Court","Summon only storm knights.  Summon a storm champion as well.", "court")
             self.upgrades['chaos_court'] = (1, 5, "Chaos Court", "Summon only chaos knights.  Summon a chaos champion as well.", "court")
-            self.upgrades["shared"] = (1, 4, "Shared Burden", "When a knight dies, the recoil damage is split evenly among the caster and all remaining knights.")
+            self.upgrades["promotion"] = (1, 6, "Promotion", "Each non-champion knight will be promoted to a champion after [20_turns:duration].")
             self.upgrades['max_charges'] = (1, 3)
+
+        def get_description(self):
+            return ("Summon a void knight, a chaos knight, and a storm knight.\n"
+                    "Each knight has [{minion_health}_HP:minion_health], various resistances, and an arsenal of unique magical abilities.\n"
+                    "Whenever a knight is about to die to damage, the caster takes [40_holy:holy] damage to fully heal the knight, restore all [SH:shields], and remove all debuffs.").format(**self.fmt_dict())
 
         def cast(self, x, y):
 
             knights = [VoidKnight(), ChaosKnight(), StormKnight()]
             if self.get_stat('void_court'):
-                knights = [VoidKnight(), VoidKnight(), VoidKnight(), Champion(VoidKnight())]
+                knights = [Champion(VoidKnight()), VoidKnight(), VoidKnight(), VoidKnight()]
             if self.get_stat('storm_court'):
-                knights = [StormKnight(), StormKnight(), StormKnight(), Champion(StormKnight())]
+                knights = [Champion(StormKnight()), StormKnight(), StormKnight(), StormKnight()]
             if self.get_stat('chaos_court'):
-                knights = [ChaosKnight(), ChaosKnight(), ChaosKnight(), Champion(ChaosKnight())]
+                knights = [Champion(ChaosKnight()), ChaosKnight(), ChaosKnight(), ChaosKnight()]
 
-            shared = self.get_stat("shared")
+            promotion = self.get_stat("promotion")
+            def promote(knight):
+                unit = Champion(knight)
+                apply_minion_bonuses(self, unit)
+                return unit
+
             for u in knights:
+                if promotion:
+                    spawner = None
+                    if u.name == "Chaos Knight":
+                        spawner = lambda: promote(ChaosKnight())
+                    elif u.name == "Void Knight":
+                        spawner = lambda: promote(VoidKnight())
+                    elif u.name == "Storm Knight":
+                        spawner = lambda: promote(StormKnight())
+                    if spawner:
+                        u.buffs.append(MatureInto(spawner, 20))
                 apply_minion_bonuses(self, u)
-                u.buffs.append(KnightBuff(self.caster, shared=shared))
+                u.buffs.append(KnightBuff(self.caster))
                 self.summon(u)
                 yield
 
@@ -5172,7 +5204,7 @@ def modify_class(cls):
 
         def get_description(self):
             return ("Your [living] and [nature] minions gain [75_ice:ice] resistance, [freeze] for [3_turns:duration] upon taking [ice] damage, and heal for [15_HP:heal] each turn while [frozen].\n"
-                    "If an eligible minion has more than [100_ice:ice] resistance, it instead has a chance to heal for [15_HP:heal] each turn equal to the percentage of its [ice] resistance above 100, to a maximum of 100%.").format(**self.fmt_dict())
+                    "For every [100_ice:ice] resistance a minion has above 100, it will be healed each turn for the same amount. An excess of less than 100 instead has a chance to heal the minion.").format(**self.fmt_dict())
 
     if cls is HibernationBuff:
 
@@ -5182,8 +5214,13 @@ def modify_class(cls):
                 return
             if self.owner.has_buff(FrozenBuff):
                 self.owner.deal_damage(-15, Tags.Heal, self)
-            elif self.owner.resists[Tags.Ice] > 100 and random.random() < (self.owner.resists[Tags.Ice] - 100)/100:
-                self.owner.deal_damage(-15, Tags.Heal, self)
+            elif self.owner.resists[Tags.Ice] > 100:
+                amount = self.owner.resists[Tags.Ice] - 100
+                while amount > 100:
+                    self.owner.deal_damage(-15, Tags.Heal, self)
+                    amount -= 100
+                if random.random() < amount/100:
+                    self.owner.deal_damage(-15, Tags.Heal, self)
 
     if cls is HolyWater:
 
