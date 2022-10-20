@@ -209,9 +209,9 @@ Void Beam:
 Void Orb:
 - Weakness changed to lightning damage.
 - Now melts walls on all affected tiles. Red Dwarf upgrade removed.
-- Red Giant (5 SP): Void Orb gains 1 radius. Void Orb also deals fire damage.
-- Black Hole (5 SP): Each turn, Void Orb pulls all nearby enemies 1 tile toward itself before dealing damage; the pull range is the orb's radius plus 2. Void Orb also deals dark damage.
-- Void Walk upgrade affects radius +2, and no longer turns chasms into walls; the teleport fails if the orb is on a chasm but the explosion still happens.
+- Red Giant (5 SP): Void Orb gains +1 radius. Void Orb also deals fire damage.
+- Black Hole (5 SP): Each turn, Void Orb pulls all nearby enemies 1 tile toward itself before dealing damage; the pull range is twice the orb's radius. Void Orb also deals dark damage.
+- Void Walk upgrade affects twice the radius, and no longer turns chasms into floors; the teleport fails if the orb is on a chasm but the explosion still happens. Cost increased to 3 SP.
 
 Blizzard:
 - Hailstorm (6 SP): If an affected tile already has a blizzard cloud, the unit on that tile is dealt ice damage equal to twice the damage of this spell, and frozen for 1 turn.

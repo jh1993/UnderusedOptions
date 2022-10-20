@@ -1065,6 +1065,14 @@ class SiegeGolemTeleport(Spell):
         self.caster.level.show_effect(self.caster.x, self.caster.y, Tags.Translocation)
         self.caster.level.act_move(self.caster, target.x, target.y, teleport=True)
 
+class VoidOrbRedGiant(Upgrade):
+    def on_init(self):
+        self.name = "Red Giant"
+        self.level = 5
+        self.description = "Void Orb also deals [fire] damage."
+        self.spell_bonuses[VoidOrbSpell]["radius"] = 1
+        self.spell_bonuses[VoidOrbSpell]["fire"] = 1
+
 def modify_class(cls):
 
     if cls is DeathBolt:
@@ -3406,16 +3414,11 @@ def modify_class(cls):
             self.tags = [Tags.Arcane, Tags.Orb, Tags.Conjuration]
             self.level = 3
 
-            self.upgrades['fire'] = (1, 5, "Red Giant", "Void Orb gains [1_radius:radius].\nVoid Orb also deals [fire] damage.")
-            self.upgrades["dark"] = (1, 5, "Black Hole", "Each turn, Void Orb pulls all nearby enemies [1_tile:range] toward itself before dealing damage; the pull range is the orb's radius plus 2.\nVoid Orb also deals [dark] damage.")
             self.upgrades['range'] = (5, 2)
             self.upgrades['minion_damage'] = (9, 3)
-            self.upgrades['orb_walk'] = (1, 2, "Void Walk", "Targeting an existing Void Orb with another detonates it, dealing its damage and melting walls in a radius equal to the orb's radius plus 2.\nYou are then teleported to that location if possible.")
-
-        def fmt_dict(self):
-            stats = Spell.fmt_dict(self)
-            stats["orb_radius"] = self.get_stat("radius") + self.get_stat("fire")
-            return stats
+            self.upgrades['orb_walk'] = (1, 3, "Void Walk", "Targeting an existing Void Orb with another detonates it, dealing its damage and melting walls in a radius equal to twice the orb's radius.\nYou are then teleported to that location if possible.")
+            self.add_upgrade(VoidOrbRedGiant())
+            self.upgrades["dark"] = (1, 5, "Black Hole", "Each turn, Void Orb pulls all nearby enemies [1_tile:range] toward itself before dealing damage; the pull range is twice the orb's radius.\nVoid Orb also deals [dark] damage.")
 
         def on_orb_walk(self, existing):
             # Burst
@@ -3427,11 +3430,10 @@ def modify_class(cls):
             dtypes = [Tags.Arcane]
             if self.get_stat("fire"):
                 dtypes.append(Tags.Fire)
-                radius += 1
             if self.get_stat("dark"):
                 dtypes.append(Tags.Dark)
 
-            for stage in Burst(self.caster.level, Point(x, y), radius + 2, ignore_walls=True):
+            for stage in Burst(self.caster.level, Point(x, y), radius*2, ignore_walls=True):
                 for point in stage:
                     unit = self.caster.level.get_unit_at(point.x, point.y)
                     if unit is self.caster or unit is existing:
@@ -3463,7 +3465,9 @@ def modify_class(cls):
                 radius += 1
             if self.get_stat("dark"):
                 dtypes.append(Tags.Dark)
-                for unit in [unit for unit in level.get_units_in_ball(next_point, radius + 2, diag=True) if are_hostile(self.caster, unit)]:
+                units = [unit for unit in level.get_units_in_ball(next_point, radius*2, diag=True) if are_hostile(self.caster, unit)]
+                random.shuffle(units)
+                for unit in units:
                     pull(unit, next_point, 1)
             level.queue_spell(boom(self, next_point, radius, damage, dtypes, orb))
 
@@ -3483,11 +3487,11 @@ def modify_class(cls):
                 yield
 
         def get_orb_impact_tiles(self, orb):
-            return [p for stage in Burst(self.caster.level, orb, self.get_stat("radius") + self.get_stat("fire") + 2, ignore_walls=True) for p in stage]
+            return [p for stage in Burst(self.caster.level, orb, self.get_stat("radius")*2, ignore_walls=True) for p in stage]
 
         def get_description(self):
             return ("Summon a void orb next to the caster.\n"
-                    "The orb melts deals [{minion_damage}_arcane:arcane] damage each turn and melts walls in a radius of [{orb_radius}_tiles:radius].\n"
+                    "The orb melts deals [{minion_damage}_arcane:arcane] damage each turn and melts walls in a radius of [{radius}_tiles:radius].\n"
                     "The orb has no will of its own, each turn it will float one tile towards the target.\n"
                     "The orb can be destroyed by lightning damage.").format(**self.fmt_dict())
 
