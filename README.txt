@@ -203,6 +203,9 @@ Underworld Passage:
 - Underworld Seeker (3 SP): You can now spend 1 extra charge to cast this spell even if you are not next to a chasm.
 - Underworld Fauna (3 SP): After teleporting, summon a spirit strider, ghost mantis, ghost toad, large ghost worm ball, or ghostly goatia near you, chosen at random.
 
+Void Beam:
+- Annihilation Beam (7 SP): Void Beam also deals dark, fire, lightning, and physical damage. Each cast of Void Beam consumes an additional charge and counts as casting the spell an additional time.
+
 Void Orb:
 - Weakness changed to lightning damage.
 - Now melts walls on all affected tiles. Red Dwarf upgrade removed.
