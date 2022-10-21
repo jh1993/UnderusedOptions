@@ -406,6 +406,9 @@ Unholy Alliance:
 White Flame:
 - Is now level 5, and reduces the target's fire resistance by 100% until the beginning of your next turn.
 
+Frozen Fragility:
+- Now instead inflicts a Fragility debuff equal to the duration of the freeze inflicted, which persists after unfreezing. If freeze duration is refreshed or extended, fragility duration will be adjusted to match if shorter.
+
 Glittering Dance:
 - Now has the nature tag.
 
