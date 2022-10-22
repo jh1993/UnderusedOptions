@@ -204,7 +204,7 @@ Underworld Passage:
 - Underworld Fauna (3 SP): After teleporting, summon a spirit strider, ghost mantis, ghost toad, large ghost worm ball, or ghostly goatia near you, chosen at random.
 
 Void Beam:
-- Annihilation Beam (7 SP): Void Beam also deals dark, fire, lightning, and physical damage. Each cast of Void Beam consumes an additional charge and counts as casting the spell an additional time.
+- Void Sniper (4 SP): Void Beam deals additional damage to targets equal to twice their distances from the caster, rounded down.
 
 Void Orb:
 - Weakness changed to lightning damage.
@@ -276,7 +276,7 @@ Purity:
 
 Pyrostatic Pulse:
 - Damage is halved but now deals both fire and lightning damage.
-- Channeling (6 SP): Pyrostatic Pulse becomes a channeled spell, and gains 1 damage per turn channeled.
+- Annihilation Pulse (7 SP): Pyrostatic Pulse also deals physical, arcane, and dark damage. Each cast of Pyrostatic Pulse consumes an additional charge and counts as casting the spell twice.
 
 Searing Seal:
 - Purefire Seal (6 SP): Holy and arcane damage can now also fuel Searing Seal, but with half the efficiency of fire damage.

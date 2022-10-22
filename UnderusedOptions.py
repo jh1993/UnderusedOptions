@@ -551,16 +551,6 @@ class LightningFormBuff(Buff):
         if self.owner.level.can_move(self.owner, x, y, teleport=True):
             yield self.owner.level.act_move(self.owner, x, y, teleport=True)
 
-class PyrostaticSurgeBuff(Buff):
-    def on_init(self):
-        self.name = "Pyrostatic Surge"
-        self.color = Tags.Fire.color
-        self.spell_bonuses[PyrostaticPulse]["damage"] = 1
-        self.stack_type = STACK_INTENSITY
-    def on_advance(self):
-        if not self.owner.has_buff(ChannelBuff):
-            self.owner.remove_buff(self)
-
 class SightOfBloodBuff(Buff):
 
     def __init__(self, spell):
@@ -3377,23 +3367,18 @@ def modify_class(cls):
             self.upgrades['damage'] = (21, 5)
             self.upgrades['range'] = (5, 2)
             self.upgrades['max_charges'] = (3, 2)
-            self.upgrades["annihilation"] = (1, 7, "Annihilation Beam", "Void Beam also deals [dark], [fire], [lightning], and [physical] damage.\nEach cast of Void Beam consumes an additional charge and counts as casting the spell an additional time.")
+            self.upgrades["sniper"] = (1, 4, "Void Sniper", "Void Beam deals additional damage to targets equal to twice their distances from the caster, rounded down.")
 
         def cast(self, x, y):
             damage = self.get_stat('damage')
-            dtypes = [Tags.Arcane]
-            if self.get_stat("annihilation"):
-                dtypes.extend([Tags.Dark, Tags.Fire, Tags.Lightning, Tags.Physical])
-                self.cur_charges = max(0, self.cur_charges - 1)
-                self.caster.level.event_manager.raise_event(EventOnSpellCast(self, self.caster, x, y), self.caster)
+            sniper = self.get_stat("sniper")
             
             for point in self.aoe(x, y):
                 # Kill walls
                 if not self.caster.level.tiles[point.x][point.y].can_see:
                     self.caster.level.make_floor(point.x, point.y)
                 # Deal damage
-                for dtype in dtypes:
-                    self.caster.level.deal_damage(point.x, point.y, damage, dtype, self)
+                self.caster.level.deal_damage(point.x, point.y, damage + (math.floor(2*distance(point, self.caster)) if sniper else 0), Tags.Arcane, self)
             yield
 
     if cls is VoidOrbSpell:
@@ -3994,24 +3979,21 @@ def modify_class(cls):
             self.upgrades['range'] = (4, 2)
             self.upgrades['damage'] = (4, 3)
             self.upgrades['max_charges'] = (8, 2)
-            self.upgrades["channel"] = (1, 6, "Channeling", "Pyrostatic Pulse becomes a channeled spell, and gains [1_damage:damage] per turn channeled.")
+            self.upgrades["annihilation"] = (1, 7, "Annihilation Pulse", "Pyrostatic Pulse also deals [physical], [arcane], and [dark] damage.\nEach cast of Pyrostatic Pulse consumes an additional charge and counts as casting the spell twice.")
 
         def get_description(self):
             return ("Deal [{damage}_fire:fire] damage and [{damage}_lightning:lightning] damage in a beam and tiles adjacent to the beam.").format(**self.fmt_dict())
 
-        def cast(self, x, y, channel_cast=False):
-            if self.get_stat('channel') and not channel_cast:
-                self.caster.apply_buff(ChannelBuff(self.cast, Point(x, y)))
-                return
-            if channel_cast:
-                self.caster.apply_buff(PyrostaticSurgeBuff())
-            yield self.cast_instant(x, y)
-
         def cast_instant(self, x, y):
             damage = self.get_stat("damage")
+            dtypes = [Tags.Fire, Tags.Lightning]
+            if self.get_stat("annihilation"):
+                dtypes.extend([Tags.Physical, Tags.Arcane, Tags.Dark])
+                self.cur_charges = max(0, self.cur_charges - 1)
+                self.caster.level.event_manager.raise_event(EventOnSpellCast(self, self.caster, x, y), self.caster)
             for p in self.get_impacted_tiles(x, y):
-                self.caster.level.deal_damage(p.x, p.y, damage, Tags.Fire, self)
-                self.caster.level.deal_damage(p.x, p.y, damage, Tags.Lightning, self)
+                for dtype in dtypes:
+                    self.caster.level.deal_damage(p.x, p.y, damage, dtype, self)
 
     if cls is SearingSealSpell:
 
