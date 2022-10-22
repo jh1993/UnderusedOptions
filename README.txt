@@ -63,7 +63,8 @@ Heavenly Blast:
 
 Hollow Flesh:
 - As per my No More Scams mod, no longer limited to living units.
-- Vigor Mortis (4 SP): When your minions are affected, their max HP are instead buffed by the same percentage. They do not lose resistances or gain heal immunity, and instead gain 100 poison resistance. If you have the Fire Vulnerability upgrade, they instead gain 50 ice resistance.
+- Mockery of Life (2 SP): Affected units no longer gain dark resistance.
+- Vigor Mortis (4 SP): When your minions are affected, their max HP are instead buffed by the same percentage. They do not gain heal immunity, and instead gain 100 poison resistance. If you have the Fire Vulnerability upgrade, they instead gain 50 ice resistance. If you have the Mockery of Life upgrade, they still gain dark resistance and do not lose holy resistance.
 
 Hungry Maw:
 - Range upgrade folded into base spell (from 7 to 11).

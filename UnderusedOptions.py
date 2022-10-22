@@ -1743,11 +1743,13 @@ def modify_class(cls):
             self.holy_vulnerability = 100
             self.fire_vulnerability = 0
             self.max_health_loss = 25
+            self.can_target_empty = False
 
             self.upgrades['max_health_loss'] = (25, 2) 
             self.upgrades['max_charges'] = (7, 2)
             self.upgrades['fire_vulnerability'] = (50, 2, "Fire Vulnerability")
-            self.upgrades["friendly"] = (1, 4, "Vigor Mortis", "When your minions are affected, their max HP are instead buffed by the same percentage.\nThey do not lose resistances or gain heal immunity, and instead gain [100_poison:poison] resistance.\nIf you have the Fire Vulnerability upgrade, they instead gain [50_ice:ice] resistance.")
+            self.upgrades["mockery"] = (1, 2, "Mockery of Life", "Affected units no longer gain [dark] resistance.")
+            self.upgrades["friendly"] = (1, 4, "Vigor Mortis", "When your minions are affected, their max HP are instead buffed by the same percentage.\nThey do not gain heal immunity, and instead gain [100_poison:poison] resistance.\nIf you have the Fire Vulnerability upgrade, they instead gain [50_ice:ice] resistance.\nIf you have the Mockery of Life upgrade, they still gain [dark] resistance and do not lose [holy] resistance.")
 
         def cast(self, x, y):
             points = self.get_impacted_tiles(x, y)
@@ -1768,7 +1770,6 @@ def modify_class(cls):
             self.color = Tags.Undead.color
             self.name = "Hollow Flesh"
             self.asset = ['status', 'rot']
-            self.resists[Tags.Dark] = 100
             self.frac = 1
             self.originally_living = False
             self.originally_undead = False
@@ -1776,13 +1777,19 @@ def modify_class(cls):
 
         def on_applied(self, owner):
 
+            self.resists[Tags.Dark] = 100
+            self.resists[Tags.Holy] = -100
+
             if self.spell.get_stat("friendly") and not are_hostile(self.owner, self.spell.caster):
+                if self.spell.get_stat("mockery"):
+                    self.resists[Tags.Holy] = 0
                 self.frac = 1 + self.spell.get_stat('max_health_loss')/100
                 self.resists[Tags.Poison] = 100
                 self.resists[Tags.Ice] = self.spell.get_stat('fire_vulnerability')
             else:
+                if self.spell.get_stat("mockery"):
+                    self.resists[Tags.Dark] = 0
                 self.frac = 1 - self.spell.get_stat('max_health_loss')/100
-                self.resists[Tags.Holy] = -100
                 self.resists[Tags.Fire] = -self.spell.get_stat('fire_vulnerability')
                 self.resists[Tags.Heal] = 100
 
