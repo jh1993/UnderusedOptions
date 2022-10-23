@@ -381,6 +381,7 @@ Knightly Oath:
 - Promotion (6 SP): Each non-champion knight will be promoted to a champion after 20 turns.
 
 Multicast:
+- Now only copies the first sorcery spell you cast per turn, to make it interact more intuitively with other spell-copying mechanics and less abusive with a few things in my other mods.
 - Adaptive Copy (6 SP): Level 5 and 4 spells are now copied 1 additional time. Level 3 and 2 spells are now copied 2 additional times. Level 1 spells are now copied 3 additional times.
 
 Spikeball Factory:

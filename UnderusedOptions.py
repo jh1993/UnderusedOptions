@@ -5081,7 +5081,6 @@ def modify_class(cls):
                 return
             if Tags.Sorcery not in evt.spell.tags:
                 return
-
             if self.can_copy:
                 self.can_copy = False
                 copies = self.copies
@@ -5095,7 +5094,9 @@ def modify_class(cls):
                 for _ in range(copies):
                     if evt.spell.can_cast(evt.x, evt.y):
                         evt.caster.level.act_cast(evt.caster, evt.spell, evt.x, evt.y, pay_costs=False)
-                evt.caster.level.queue_spell(self.reset())
+
+        def on_advance(self):
+            self.can_copy = True
 
     if cls is MulticastSpell:
 
@@ -5112,6 +5113,10 @@ def modify_class(cls):
             self.range = 0
             self.level = 7
             self.tags = [Tags.Enchantment, Tags.Arcane]
+
+        def get_description(self):
+            return ("The first [sorcery] spell you cast each turn is copied [{copies}:sorcery] times.\n"
+                    "Lasts [{duration}_turns:duration]").format(**self.fmt_dict())
 
     if cls is SpikeballFactory:
 
