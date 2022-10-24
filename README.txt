@@ -128,7 +128,8 @@ Devour Mind:
 - Mind Rot (4 SP): If the target dies to arcane damage, summon a void imp and an insanity imp near it. If the target dies to dark damage, summon a rot imp near it.
 
 Dominate:
-- As per my No More Scams mod, dominating an enemy now procs on-summon effects, and it now counts as a minion summoned by Dominate.
+- HP threshold is now based on the damage stat, and the HP threshold upgrade is changed to a damage upgrade.
+- Dominating an enemy now procs on-summon effects, and it now counts as a minion summoned by Dominate.
 - Mass Dominate (6 SP): When cast, Dominate now also affects all eligible enemies with the same name as the target within 3 tiles.
 - Recruitment Bonus (3 SP): The target is now healed to full HP after being dominated, and all of its debuffs are dispelled.
 
@@ -249,7 +250,9 @@ Death Gaze:
 - Now also an eye spell.
 
 Essence Flux:
-- Selective Flux (3 SP): When targeting an ally with this spell, the resistances of enemies are not swapped. When targeting an enemy with this spell, the resistances of allies are not swapped. In both cases, both allies and enemies are treated as the same group of units.
+- Level reduced to 3.
+- Blindcasting (2 SP): Essence Flux no longer requires line of sight to cast.
+- Imbalanced Flux (5 SP): For each pair of resistances, both resistances will be set to the lower of the two if the affected unit is an enemy, and the higher of the two if the affected unit is an ally.
 
 Fiery Tormentor:
 - Tormentor's Remorse (4 SP): The range of the tormentor's soul suck is increased by its the radius of its torment. Its soul suck now also heals the wizard, but the total amount healed cannot exceed the total damage that the wizard has taken from tormentors summoned by this spell, before counting heal resistance.
@@ -388,7 +391,8 @@ Spikeball Factory:
 - Forceful Construction (4 SP): Wall and chasm tiles in the affected area are converted to floor tiles, and units tossed up to 3 tiles away, before summoning the spikeball gates.
 
 Word of Ice:
-- HP Threshold (5 SP): +30 HP threshold.
+- HP threshold is now based on the damage stat.
+- Damage (5 SP): +30 damage.
 
 Arcane Accounting:
 - Now instead lasts 2 turns (starting from the next turn) with only 50% chance to refund 1 spell charge. Duration can be extended by Permanence.

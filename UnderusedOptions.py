@@ -2423,17 +2423,26 @@ def modify_class(cls):
             self.tags = [Tags.Arcane, Tags.Enchantment]
             self.level = 3
 
-            self.hp_threshold = 40
+            self.damage = 40
 
             self.upgrades['max_charges'] = (2, 2)
-            self.upgrades['hp_threshold'] = (40, 3, 'HP Threshold', 'Increase the maximum HP units which can be targeted.')
+            self.upgrades['damage'] = (40, 3)
             self.upgrades['check_cur_hp'] = (1, 4, 'Brute Force', 'Dominate targets based on current HP instead of maximum HP.')
             self.upgrades["mass"] = (1, 6, "Mass Dominate", "When cast, Dominate now also affects all eligible enemies with the same name as the target within [3_tiles:radius].")
             self.upgrades["heal"] = (1, 3, "Recruitment Bonus", "The target is now healed to full HP after being dominated, and all of its debuffs are dispelled.")
 
+        def can_cast(self, x, y):
+            if not Spell.can_cast(self, x, y):
+                return False
+            unit = self.caster.level.get_unit_at(x, y)
+            if not unit or not are_hostile(unit, self.caster):
+                return False
+            hp = unit.cur_hp if self.get_stat('check_cur_hp') else unit.max_hp
+            return hp <= self.get_stat('damage')
+
         def get_impacted_tiles(self, x, y):
             points = [Point(x, y)]
-            hp_threshold = self.get_stat("hp_threshold")
+            damage = self.get_stat("damage")
             check_cur_hp = self.get_stat("check_cur_hp")
             origin = self.caster.level.get_unit_at(x, y)
             if origin and self.get_stat("mass"):
@@ -2441,7 +2450,7 @@ def modify_class(cls):
                     if unit is origin:
                         continue
                     hp = unit.cur_hp if check_cur_hp else unit.max_hp
-                    if are_hostile(self.caster, unit) and hp <= hp_threshold and unit.name == origin.name:
+                    if are_hostile(self.caster, unit) and hp <= damage and unit.name == origin.name:
                         points.append(Point(unit.x, unit.y))
             return points
 
@@ -2455,11 +2464,15 @@ def modify_class(cls):
                 unit.source = self
                 unit.level.event_manager.raise_event(EventOnUnitAdded(unit), unit)
                 if heal:
-                    unit.deal_damage(-unit.max_hp, Tags.Heal, self)
                     for buff in unit.buffs:
                         if buff.buff_type == BUFF_TYPE_CURSE:
                             unit.remove_buff(buff)
+                    unit.deal_damage(-unit.max_hp, Tags.Heal, self)
                 yield
+
+        def get_description(self):
+            return ("Target enemy unit with [{damage}:damage] max HP or lower becomes your minion. The HP threshold benefits from your bonuses to [damage].\n"
+                    "This counts as summoning, and the dominated enemy counts as a minion summoned by this spell.").format(**self.fmt_dict())
 
     if cls is EarthquakeSpell:
 
@@ -3703,24 +3716,21 @@ def modify_class(cls):
             self.tags = [Tags.Arcane, Tags.Chaos, Tags.Enchantment]
 
             self.max_charges = 12
-            self.level = 4
+            self.level = 3
             self.range = 7
 
             self.upgrades['max_charges'] = (6, 2)
-            self.upgrades["selective"] = (1, 3, "Selective Flux", "When targeting an ally with this spell, the resistances of enemies are not swapped.\nWhen targeting an enemy with this spell, the resistances of allies are not swapped.\nIn both cases, both allies and enemies are treated as the same group of units.")
+            self.upgrades["requires_los"] = (-1, 2, "Blindcasting", "Essence Flux no longer requires line of sight to cast.")
+            self.upgrades["imbalance"] = (1, 5, "Imbalanced Flux", "For each pair of resistances, both resistances will be set to the lower of the two if the affected unit is an enemy, and the higher of the two if the affected unit is an ally.")
 
         def cast(self, x, y):
+
             points = self.get_impacted_tiles(x, y)
-            selective = self.get_stat("selective")
-            target = self.caster.level.get_unit_at(x, y)
-            if not target:
-                return
+            imbalance = self.get_stat("imbalance")
+
             for p in points:
                 unit = self.caster.level.get_unit_at(p.x, p.y)
                 if unit:
-                    if selective and are_hostile(target, unit):
-                        continue
-
                     old_resists = unit.resists.copy()
                     for e1, e2 in [
                         (Tags.Fire, Tags.Ice),
@@ -3728,20 +3738,26 @@ def modify_class(cls):
                         (Tags.Dark, Tags.Holy),
                         (Tags.Poison, Tags.Arcane)]:
 
-                        if old_resists[e1] == 0 and old_resists[e2] == 0:
-                            continue
-
                         if old_resists[e1] == old_resists[e2]:
                             continue
 
-                        unit.resists[e1] = old_resists[e2]
-                        unit.resists[e2] = old_resists[e1]
-
-                        color = e1.color if old_resists[e1] > old_resists[e2] else e2.color
-
-                        etype = random.choice([e1, e2])
-                        self.caster.level.show_effect(unit.x, unit.y, Tags.Debuff_Apply, fill_color=color)
-                        yield
+                        if not imbalance:
+                            unit.resists[e1] = old_resists[e2]
+                            unit.resists[e2] = old_resists[e1]
+                            color = e1.color if old_resists[e1] > old_resists[e2] else e2.color
+                            self.caster.level.show_effect(unit.x, unit.y, Tags.Debuff_Apply, fill_color=color)
+                        else:
+                            if are_hostile(unit, self.caster):
+                                unit.resists[e1] = min(old_resists[e1], old_resists[e2])
+                                unit.resists[e2] = unit.resists[e1]
+                                color = e1.color if old_resists[e1] > old_resists[e2] else e2.color
+                                self.caster.level.show_effect(unit.x, unit.y, Tags.Debuff_Apply, fill_color=color)
+                            else:
+                                unit.resists[e1] = max(old_resists[e1], old_resists[e2])
+                                unit.resists[e2] = unit.resists[e1]
+                                color = e1.color if old_resists[e1] < old_resists[e2] else e2.color
+                                self.caster.level.show_effect(unit.x, unit.y, Tags.Buff_Apply, fill_color=color)
+            yield
 
     if cls is SummonFieryTormentor:
 
@@ -5178,16 +5194,15 @@ def modify_class(cls):
 
             self.upgrades['duration'] = (4, 3)
             self.upgrades['max_charges'] = (1, 2)
-            self.upgrades["hp_threshold"] = (30, 5)
+            self.upgrades["damage"] = (30, 5)
 
         def cast(self, x, y):
             units = [u for u in self.caster.level.units if are_hostile(u, self.caster)]
             random.shuffle(units)
             duration = self.get_stat("duration")
             damage = self.get_stat('damage')
-            hp_threshold = self.get_stat("hp_threshold")
             for u in units:
-                if u.cur_hp < hp_threshold:
+                if u.cur_hp < damage:
                     u.apply_buff(FrozenBuff(), duration)
                 if Tags.Fire in u.tags:
                     u.deal_damage(damage, Tags.Ice, self)
@@ -5195,7 +5210,7 @@ def modify_class(cls):
                     yield
 
         def get_description(self):
-            return ("All non [ice] immune enemies under [{hp_threshold}:damage] current HP are [frozen] for [{duration}_turns:duration].\n"
+            return ("All non [ice] immune enemies under [{damage}:damage] current HP are [frozen] for [{duration}_turns:duration]. The HP threshold benefits from your bonuses to [damage].\n"
                     "Deals [{damage}_ice:ice] damage to all [fire] units.").format(**self.fmt_dict())
 
     if cls is ArcaneCredit:
