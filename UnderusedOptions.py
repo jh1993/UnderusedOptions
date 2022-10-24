@@ -5010,6 +5010,8 @@ def modify_class(cls):
         def on_init(self):
             self.name = "Bound Knight"
             self.owner_triggers[EventOnDamaged] = lambda evt: on_damaged(self, evt)
+            self.color = Tags.Holy.color
+            self.description = "Upon reaching 0 HP, deal 40 holy damage to its summoner to fully heal self and remove all debuffs."
 
         def on_damaged(self, evt):
             if self.owner.cur_hp <= 0:
@@ -5064,6 +5066,7 @@ def modify_class(cls):
             def promote(knight):
                 unit = Champion(knight)
                 apply_minion_bonuses(self, unit)
+                unit.buffs.append(KnightBuff(self.caster))
                 return unit
 
             for u in knights:
