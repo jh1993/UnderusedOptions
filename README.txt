@@ -382,6 +382,7 @@ Searing Orb:
 Knightly Oath:
 - Instead of damaging the caster on death, a knight now deals 40 damage to the caster when about to take fatal damage to fully heal self, restore SH, and remove all debuffs.
 - Promotion (6 SP): Each non-champion knight will be promoted to a champion after 20 turns.
+- Undying Oath (7 SP): Knightly Oath can now save one knight from death per turn for free, without dealing damage to the caster. This is refreshed before the beginning of each of your turns.
 
 Multicast:
 - Now only copies the first sorcery spell you cast per turn, to make it interact more intuitively with other spell-copying mechanics and less abusive with a few things in my other mods.

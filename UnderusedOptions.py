@@ -1063,6 +1063,47 @@ class VoidOrbRedGiant(Upgrade):
         self.spell_bonuses[VoidOrbSpell]["radius"] = 1
         self.spell_bonuses[VoidOrbSpell]["fire"] = 1
 
+class KnightlyOathBuff(Buff):
+
+    def __init__(self, spell):
+        self.spell = spell
+        Buff.__init__(self)
+
+    def on_applied(self, owner):
+        self.max_hp = self.owner.max_hp
+        self.shields = self.owner.shields
+
+    def on_init(self):
+        self.owner_triggers[EventOnDamaged] = self.on_damaged
+        self.color = Tags.Holy.color
+        self.description = "Upon reaching 0 HP, deal 40 holy damage to its summoner to fully heal self and remove all debuffs."
+        self.undying = self.spell.caster.get_buff(KnightlyOathUndyingOath)
+
+    def on_damaged(self, evt):
+        if self.owner.cur_hp <= 0:
+            self.owner.cur_hp = 1
+            for buff in list(self.owner.buffs):
+                if buff.buff_type == BUFF_TYPE_CURSE:
+                    self.owner.remove_buff(buff)
+            self.owner.max_hp = max(self.owner.max_hp, self.max_hp)
+            self.owner.shields = max(self.owner.shields, self.shields)
+            self.owner.deal_damage(-self.owner.max_hp, Tags.Heal, self.spell)
+            if self.undying and self.undying.free_revive:
+                self.undying.free_revive = False
+            else:
+                self.spell.caster.deal_damage(40, Tags.Holy, self.spell)
+
+class KnightlyOathUndyingOath(Upgrade):
+
+    def on_init(self):
+        self.name = "Undying Oath"
+        self.level = 7
+        self.description = "Knightly Oath can now save one knight from death per turn for free, without dealing damage to the caster.\nThis is refreshed before the beginning of each of your turns."
+        self.free_revive = True
+    
+    def on_pre_advance(self):
+        self.free_revive = True
+
 def modify_class(cls):
 
     if cls is DeathBolt:
@@ -3718,6 +3759,7 @@ def modify_class(cls):
             self.max_charges = 12
             self.level = 3
             self.range = 7
+            self.can_target_empty = False
 
             self.upgrades['max_charges'] = (6, 2)
             self.upgrades["requires_los"] = (-1, 2, "Blindcasting", "Essence Flux no longer requires line of sight to cast.")
@@ -5001,29 +5043,6 @@ def modify_class(cls):
                     continue
                 u.deal_damage(damage, Tags.Fire, self)
 
-    if cls is KnightBuff:
-        
-        def on_applied(self, owner):
-            self.max_hp = self.owner.max_hp
-            self.shields = self.owner.shields
-
-        def on_init(self):
-            self.name = "Bound Knight"
-            self.owner_triggers[EventOnDamaged] = lambda evt: on_damaged(self, evt)
-            self.color = Tags.Holy.color
-            self.description = "Upon reaching 0 HP, deal 40 holy damage to its summoner to fully heal self and remove all debuffs."
-
-        def on_damaged(self, evt):
-            if self.owner.cur_hp <= 0:
-                self.owner.cur_hp = 1
-                for buff in list(self.owner.buffs):
-                    if buff.buff_type == BUFF_TYPE_CURSE:
-                        self.owner.remove_buff(buff)
-                self.owner.max_hp = max(self.owner.max_hp, self.max_hp)
-                self.owner.shields = max(self.owner.shields, self.shields)
-                self.owner.deal_damage(-self.owner.max_hp, Tags.Heal, self)
-                self.summoner.deal_damage(40, Tags.Holy, self)
-
     if cls is SummonKnights:
 
         def on_init(self):
@@ -5046,6 +5065,7 @@ def modify_class(cls):
             self.upgrades['chaos_court'] = (1, 5, "Chaos Court", "Summon only chaos knights.  Summon a chaos champion as well.", "court")
             self.upgrades["promotion"] = (1, 6, "Promotion", "Each non-champion knight will be promoted to a champion after [20_turns:duration].")
             self.upgrades['max_charges'] = (1, 3)
+            self.add_upgrade(KnightlyOathUndyingOath())
 
         def get_description(self):
             return ("Summon a void knight, a chaos knight, and a storm knight.\n"
@@ -5066,7 +5086,7 @@ def modify_class(cls):
             def promote(knight):
                 unit = Champion(knight)
                 apply_minion_bonuses(self, unit)
-                unit.buffs.append(KnightBuff(self.caster))
+                unit.buffs.append(KnightlyOathBuff(self))
                 return unit
 
             for u in knights:
@@ -5081,7 +5101,7 @@ def modify_class(cls):
                     if spawner:
                         u.buffs.append(MatureInto(spawner, 20))
                 apply_minion_bonuses(self, u)
-                u.buffs.append(KnightBuff(self.caster))
+                u.buffs.append(KnightlyOathBuff(self))
                 self.summon(u)
                 yield
 
@@ -5626,5 +5646,5 @@ def modify_class(cls):
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, BallLightning, CantripCascade, IceWind, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, KnightBuff, SummonKnights, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, FragilityBuff, FrozenFragility, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines]:
+for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, BallLightning, CantripCascade, IceWind, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, FragilityBuff, FrozenFragility, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines]:
     modify_class(cls)
