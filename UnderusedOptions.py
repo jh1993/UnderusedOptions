@@ -1241,7 +1241,7 @@ def modify_class(cls):
             self.name = "Wolf"
             self.minion_health = 11
             self.minion_damage = 5
-            self.upgrades['leap_range'] = (4, 3, "Pounce", "Summoned wolves gain a leap attack")
+            self.upgrades['leap_range'] = (1, 3, "Pounce", "Summoned wolves gain a leap attack")
             self.upgrades['minion_damage'] = 4
             self.upgrades['minion_health'] = (12, 3)
 
@@ -1265,7 +1265,7 @@ def modify_class(cls):
             wolf.tags = [Tags.Living, Tags.Nature]
 
             if self.get_stat('leap_range'):
-                wolf.spells.append(LeapAttack(damage=self.get_stat('minion_damage'), damage_type=Tags.Physical, range=self.get_stat('leap_range')))
+                wolf.spells.append(LeapAttack(damage=self.get_stat('minion_damage'), damage_type=Tags.Physical, range=self.get_stat('minion_range', base=4)))
 
             if self.get_stat('blood_hound'):
                 wolf.name = "Blood Hound"
