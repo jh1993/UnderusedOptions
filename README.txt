@@ -23,8 +23,9 @@ Wolf:
 - Wolf Pack cost reduced to 7, because I don't think anything should cost more than 7 SP; 7 SP should be enough for this upgrade anyways. It also counts as casting the spell twice, to make you not lose out on Thorn Garden and Icy Spriggan shrine procs.
 
 Annihilate:
-- Can now target empty tiles.
-- Cascade upgrade description changed to clarify that the cascade works if the original target is an empty tile, and that it ignores line of sight.
+- Max charges upgrade now costs 6 SP and gives +16 charges.
+- Arcane Annihilation and Dark Annihilation merged into one upgrade that costs 2 SP, so you can save SP at a circle.
+- Disintegrate (5 SP): Annihilate will now deal all of its damage in separate 1 damage hits, cycling through all of its damage types repeatedly. Each hit removes SH separately, and cannot be resisted unless the target is immune to that damage type.
 
 Blazerip:
 - Fractal Rip (6 SP): Each hit of Blazerip now has a 10% chance of triggering another Blazerip on that tile. This can still happen even if an empty tile is hit. Each rip can trigger at most one additional rip.
@@ -348,7 +349,7 @@ Ice Phoenix:
 - Icy Judgment (5 SP): Half of all of the ice phoenix's ice damage will be redealt as holy damage.
 
 Mega Annihilate:
-- Cascade upgrade description changed to clarify that the cascade works if the original target is an empty tile, and that it ignores line of sight.
+- Inescapable Annihilation (5 SP): Mega Annihilate will now remove all SH and buffs from the target before dealing damage.
 
 Ring of Spiders:
 - Damage upgrade SP cost reduced to 2.

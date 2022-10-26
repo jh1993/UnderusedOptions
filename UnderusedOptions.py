@@ -1320,14 +1320,47 @@ def modify_class(cls):
             self.damage = 16
             self.tags = [Tags.Chaos, Tags.Sorcery]
             self.level = 2
-            self.cascade_range = 0  # Should be cascade range
             self.arcane = 0
             self.dark = 0
 
-            self.upgrades['cascade_range'] =  (4, 3, 'Cascade', 'Hits from Annihilate will jump to nearby targets if the main target is killed or if targeting an empty tile.\nThis ignores line of sight.')
-            self.upgrades['dark'] =  (1, 1, 'Dark Annihilation', 'Annihilate deals an additional [dark] damage hit')
-            self.upgrades['arcane'] =  (1, 1, 'Arcane Annihilation', 'Annihilate deals an additional [arcane] damage hit')
-            self.upgrades['max_charges'] = (4, 2)
+            self.upgrades['cascade'] =  (1, 3, 'Cascade', 'Hits from Annihilate will jump to targets up to [4_tiles:cascade_range] away if the main target is killed or if targeting an empty tile.\nThis ignores line of sight and benefits from bonuses to [cascade_range:cascade_range].')
+            self.upgrades['nightmare'] =  (1, 2, 'Nightmare Annihilation', 'Annihilate also deals [arcane] and [dark] damage.')
+            self.upgrades["disintegrate"] = (1, 5, "Disintegrate", "Annihilate will now deal all of its damage in separate [1_damage:damage] hits, cycling through all of its damage types repeatedly.\nEach hit removes [SH:shields] separately, and cannot be resisted unless the target is immune to that damage type.")
+            self.upgrades['max_charges'] = (16, 6)
+
+        def cast(self, x, y):
+            
+            cur_target = Point(x, y)
+            dtypes = [Tags.Fire, Tags.Lightning, Tags.Physical]
+            if self.get_stat('arcane'):
+                dtypes.append(Tags.Arcane)
+            if self.get_stat('dark'):
+                dtypes.append(Tags.Dark)
+            if self.get_stat("nightmare"):
+                dtypes.extend([Tags.Arcane, Tags.Dark])
+            
+            damage = self.get_stat('damage')
+            cascade = self.get_stat("cascade")
+            cascade_range = self.get_stat("cascade_range", base=4)
+            disintegrate = self.get_stat("disintegrate")
+            inescapable = self.get_stat("inescapable")
+
+            for _ in range(damage if disintegrate else 1):
+                for dtype in dtypes:
+                    if cascade and not self.caster.level.get_unit_at(cur_target.x, cur_target.y):
+                        other_targets = [t for t in self.caster.level.get_units_in_ball(cur_target, cascade_range) if are_hostile(t, self.caster)]
+                        if other_targets:
+                            cur_target = random.choice(other_targets)
+                    if inescapable:
+                        unit = self.caster.level.get_unit_at(cur_target.x, cur_target.y)
+                        if unit:
+                            unit.shields = 0
+                            for buff in list(unit.buffs):
+                                if buff.buff_type == BUFF_TYPE_BLESS:
+                                    unit.remove_buff(buff)
+                    self.caster.level.deal_damage(cur_target.x, cur_target.y, 1 if disintegrate else damage, dtype, self)
+
+            yield
 
     if cls is Blazerip:
 
@@ -4772,13 +4805,10 @@ def modify_class(cls):
             self.tags = [Tags.Chaos, Tags.Sorcery]
             self.level = 5
 
-            self.cascade_range = 0
-            self.arcane = 0
-            self.dark = 0
-
-            self.upgrades['cascade_range'] =  (4, 3, 'Cascade', 'Hits from Mega Annihilate will jump to nearby targets if the main target is killed or if targeting an empty tile.\nThis ignores line of sight.')
-            self.upgrades['dark'] =  (1, 2, 'Dark Annihilation', 'Mega Annihilate deals an additional [dark] damage hit')
-            self.upgrades['arcane'] =  (1, 2, 'Arcane Annihilation', 'Mega Annihilate deals an additional [arcane] damage hit')
+            self.upgrades['cascade'] =  (1, 3, 'Cascade', 'Hits from Annihilate will jump to targets up to [4_tiles:cascade_range] away if the main target is killed or if targeting an empty tile.\nThis ignores line of sight and benefits from bonuses to [cascade_range:cascade_range].')
+            self.upgrades['dark'] =  (1, 2, 'Dark Annihilation', 'Mega Annihilate also deals [dark] damage.')
+            self.upgrades['arcane'] =  (1, 2, 'Arcane Annihilation', 'Mega Annihilate also deals [arcane] damage.')
+            self.upgrades["inescapable"] = (1, 5, "Inescapable Annihilation", "Mega Annihilate will now remove all [SH:shields] and buffs from the target before dealing damage.")
             self.upgrades['damage'] = (99, 4)
 
     if cls is RingOfSpiders:
