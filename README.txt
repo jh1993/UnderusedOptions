@@ -25,7 +25,7 @@ Wolf:
 Annihilate:
 - Max charges upgrade now costs 6 SP and gives +16 charges.
 - Arcane Annihilation and Dark Annihilation merged into one upgrade that costs 2 SP, so you can save SP at a circle.
-- Disintegrate (5 SP): Annihilate will now deal all of its damage in separate 1 damage hits, cycling through all of its damage types repeatedly. Each hit removes SH separately, and cannot be resisted unless the target is immune to that damage type.
+- Disintegrate (7 SP): Annihilate will now deal all of its damage in separate 1 damage hits, cycling through all of its damage types repeatedly. Each hit removes SH separately, and cannot be resisted unless the target is immune to that damage type.
 
 Blazerip:
 - Fractal Rip (6 SP): Each hit of Blazerip now has a 10% chance of triggering another Blazerip on that tile. This can still happen even if an empty tile is hit. Each rip can trigger at most one additional rip.
@@ -349,7 +349,7 @@ Ice Phoenix:
 - Icy Judgment (5 SP): Half of all of the ice phoenix's ice damage will be redealt as holy damage.
 
 Mega Annihilate:
-- Inescapable Annihilation (5 SP): Mega Annihilate will now remove all SH and buffs from the target before dealing damage.
+- Inescapable Annihilation (7 SP): Mega Annihilate will now remove all SH and buffs from the target before dealing damage.
 
 Ring of Spiders:
 - Damage upgrade SP cost reduced to 2.

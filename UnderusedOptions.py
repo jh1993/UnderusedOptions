@@ -1325,7 +1325,7 @@ def modify_class(cls):
 
             self.upgrades['cascade'] =  (1, 3, 'Cascade', 'Hits from Annihilate will jump to targets up to [4_tiles:cascade_range] away if the main target is killed or if targeting an empty tile.\nThis ignores line of sight and benefits from bonuses to [cascade_range:cascade_range].')
             self.upgrades['nightmare'] =  (1, 2, 'Nightmare Annihilation', 'Annihilate also deals [arcane] and [dark] damage.')
-            self.upgrades["disintegrate"] = (1, 5, "Disintegrate", "Annihilate will now deal all of its damage in separate [1_damage:damage] hits, cycling through all of its damage types repeatedly.\nEach hit removes [SH:shields] separately, and cannot be resisted unless the target is immune to that damage type.")
+            self.upgrades["disintegrate"] = (1, 7, "Disintegrate", "Annihilate will now deal all of its damage in separate [1_damage:damage] hits, cycling through all of its damage types repeatedly.\nEach hit removes [SH:shields] separately, and cannot be resisted unless the target is immune to that damage type.")
             self.upgrades['max_charges'] = (16, 6)
 
         def cast(self, x, y):
@@ -4808,7 +4808,7 @@ def modify_class(cls):
             self.upgrades['cascade'] =  (1, 3, 'Cascade', 'Hits from Annihilate will jump to targets up to [4_tiles:cascade_range] away if the main target is killed or if targeting an empty tile.\nThis ignores line of sight and benefits from bonuses to [cascade_range:cascade_range].')
             self.upgrades['dark'] =  (1, 2, 'Dark Annihilation', 'Mega Annihilate also deals [dark] damage.')
             self.upgrades['arcane'] =  (1, 2, 'Arcane Annihilation', 'Mega Annihilate also deals [arcane] damage.')
-            self.upgrades["inescapable"] = (1, 5, "Inescapable Annihilation", "Mega Annihilate will now remove all [SH:shields] and buffs from the target before dealing damage.")
+            self.upgrades["inescapable"] = (1, 7, "Inescapable Annihilation", "Mega Annihilate will now remove all [SH:shields] and buffs from the target before dealing damage.")
             self.upgrades['damage'] = (99, 4)
 
     if cls is RingOfSpiders:
