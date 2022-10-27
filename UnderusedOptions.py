@@ -3198,7 +3198,7 @@ def modify_class(cls):
             damage = evt.damage
             if damage <= 0:
                 return
-            if self.owner.resists[evt.damage_type] < 0 and not self.owner.shields:
+            if self.owner.resists[evt.damage_type] < 0:
                 damage *= math.ceil(1 - self.owner.resists[evt.damage_type]/100)
             if self.masochism and is_friendly_fire(self, evt.source):
                 damage *= 2
