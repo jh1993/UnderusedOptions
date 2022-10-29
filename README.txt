@@ -16,7 +16,7 @@ Fireball:
 - Damage type upgrades changed to redeal all fire damage resisted or blocked by SH as a split between the other damage types.
 
 Poison Sting:
-- Torment (5 SP): Deal 1 extra damage per 10 turns of poison on the target, and 1 extra damage per turn of every other debuff on the target.
+- Torment (5 SP): Deal 1 extra damage per 10 turns of poison on the target, and 1 extra damage per turn of every other debuff on the target. Deal 1 extra damage per debuff on the target. Multiple stacks of the same type of debuff are counted as different debuffs.
 
 Wolf:
 - Ice hounds are now nature units.

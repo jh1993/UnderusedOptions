@@ -1211,23 +1211,25 @@ def modify_class(cls):
             self.upgrades['range'] = (4, 1)
             self.upgrades['max_charges'] = (10, 3)
             self.upgrades['duration'] = (60, 2)
-            self.upgrades['antigen'] = (1, 2, "Acidity", "Damaged targets lose all poison resist")
-            self.upgrades["torment"] = (1, 5, "Torment", "Deal 1 extra damage per 10 turns of [poison] on the target, and 1 extra damage per turn of every other debuff on the target.")
+            self.upgrades['antigen'] = (1, 2, "Acidity", "Damaged targets lose all [poison] resistance.")
+            self.upgrades["torment"] = (1, 5, "Torment", "Deal 1 extra damage per 10 turns of [poison] on the target, and 1 extra damage per turn of every other debuff on the target.\nDeal 1 extra damage per debuff on the target. Multiple stacks of the same type of debuff are counted as different debuffs.")
 
-        def cast_instant(self, x, y):
+        def cast(self, x, y):
             unit = self.caster.level.get_unit_at(x, y)
+
+            for p in Bolt(self.caster.level, self.caster, Point(x, y), find_clear=False):
+                self.caster.level.show_effect(p.x, p.y, Tags.Poison, minor=True)
+                yield
 
             damage = self.get_stat("damage")
             if unit and self.get_stat("torment"):
                 for debuff in [buff for buff in unit.buffs if buff.buff_type == BUFF_TYPE_CURSE]:
+                    damage += 1
                     if isinstance(debuff, Poison):
                         damage += math.ceil(debuff.turns_left/10)
                     else:
                         damage += debuff.turns_left
             damage = self.caster.level.deal_damage(x, y, damage, Tags.Physical, self)
-
-            for p in self.caster.level.get_points_in_line(self.caster, Point(x, y), find_clear=True)[1:-1]:
-                self.caster.level.show_effect(p.x, p.y, Tags.Poison, minor=True)
 
             if unit:
                 if damage and self.get_stat('antigen'):
