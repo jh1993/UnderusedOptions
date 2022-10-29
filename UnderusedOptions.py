@@ -1664,14 +1664,12 @@ def modify_class(cls):
             self.name = "Freeze"
         
             self.duration = 5
-            
             self.max_charges = 20
-
             self.range = 8
 
             self.upgrades['duration'] = (4, 3)
             self.upgrades["absolute_zero"] = (1, 6, "Absolute Zero", "The target now permanently loses [100_ice:ice] resistance before being frozen.")
-            self.upgrades["permafrost"] = (1, 5, "Permafrost", "When targeting an already frozen unit, increase the duration of freeze on it by one third of this spell's duration if the result is greater than this spell's duration.\nThen deal [ice] damage equal to twice the target's freeze duration.")
+            self.upgrades["permafrost"] = (1, 5, "Permafrost", "When targeting an already [frozen] unit, increase the duration of [freeze] on it by one third of this spell's duration if the result is greater than this spell's duration.\nThen deal [ice] damage equal to twice the target's [freeze] duration.\nThis upgrade cannot extend [freeze] duration on targets that can gain clarity.")
 
         def cast_instant(self, x, y):
             duration = self.get_stat("duration")
@@ -1681,8 +1679,9 @@ def modify_class(cls):
             if self.get_stat("absolute_zero"):
                 target.apply_buff(AbsoluteZeroBuff())
             existing = target.get_buff(FrozenBuff)
-            if existing:
-                existing.turns_left = max(duration, existing.turns_left + duration//3)
+            if existing and self.get_stat("permafrost"):
+                if not target.gets_clarity:
+                    existing.turns_left = max(duration, existing.turns_left + duration//3)
                 target.deal_damage(existing.turns_left*2, Tags.Ice, self)
             else:
                 target.apply_buff(FrozenBuff(), duration)
