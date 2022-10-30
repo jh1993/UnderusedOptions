@@ -321,6 +321,9 @@ Watcher Form:
 - The resist buffs are rolled into the beam-shooting buff, so you can't get the resists separately via Purity anymore.
 - Void Watcher (6 SP): Gain 100 arcane resist. Watcher Form now instead targets the furthest unit from the caster regardless of line of sight, melts through walls, and also deals arcane damage.
 
+Wheel of Death:
+- Royal Flush (7 SP): Wheel of Death now deals an additional hit of fire, lightning, physical, and arcane damage, each targeting a random enemy. Not compatible with Death Roulette.
+
 Ball Lightning:
 - Weakness changed to arcane damage.
 - Magnetic Pulse upgrade replaced by Lightning Barrage (6 SP): Targeting an existing lightning orb causes it to shoot a number of beams equal to twice its num targets, each targeting a random enemy in line of sight. An enemy can be hit by more than one beam.
@@ -331,6 +334,10 @@ Cantrip Cascade:
 Chill Wind:
 - Now benefits from radius bonuses, which increases line width.
 - Width (5 SP): Chill Wind now affects a line 5 tiles wide.
+
+Death Cleave:
+- Level reduced to 4.
+- Patient Butcher (3 SP): Each turn, the remaining duration of Death Cleave will not decrease if it is not used to cleave a spell to an additional target.
 
 Fae Court:
 - Glass Faery cost reduced to 6. It's anti-synergistic with Cracklevoid so the cost shouldn't be that high.
@@ -413,6 +420,13 @@ Unholy Alliance:
 
 White Flame:
 - Is now level 5, and reduces the target's fire resistance by 100% until the beginning of your next turn.
+
+Acid Fumes:
+- Now prioritizes the closest unacidified enemy.
+
+Collected Agony:
+- The dark damage will no longer target dark-immune enemies.
+- In addition to its other effects, this skill now also stores the remaining poison durations of all dead units, and consumes stored duration to randomly increase the poison durations of enemies each turn. Stored poison duration is reset when entering a new level.
 
 Frozen Fragility:
 - Now instead inflicts a Fragility debuff equal to the duration of the freeze inflicted, which persists after unfreezing. If freeze duration is refreshed or extended, fragility duration will be adjusted to match if shorter.

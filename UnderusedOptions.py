@@ -4511,6 +4511,44 @@ def modify_class(cls):
                     "The uer cannot move or cast spells for the duration. If the caster is not you, this spell only deals 20% damage.\n"
                     "Lasts [{duration}_turns:duration].\n").format(**self.fmt_dict())
 
+    if cls is WheelOfFate:
+
+        def on_init(self):
+            self.name = "Wheel of Death"
+            self.damage = 200
+            self.range = 0
+            self.tags = [Tags.Dark, Tags.Sorcery]
+            self.element = Tags.Dark
+            self.level = 4
+            self.max_charges = 5
+
+            self.upgrades['max_charges'] = (3, 4)
+            self.upgrades['cascade'] = (1, 7, "Death Roulette", "On kill, gain a Roulette stack for [10_turns:duration], which benefits from bonuses to [duration].\nWheel of Death hits an additional enemy for each Roulette stack you have at cast time.", "fate")
+            self.upgrades["annihilate"] = (1, 7, "Royal Flush", "Wheel of Death now deals an additional hit of [fire], [lightning], [physical], and [arcane] damage, each targeting a random enemy.", "fate")
+
+        def cast(self, x, y):
+            
+            num_targets = 1 + len([b for b in self.owner.buffs if isinstance(b, DeathrouletteStack)])
+            prev_hit = set()
+            damage = self.get_stat('damage')
+            cascade = self.get_stat('cascade')
+            duration = self.get_stat('duration', 10)
+            iter = range(num_targets)
+            if self.get_stat("annihilate"):
+                iter = [Tags.Dark, Tags.Fire, Tags.Lightning, Tags.Physical, Tags.Arcane]
+
+            for i in iter:
+                valid_targets = [u for u in self.caster.level.units if self.caster.level.are_hostile(self.caster, u) and u not in prev_hit]
+                if not valid_targets:
+                    return
+                target = random.choice(valid_targets)
+                prev_hit.add(target)
+                target.deal_damage(damage, i if isinstance(i, Tag) else Tags.Dark, self)
+                if cascade and not target.is_alive():
+                    self.owner.apply_buff(DeathrouletteStack(), duration)
+                for _ in range(3):
+                    yield
+
     if cls is BallLightning:
 
         def on_init(self):
@@ -4618,6 +4656,74 @@ def modify_class(cls):
                 for q in self.caster.level.get_points_in_rect(p.x - radius, p.y - radius, p.x + radius, p.y + radius):
                     result.add(q)
             return result
+
+    if cls is DeathCleaveBuff:
+
+        def on_init(self):
+            self.name = "Death Cleave"
+            self.description = "Spells will cleave to nearby targets if they kill their main target"
+            self.cur_target = None	
+            self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
+            self.cleaved = False
+            self.patient = self.spell.get_stat("patient")
+
+        def effect(self, evt):
+            if self.cur_target and not self.cur_target.is_alive():
+
+                def can_cleave(t):
+                    if not evt.caster.level.are_hostile(t, evt.caster):
+                        return False
+                    if not evt.spell.can_cast(t.x, t.y):
+                        return False
+                    if distance(t, self.cur_target) > self.spell.get_stat('cascade_range'):
+                        return False
+                    return True
+
+                cleave_targets = [u for u in evt.caster.level.units if can_cleave(u)]
+
+                if cleave_targets:
+                    target = random.choice(cleave_targets)
+                    # Draw chain
+                    for p in Bolt(self.owner.level, self.cur_target, target, find_clear=False):
+                        self.owner.level.show_effect(p.x, p.y, Tags.Dark, minor=True)
+                        yield
+                    evt.caster.level.act_cast(evt.caster, evt.spell, target.x, target.y, pay_costs=False)
+                    self.cleaved = True
+                # If no cleavable targets exist, show a fizzling out effect on the last target
+                else:
+                    evt.caster.level.queue_spell(self.show_fizzle(evt.caster))
+
+            elif self.cur_target and self.cur_target.is_alive():
+                evt.caster.level.queue_spell(self.show_fizzle(self.cur_target))
+
+        def on_advance(self):
+            for buff in self.owner.buffs:
+                if not isinstance(buff, ChannelBuff):
+                    continue
+                target = self.owner.level.get_unit_at(buff.spell_target.x, buff.spell_target.y)
+                if not target:
+                    continue
+                self.cur_target = target
+                spell = buff.spell.__self__
+                self.owner.level.queue_spell(self.effect(EventOnSpellCast(spell, spell.caster, target.x, target.y)))
+            if self.patient and not self.cleaved:
+                self.turns_left += 1
+            self.cleaved = False
+
+    if cls is DeathCleaveSpell:
+
+        def on_init(self):
+            self.name = "Death Cleave"
+            self.duration = 2
+            self.upgrades['duration'] = (3, 3)
+            self.upgrades['max_charges'] = (4, 2)
+            self.upgrades['cascade_range'] = (3, 4)
+            self.upgrades["patient"] = (1, 3, "Patient Butcher", "Each turn, the remaining duration of Death Cleave will not decrease if it is not used to cleave a spell to an additional target.")
+            self.max_charges = 4
+            self.cascade_range = 5
+            self.range = 0
+            self.level = 4
+            self.tags = [Tags.Enchantment, Tags.Arcane, Tags.Dark]
 
     if cls is FaeCourt:
 
@@ -5431,6 +5537,77 @@ def modify_class(cls):
                 unit.apply_buff(WhiteFlameDebuff())
             self.owner.level.deal_damage(evt.x, evt.y, self.get_stat('damage'), Tags.Fire, self)
 
+    if cls is AcidFumes:
+
+        def on_init(self):
+            self.name = "Acid Fumes"
+            self.tags = [Tags.Nature, Tags.Dark]
+            self.description = "Each turn, the closest unacidified enemy is [acidified:poison].\n[Acidified:poison] units lose [100_poison:poison] resistance."
+            self.level = 5
+
+        def on_advance(self):
+            candidates = [u for u in self.owner.level.units if are_hostile(u, self.owner) and not u.has_buff(Acidified)]
+            if candidates:
+                target = min(candidates, key=lambda unit: distance(unit, self.owner))
+                target.apply_buff(Acidified())
+
+    if cls is CollectedAgony:
+
+        def on_init(self):
+            self.name = "Collected Agony"
+            self.global_triggers[EventOnDamaged] = self.on_damage
+            self.global_triggers[EventOnDeath] = lambda evt: on_death(self, evt)
+            self.owner_triggers[EventOnUnitAdded] = lambda evt: on_unit_added(self, evt)
+            self.charges = 0
+            self.stored_duration = 0
+            self.tags = [Tags.Dark, Tags.Nature]
+            self.level = 5
+
+        def get_description(self):
+            return ("Each turn, deal twice the total of all [poison] damage dealt to all units this turn to the nearest enemy as [dark] damage. Enemies immune to [dark] damage will not be targeted.\n"
+                    "Whenever a unit dies, its remaining [poison] duration is stored by this skill, which is reset whenever you enter a new realm. Each turn, consume a random amount of stored duration per [poisoned] enemy, up to half of the enemy's poison duration, to increase its duration by the consumed amount.\n"
+                    "This skill currently has [{stored_duration}_turns:duration] of [poison] stored.").format(**self.fmt_dict())
+
+        def fmt_dict(self):
+            stats = Upgrade.fmt_dict(self)
+            stats["stored_duration"] = self.stored_duration
+            return stats
+
+        def on_damage(self, evt):
+            if evt.damage_type == Tags.Poison:
+                self.charges += evt.damage
+
+        def on_advance(self):
+
+            if self.charges > 0:
+                options = [u for u in self.owner.level.units if are_hostile(u, self.owner) and not is_immune(u, self, Tags.Dark)]
+                if not options:
+                    return
+                target = min(options, key=lambda unit: distance(unit, self.owner))
+                self.owner.level.queue_spell(self.do_damage(target, 2*self.charges))
+            self.charges = 0
+
+            for unit in self.owner.level.units:
+                if not are_hostile(unit, self.owner):
+                    continue
+                poison = unit.get_buff(Poison)
+                if not poison:
+                    continue
+                amount = poison.turns_left//2
+                amount = math.ceil(amount*random.random())
+                amount = min(self.stored_duration, amount)
+                self.stored_duration -= amount
+                poison.turns_left += amount
+
+        def on_death(self, evt):
+            poison = evt.unit.get_buff(Poison)
+            if not poison:
+                return
+            self.stored_duration += poison.turns_left
+
+        def on_unit_added(self, evt):
+            self.stored_duration = 0
+
     if cls is FragilityBuff:
 
         def on_init(self):
@@ -5677,5 +5854,5 @@ def modify_class(cls):
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, BallLightning, CantripCascade, IceWind, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, FragilityBuff, FrozenFragility, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines]:
+for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines]:
     modify_class(cls)
