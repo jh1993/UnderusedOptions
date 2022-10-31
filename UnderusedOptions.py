@@ -422,6 +422,9 @@ class ConductanceBuff(Buff):
         self.asset = ['status', 'conductance']
         self.owner_triggers[EventOnPreDamaged] = self.on_pre_damaged
     
+    def on_advance(self):
+        self.spell.caster.apply_buff(RemoveBuffOnPreAdvance(AntiConductanceBuff))
+
     def on_pre_damaged(self, evt):
         if evt.damage_type != Tags.Lightning:
             return
@@ -433,7 +436,7 @@ class ConductanceBuff(Buff):
             target = random.choice(conductive_targets)
         else:
             target = random.choice(targets)
-        target.apply_buff(AntiConductanceBuff(), 1)
+        target.apply_buff(AntiConductanceBuff())
         self.owner.level.queue_spell(self.bolt(target, evt.damage))
     
     def bolt(self, target, damage):
@@ -441,9 +444,7 @@ class ConductanceBuff(Buff):
             self.owner.level.show_effect(point.x, point.y, Tags.Lightning, minor=True)
             yield
         target.deal_damage(damage, Tags.Lightning, self.spell)
-        duration = self.turns_left//2
-        if duration:
-            target.apply_buff(curr_module.ConductanceBuff(self.spell), duration)
+        target.apply_buff(curr_module.ConductanceBuff(self.spell), self.turns_left)
 
 class FieryTormentorRemorse(Upgrade):
 
@@ -3734,10 +3735,9 @@ def modify_class(cls):
                 unit.apply_buff(curr_module.ConductanceBuff(self), self.get_stat("duration"))
 
         def get_description(self):
-            return ("Curse an enemy with the essence of conductivity.\n"
-                    "That enemy loses [{resistance_debuff}_lightning:lightning] resistance.\n"
-                    "Whenever [lightning] damage is dealt to the target, deal the same amount of [lightning] damage, before counting resistances, to another random enemy in a [{cascade_range}_tile:cascade_range] burst. New targets with Conductance are prioritized, and a new target without Conductance is inflicted with Conductance for half the duration of conductance on the original target.\n"
-                    "A target can only be affected once per turn.\n"
+            return ("The target enemy enemy loses [{resistance_debuff}_lightning:lightning] resistance.\n"
+                    "Whenever [lightning] damage is dealt to the target, deal the same amount of [lightning] damage, before counting resistances, to another random enemy in a [{cascade_range}_tile:cascade_range] burst. New targets with Conductance are prioritized, and a new target without Conductance is inflicted with Conductance for the same duration as conductance on the original target.\n"
+                    "A target can only be affected once per turn, refreshing before the start of your turn.\n"
                     "Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
 
     if cls is ConjureMemories:

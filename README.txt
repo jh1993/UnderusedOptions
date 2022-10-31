@@ -236,7 +236,7 @@ Chimera Familiar:
 - Self Sufficiency (4 SP): +5 minion damage and +3 minion range.
 
 Conductance:
-- Instead of copying lightning spells cast at the target, the debuff will cause any lightning damage dealt to the target, before resistances, to also be dealt to a target in line of sight up to 4 tiles away. Targets with Conductance are prioritized, and if a target does not have Conductance, apply Conductance with duration equal to half of current remaining duration to it after dealing damage. Each target can only be damaged by Conductance once per turn.
+- Instead of copying lightning spells cast at the target, the debuff will cause any lightning damage dealt to the target, before resistances, to also be dealt to a target in line of sight up to 4 tiles away. Targets with Conductance are prioritized, and if a target does not have Conductance, apply Conductance with duration equal to the current remaining duration to it after dealing damage. Each target can only be damaged by Conductance once per turn, refreshed before the beginning of your turn.
 - Multicopy upgrade replaced by Cascade Range upgrade (4 SP): + 4 cascade range.
 
 Conjure Memories:
