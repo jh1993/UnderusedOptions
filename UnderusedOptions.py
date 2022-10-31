@@ -5556,29 +5556,18 @@ def modify_class(cls):
         def on_init(self):
             self.name = "Collected Agony"
             self.global_triggers[EventOnDamaged] = self.on_damage
-            self.global_triggers[EventOnDeath] = lambda evt: on_death(self, evt)
-            self.owner_triggers[EventOnUnitAdded] = lambda evt: on_unit_added(self, evt)
             self.charges = 0
-            self.stored_duration = 0
             self.tags = [Tags.Dark, Tags.Nature]
             self.level = 5
 
         def get_description(self):
-            return ("Each turn, deal twice the total of all [poison] damage dealt to all units this turn to the nearest enemy as [dark] damage. Enemies immune to [dark] damage will not be targeted.\n"
-                    "Whenever a unit dies, its remaining [poison] duration is stored by this skill, which is reset whenever you enter a new realm. Each turn, consume a random amount of stored duration per [poisoned] enemy, up to half of the enemy's poison duration, to increase its duration by the consumed amount.\n"
-                    "This skill currently has [{stored_duration}_turns:duration] of [poison] stored.").format(**self.fmt_dict())
-
-        def fmt_dict(self):
-            stats = Upgrade.fmt_dict(self)
-            stats["stored_duration"] = self.stored_duration
-            return stats
+            return ("Each turn, deal twice the total of all [poison] damage dealt to all units this turn to the nearest enemy as [dark] damage. Enemies immune to [dark] damage will not be targeted.").format(**self.fmt_dict())
 
         def on_damage(self, evt):
             if evt.damage_type == Tags.Poison:
                 self.charges += evt.damage
 
         def on_advance(self):
-
             if self.charges > 0:
                 options = [u for u in self.owner.level.units if are_hostile(u, self.owner) and not is_immune(u, self, Tags.Dark)]
                 if not options:
@@ -5586,27 +5575,6 @@ def modify_class(cls):
                 target = min(options, key=lambda unit: distance(unit, self.owner))
                 self.owner.level.queue_spell(self.do_damage(target, 2*self.charges))
             self.charges = 0
-
-            for unit in self.owner.level.units:
-                if not are_hostile(unit, self.owner):
-                    continue
-                poison = unit.get_buff(Poison)
-                if not poison:
-                    continue
-                amount = poison.turns_left//2
-                amount = math.ceil(amount*random.random())
-                amount = min(self.stored_duration, amount)
-                self.stored_duration -= amount
-                poison.turns_left += amount
-
-        def on_death(self, evt):
-            poison = evt.unit.get_buff(Poison)
-            if not poison:
-                return
-            self.stored_duration += poison.turns_left
-
-        def on_unit_added(self, evt):
-            self.stored_duration = 0
 
     if cls is FragilityBuff:
 

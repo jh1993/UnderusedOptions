@@ -426,7 +426,6 @@ Acid Fumes:
 
 Collected Agony:
 - The dark damage will no longer target dark-immune enemies.
-- In addition to its other effects, this skill now also stores the remaining poison durations of all dead units, and consumes stored duration to randomly increase the poison durations of enemies each turn. Stored poison duration is reset when entering a new level.
 
 Frozen Fragility:
 - Now instead inflicts a Fragility debuff equal to the duration of the freeze inflicted, which persists after unfreezing. If freeze duration is refreshed or extended, fragility duration will be adjusted to match if shorter.
