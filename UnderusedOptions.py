@@ -156,6 +156,7 @@ class SpiritBindingBuff(Buff):
 
     def __init__(self, spell):
         self.spell = spell
+        self.applier = spell.caster
         Buff.__init__(self)
     
     def on_init(self):
@@ -404,8 +405,10 @@ class ChimeraFamiliarSelfSufficiency(Upgrade):
         self.spell_bonuses[ChimeraFarmiliar]["minion_range"] = 3
 
 class AntiConductanceBuff(Buff):
-    def on_init(self):
+    def __init__(self, applier):
+        Buff.__init__(self)
         self.buff_type = BUFF_TYPE_PASSIVE
+        self.applier = applier
 
 class ConductanceBuff(Buff):
 	
@@ -436,7 +439,7 @@ class ConductanceBuff(Buff):
             target = random.choice(conductive_targets)
         else:
             target = random.choice(targets)
-        target.apply_buff(AntiConductanceBuff())
+        target.apply_buff(AntiConductanceBuff(self.spell.caster))
         self.owner.level.queue_spell(self.bolt(target, evt.damage))
     
     def bolt(self, target, damage):
