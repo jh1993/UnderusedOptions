@@ -5207,9 +5207,9 @@ def modify_class(cls):
             # Purely for shrine bonuses
             self.minion_range = 6
 
-            self.upgrades['void_court'] = (1, 5, "Void Court", "Summon only void knights.  Summon a void champion as well.", "court")
-            self.upgrades['storm_court'] = (1, 5, "Storm Court","Summon only storm knights.  Summon a storm champion as well.", "court")
-            self.upgrades['chaos_court'] = (1, 5, "Chaos Court", "Summon only chaos knights.  Summon a chaos champion as well.", "court")
+            self.upgrades['void_court'] = (1, 5, "Void Court", "Summon only void knights, which benefits from bonuses to [num_summons:num_summons].\nSummon a void champion as well.", "court")
+            self.upgrades['storm_court'] = (1, 5, "Storm Court","Summon only storm knights, which benefits from bonuses to [num_summons:num_summons].\nSummon a storm champion as well.", "court")
+            self.upgrades['chaos_court'] = (1, 5, "Chaos Court", "Summon only chaos knights, which benefits from bonuses to [num_summons:num_summons].\nSummon a chaos champion as well.", "court")
             self.upgrades["promotion"] = (1, 6, "Promotion", "Each non-champion knight will be promoted to a champion after [20_turns:duration].")
             self.upgrades['max_charges'] = (1, 3)
             self.add_upgrade(KnightlyOathUndyingOath())
@@ -5222,12 +5222,19 @@ def modify_class(cls):
         def cast(self, x, y):
 
             knights = [VoidKnight(), ChaosKnight(), StormKnight()]
+            num_summons = self.get_stat("num_summons", base=3)
             if self.get_stat('void_court'):
-                knights = [Champion(VoidKnight()), VoidKnight(), VoidKnight(), VoidKnight()]
+                knights = [Champion(VoidKnight())]
+                for _ in range(num_summons):
+                    knights.append(VoidKnight())
             if self.get_stat('storm_court'):
-                knights = [Champion(StormKnight()), StormKnight(), StormKnight(), StormKnight()]
+                knights = [Champion(StormKnight())]
+                for _ in range(num_summons):
+                    knights.append(StormKnight())
             if self.get_stat('chaos_court'):
-                knights = [Champion(ChaosKnight()), ChaosKnight(), ChaosKnight(), ChaosKnight()]
+                knights = [Champion(ChaosKnight())]
+                for _ in range(num_summons):
+                    knights.append(ChaosKnight())
 
             promotion = self.get_stat("promotion")
             def promote(knight):
