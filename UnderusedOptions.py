@@ -1105,6 +1105,13 @@ class KnightlyOathUndyingOath(Upgrade):
     def on_pre_advance(self):
         self.free_revive = True
 
+class WarpLightningBuff(Buff):
+    def on_init(self):
+        self.show_effect = False
+        self.name = "Warp Lightning"
+        self.buff_type = BUFF_TYPE_CURSE
+        self.color = Tags.Lightning.color
+
 def modify_class(cls):
 
     if cls is DeathBolt:
@@ -5246,7 +5253,6 @@ def modify_class(cls):
 
         def on_init(self):
             self.name = "Multicast"
-            self.description = "Whenever you cast a sorcery spell, copy it."
             self.can_copy = True
             self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
             self.copies = self.spell.get_stat("copies")
@@ -5271,7 +5277,7 @@ def modify_class(cls):
                     if evt.spell.can_cast(evt.x, evt.y):
                         evt.caster.level.act_cast(evt.caster, evt.spell, evt.x, evt.y, pay_costs=False)
 
-        def on_advance(self):
+        def on_pre_advance(self):
             self.can_copy = True
 
     if cls is MulticastSpell:
@@ -5291,7 +5297,7 @@ def modify_class(cls):
             self.tags = [Tags.Enchantment, Tags.Arcane]
 
         def get_description(self):
-            return ("The first [sorcery] spell you cast each turn is copied [{copies}:sorcery] times.\n"
+            return ("The first [sorcery] spell you cast each turn is copied [{copies}:sorcery] times. This is reset before the beginning of your turn.\n"
                     "Lasts [{duration}_turns:duration]").format(**self.fmt_dict())
 
     if cls is SpikeballFactory:
@@ -5525,13 +5531,18 @@ def modify_class(cls):
         def get_description(self):
             return "Whenever you cast a [fire] spell at a tile other than your own, the unit on that tile loses [100_fire:fire] resistance, which is removed at the beginning of your next turn.\nThen deal [%d_fire:fire] damage to the targeted tile." % self.get_stat('damage')
 
+        def on_pre_advance(self):
+            for unit in list(self.owner.level.units):
+                for buff in list(unit.buffs):
+                    if isinstance(buff, WhiteFlameDebuff):
+                        unit.remove_buff(buff)
+
         def on_spell_cast(self, evt):
             if Tags.Fire not in evt.spell.tags:
                 return
             # dont white flame yourself with eye of fire or whatever
             if evt.x == self.owner.x and evt.y == self.owner.y:
                 return
-            self.owner.apply_buff(RemoveBuffOnPreAdvance(WhiteFlameDebuff))
             unit = self.owner.level.get_unit_at(evt.x, evt.y)
             if unit:
                 unit.apply_buff(WhiteFlameDebuff())
@@ -5818,9 +5829,56 @@ def modify_class(cls):
             
             self.owner.apply_buff(InfernoEngineAura(evt.spell.level), duration)
 
+    if cls is LightningWarp:
+
+        def on_init(self):
+            self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
+            self.damage = 12
+            self.name = "Lightning Warp"
+            self.level = 6
+            self.radius = 3
+            self.range = 4
+            self.tags = [Tags.Lightning, Tags.Translocation]
+
+        def fmt_dict(self):
+            stats = Upgrade.fmt_dict(self)
+            stats["double_range"] = self.get_stat("range")*2
+            return stats
+
+        def get_description(self):
+            return ("Whenever you cast a [lightning] spell, all enemy units within [{radius}_tiles:radius] of the target are inflicted with Warp Lightning.\n"
+                    "Then teleport all enemies with Warp Lightning to random spaces [{range}_to_{double_range}_tiles:range] away and deal [{damage}_lightning:lightning] damage to them.\n"
+                    "Warp Lightning is removed from all units before the beginning of your turn.").format(**self.fmt_dict())
+
+        def on_pre_advance(self):
+            for unit in list(self.owner.level.units):
+                for buff in list(unit.buffs):
+                    if isinstance(buff, WarpLightningBuff):
+                        unit.remove_buff(buff)
+
+        def do_teleports(self, evt):
+
+            for unit in self.owner.level.get_units_in_ball(evt, self.get_stat("radius")):
+                if not are_hostile(unit, self.owner):
+                    continue
+                unit.apply_buff(WarpLightningBuff())
+
+            warp_range = self.get_stat("range")
+            damage = self.get_stat('damage')
+            for unit in list(self.owner.level.units):
+                if not are_hostile(unit, self.owner) or not unit.has_buff(WarpLightningBuff):
+                    continue
+                points = self.owner.level.get_points_in_ball(evt.x, evt.y, 2*warp_range)
+                points = [p for p in points if distance(p, self.owner) >= warp_range and self.owner.level.can_stand(p.x, p.y, unit)]
+                if points:
+                    point = random.choice(points)
+                    self.owner.level.act_move(unit, point.x, point.y, teleport=True)
+                unit.deal_damage(damage, Tags.Lightning, self)
+                yield
+
     for func_name, func in [(key, value) for key, value in locals().items() if callable(value)]:
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines]:
+for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp]:
     modify_class(cls)

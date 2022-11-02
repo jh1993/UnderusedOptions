@@ -393,7 +393,7 @@ Knightly Oath:
 - Undying Oath (7 SP): Knightly Oath can now save one knight from death per turn for free, without dealing damage to the caster. This is refreshed before the beginning of each of your turns.
 
 Multicast:
-- Now only copies the first sorcery spell you cast per turn, to make it interact more intuitively with other spell-copying mechanics and less abusive with a few things in my other mods.
+- Now only copies the first sorcery spell you cast per turn, to make it interact more intuitively with other spell-copying mechanics and less abusive with a few things in my other mods. Resets before the beginning of your turn.
 - Adaptive Copy (6 SP): Level 5 and 4 spells are now copied 1 additional time. Level 3 and 2 spells are now copied 2 additional times. Level 1 spells are now copied 3 additional times.
 
 Spikeball Factory:
@@ -453,3 +453,8 @@ Frostbite:
 
 Inferno Engines:
 - Level increased to 7, but the effect is now fully retroactive, automatically applying to all newly summoned metallic minions and minions that become metallic.
+
+Lightning Warp:
+- Now inflicts a Warp Lightning debuff on affected enemies, then deals damage to all enemies with Warp Lightning. This means that if Lightning Warp is triggered more than once in a turn, the initially affected enemies will be damaged every time the skill triggers, no matter where they're teleported to.
+- Teleport range now scales with range bonuses.
+- Damage now occurs even if the target is not teleported.
