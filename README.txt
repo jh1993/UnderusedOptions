@@ -20,7 +20,7 @@ Poison Sting:
 
 Wolf:
 - Ice hounds are now nature units.
-- Wolf Pack cost reduced to 7, because I don't think anything should cost more than 7 SP; 7 SP should be enough for this upgrade anyways. It also counts as casting the spell twice, to make you not lose out on Thorn Garden and Icy Spriggan shrine procs.
+- Wolf Pack cost reduced to 7, because I don't think anything should cost more than 7 SP; 7 SP should be enough for this upgrade anyways. It also counts as casting the spell twice, to make you not lose out on Thorn Garden and Icy Spriggan shrine procs. Number of wolves summoned now benefits from num summons bonuses.
 
 Annihilate:
 - Max charges upgrade now costs 6 SP and gives +16 charges.

@@ -1258,7 +1258,7 @@ def modify_class(cls):
             self.upgrades['blood_hound'] = (1, 3, "Blood Hound", "Summon blood hounds instead of wolves.", "hound")
             self.upgrades['ice_hound'] = (1, 3, "Ice Hound", "Summon ice hounds instead of wolves.", "hound")
             self.upgrades['clay_hound'] = (1, 6, "Clay Hound", "Summon clay hounds instead of wolves.", "hound")
-            self.upgrades['wolf_pack'] = (1, 7, "Wolf Pack", "Each cast of Wolf consumes an additional charge and summons 4 wolves.\nThis counts as casting the spell an additional time.")
+            self.upgrades['wolf_pack'] = (1, 7, "Wolf Pack", "Each cast of Wolf consumes an additional charge and summons [4:num_summons] wolves; this number benefits from bonuses to [num_summons:num_summons].\nThis counts as casting the spell an additional time.")
 
 
             self.tags = [Tags.Nature, Tags.Conjuration]
@@ -1312,11 +1312,11 @@ def modify_class(cls):
         def cast(self, x, y):
             num_wolves = 1
             if self.get_stat('wolf_pack'):
-                num_wolves = 4
+                num_wolves = self.get_stat("num_summons", base=4)
                 self.cur_charges -= 1
                 self.cur_charges = max(self.cur_charges, 0)
                 self.caster.level.event_manager.raise_event(EventOnSpellCast(self, self.caster, x, y), self.caster)
-            for i in range(num_wolves):
+            for _ in range(num_wolves):
                 wolf = self.make_wolf()
                 self.summon(wolf, Point(x, y))
                 yield
