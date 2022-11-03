@@ -319,7 +319,8 @@ Wall of Ice:
 Watcher Form:
 - Now also an eye spell.
 - The resist buffs are rolled into the beam-shooting buff, so you can't get the resists separately via Purity anymore.
-- Void Watcher (6 SP): Gain 100 arcane resist. Watcher Form now instead targets the furthest unit from the caster regardless of line of sight, melts through walls, and also deals arcane damage.
+- Void Watcher (6 SP): Watcher Form also grants 100 arcane resist. Watcher Form now instead targets the furthest unit from the caster regardless of line of sight, melts through walls, and also deals arcane damage.
+- Watcher's Instinct (6 SP): While in Watcher Form, each turn you will automatically cast a random one of your lightning or arcane sorcery spells at a random valid enemy target, consuming charges as usual.
 
 Wheel of Death:
 - Royal Flush (7 SP): Wheel of Death now deals an additional hit of fire, lightning, physical, and arcane damage, each targeting a random enemy. Not compatible with Death Roulette.

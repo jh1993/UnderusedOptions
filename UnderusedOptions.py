@@ -4453,10 +4453,6 @@ def modify_class(cls):
 
     if cls is WatcherFormBuff:
 
-        def __init__(self, spell):
-            self.spell = spell
-            Stun.__init__(self)
-
         def on_applied(self, owner):
             self.arcane = self.spell.get_stat("arcane")
             self.transform_asset_name = "watcher" if not self.arcane else "void_watcher"
@@ -4472,6 +4468,7 @@ def modify_class(cls):
             self.damage = self.spell.get_stat("damage")
             if not self.owner.is_player_controlled:
                 self.damage = self.damage//5
+            self.instinct = self.spell.get_stat("instinct")
 
         def on_advance(self):
 
@@ -4487,6 +4484,17 @@ def modify_class(cls):
             else:
                 # Show the effect fizzling
                 self.owner.deal_damage(0, Tags.Lightning, self)
+            
+            if not self.instinct:
+                return
+            spells = [spell for spell in self.owner.spells if Tags.Sorcery in spell.tags and (Tags.Lightning in spell.tags or Tags.Arcane in spell.tags) and spell.can_pay_costs()]
+            random.shuffle(spells)
+            for spell in spells:
+                target = spell.get_ai_target()
+                if not target:
+                    continue
+                self.owner.level.act_cast(self.owner, spell, target.x, target.y)
+                return
 
         def shoot(self, target):
             points = self.owner.level.get_points_in_line(Point(self.owner.x, self.owner.y), Point(target.x, target.y), find_clear=not self.arcane)[1:]
@@ -4513,7 +4521,8 @@ def modify_class(cls):
             self.upgrades['damage'] = (30, 3)
             self.upgrades['max_charges'] = (3, 2)
             self.upgrades['duration'] = 3
-            self.upgrades["arcane"] = (1, 6, "Void Watcher", "Gain [100_arcane:arcane] resist.\nWatcher Form now instead targets the furthest unit from the caster regardless of line of sight, melts through walls, and also deals [arcane] damage.")
+            self.upgrades["arcane"] = (1, 6, "Void Watcher", "Watcher Form also grants [100_arcane:arcane] resist.\nWatcher Form now instead targets the furthest unit from the caster regardless of line of sight, melts through walls, and also deals [arcane] damage.")
+            self.upgrades["instinct"] = (1, 6, "Watcher's Instinct", "While in Watcher Form, each turn you will automatically cast a random one of your [lightning] or [arcane] [sorcery] spells at a random valid enemy target, consuming charges as usual.")
 
         def cast_instant(self, x, y):
             self.caster.apply_buff(WatcherFormBuff(self), self.get_stat('duration'))
