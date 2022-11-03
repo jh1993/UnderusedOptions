@@ -147,9 +147,12 @@ class DarknessBuff(Spells.DarknessBuff):
             unit.apply_buff(BlindBuff(), 1)
     
     def on_pre_damaged(self, evt):
+        if isinstance(evt.source, Spell) and evt.source.statholder:
+            if evt.source.statholder is self.owner or evt.source.statholder is self.spell.statholder:
+                return
         if evt.damage <= 0 or not are_hostile(evt.unit, self.owner) or not self.owner.is_blind():
             return
-        if evt.source.owner and (Tags.Undead in evt.source.owner.tags or Tags.Demon in evt.source.owner.tags) and not are_hostile(evt.source.owner, self.owner):
+        if evt.source and evt.source.owner and (Tags.Undead in evt.source.owner.tags or Tags.Demon in evt.source.owner.tags) and not are_hostile(evt.source.owner, self.owner):
             evt.unit.deal_damage(evt.damage//2, evt.damage_type, self.spell)
 
 class SpiritBindingBuff(Buff):
@@ -2390,7 +2393,7 @@ def modify_class(cls):
 
             self.upgrades['duration'] = (3, 2)
             self.upgrades["horizon"] = (1, 3, "Dark Horizon", "Hostile [demon] and [undead] units have a 5% chance to be [blinded:blind] per tile away from you.")
-            self.upgrades["echo"] = (1, 6, "Dark Echoes", "While Darkness is active, if you are [blind], your [demon] and [undead] minions redeal half of all their damage as the original damage type.")
+            self.upgrades["echo"] = (1, 6, "Dark Echoes", "While Darkness is active, if you are [blind], your [demon] and [undead] minions redeal half of all their damage as the original damage type.\nDamage dealt by spells inherited from the caster of this spell, and damage done by spells inherited from the unit that this spell is inherited from, cannot be echoed, in cases of minions inheriting or copying your spells.")
 
         def cast_instant(self, x, y):
             self.caster.apply_buff(curr_module.DarknessBuff(self), self.get_stat('duration'))
