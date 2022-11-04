@@ -429,10 +429,13 @@ class ConductanceBuff(Buff):
         self.owner_triggers[EventOnPreDamaged] = self.on_pre_damaged
     
     def on_advance(self):
+        if not self.spell.caster.is_alive():
+            self.owner.remove_buff(self)
+            return
         self.spell.caster.apply_buff(RemoveBuffOnPreAdvance(AntiConductanceBuff))
 
     def on_pre_damaged(self, evt):
-        if evt.damage_type != Tags.Lightning:
+        if evt.damage_type != Tags.Lightning or not self.spell.caster.is_alive():
             return
         targets = [unit for unit in self.owner.level.get_units_in_ball(self.owner, self.cascade_range) if are_hostile(self.spell.caster, unit) and self.owner.level.can_see(self.owner.x, self.owner.y, unit.x, unit.y) and not unit.has_buff(AntiConductanceBuff)]
         if not targets:
@@ -1780,7 +1783,7 @@ def modify_class(cls):
             shield = self.get_stat("shield")
             echo_heal = self.get_stat("echo_heal")
             duration = self.get_stat("duration", base=5)
-            bind = self.get_stat("spiritbind")
+            bind = self.get_stat("spiritbind") and self.caster.is_alive()
 
             if bind:
                 self.caster.apply_buff(RemoveBuffOnPreAdvance(SpiritBindingBuff))
