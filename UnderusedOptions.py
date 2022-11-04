@@ -1118,6 +1118,11 @@ class WarpLightningBuff(Buff):
         self.buff_type = BUFF_TYPE_CURSE
         self.color = Tags.Lightning.color
 
+class SpiderPoisonResistance(Buff):
+    def on_init(self):
+        self.buff_type = BUFF_TYPE_PASSIVE
+        self.resists[Tags.Poison] = 100
+
 def modify_class(cls):
 
     if cls is DeathBolt:
@@ -1468,7 +1473,7 @@ def modify_class(cls):
 
             self.upgrades['radius'] = (2, 2)
             self.upgrades['max_charges'] = (10, 2)
-            self.upgrades["shadow"] = (1, 4, "Quantum Shadow", "Summon a void ghost in the former location of each unit teleported away.\nThese void ghosts cannot be affected by this spell.")
+            self.upgrades["shadow"] = (1, 6, "Quantum Shadow", "Summon a void ghost in the former location of each unit teleported away.\nThese void ghosts cannot be affected by this spell.")
 
         def cast(self, x, y):
             shadow = self.get_stat("shadow")
@@ -5503,6 +5508,23 @@ def modify_class(cls):
                 p = points.pop()
                 self.owner.level.deal_damage(p.x, p.y, 0, random.choice([Tags.Holy, Tags.Ice]), self)
 
+    if cls is SpiderSpawning:
+
+        def on_applied(self, owner):
+            self.global_triggers[EventOnUnitAdded] = lambda evt: on_unit_added(self, evt)
+        
+        def on_unit_added(self, evt):
+            if Tags.Spider in evt.unit.tags and not are_hostile(evt.unit, self.owner) and not evt.unit.is_player_controlled:
+                evt.unit.apply_buff(SpiderPoisonResistance())
+
+        def get_description(self):
+            return ("Your [spider] minions gain [100_poison:poison] resistance.\n"
+                    "Whenever an enemy dies to [poison] damage, summon a friendly spider nearby.\n"
+                    "Giant spiders have [{minion_health}_HP:minion_health] and spin webs.\n"
+                    "Giant spiders have a melee attack which deals [{minion_damage}_physical:physical] and inflicts [5_turns:duration] of [poison].\n"
+                    "Webs [stun] non spider units which step on them for [1_turn:duration].\n"
+                    + text.poison_desc + text.stun_desc).format(**self.fmt_dict())
+
     if cls is UnholyAlliance:
 
         def on_init(self):
@@ -5902,5 +5924,5 @@ def modify_class(cls):
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp]:
+for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp]:
     modify_class(cls)

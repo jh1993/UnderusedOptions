@@ -34,7 +34,7 @@ Boiling Blood:
 - Retroactive (4 SP): You now gain Bloodlust Aura when you cast this spell, during which all minions you summon will automatically gain Boiling Blood for the remaining duration.
 
 Disperse:
-- Quantum Shadow (4 SP): Summon a void ghost in the former location of each unit teleported away. These void ghosts cannot be affected by this spell.
+- Quantum Shadow (6 SP): Summon a void ghost in the former location of each unit teleported away. These void ghosts cannot be affected by this spell.
 
 Eye of Fire:
 - Eye of Blasting (3 SP): On hit, Eye of Fire also deals damage to all enemies adjacent to the target.
@@ -414,6 +414,9 @@ Hibernation:
 
 Holy Water:
 - Affected allies also deal 2 holy or ice damage once to all enemies in a radius equal to the number of SH they have, even if their SH are maxed out. Holy damage from this skill cannot trigger itself. Cost increased to 5 SP.
+
+Spider Spawning:
+- Now also gives spider minions +100 poison resistance.
 
 Unholy Alliance:
 - Now retroactively applies to already summoned minions, including when a minion's tags change.
