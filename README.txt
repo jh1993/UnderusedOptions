@@ -78,6 +78,11 @@ Invoke Savagery:
 - Blood Savagery (3 SP): Now also affects nature and demon units.
 - Stampede (5 SP): If no melee targets are available, each ally will instead try to perform a charge attack with a range of 6 tiles. This attack benefits from bonuses to minion range, and does not stun.
 
+Magnetize:
+- Base radius and radius upgrade increased by 1 each.
+- Pull strength and duration upgrades reduced to 2 SP.
+- Universal Magnetism upgrade reduced to 3 SP.
+
 Melt:
 - As per my No More Scams mod, debuffs are now permanent.
 - Now also an enchantment spell.
@@ -213,7 +218,7 @@ Void Orb:
 - Weakness changed to lightning damage.
 - Now melts walls on all affected tiles. Red Dwarf upgrade removed.
 - Red Giant (5 SP): Void Orb gains +1 radius. Void Orb also deals fire damage.
-- Black Hole (5 SP): Each turn, Void Orb pulls all nearby enemies 1 tile toward itself before dealing damage; the pull range is twice the orb's radius. Void Orb also deals dark damage.
+- Black Hole (5 SP): Each turn, Void Orb pulls all nearby enemies 1 tile toward itself before dealing damage; the pull range is three times the orb's radius. Void Orb also deals dark damage.
 - Void Walk upgrade affects twice the radius, and no longer turns chasms into floors; the teleport fails if the orb is on a chasm but the explosion still happens. Cost increased to 3 SP.
 
 Blizzard:

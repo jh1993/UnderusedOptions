@@ -2022,6 +2022,28 @@ def modify_class(cls):
                     self.caster.level.act_cast(unit, charge, target.x, target.y, pay_costs=False)
                     yield
 
+    if cls is MagnetizeSpell:
+
+        def on_init(self):
+            self.name = "Magnetize"
+            self.tags = [Tags.Lightning, Tags.Metallic, Tags.Enchantment]
+
+            self.level = 2
+            self.max_charges = 10
+
+            self.radius = 5
+            self.pull_strength = 1
+
+            self.range = 9
+            self.requires_los = False
+
+            self.duration = 5
+
+            self.upgrades['radius'] = (3, 3)
+            self.upgrades['pull_strength'] = (1, 2, "Pull Distance")
+            self.upgrades['duration'] = (10, 2)
+            self.upgrades['universal'] = (1, 3, "Universal Magnetism", "Magnetize can target non [metallic] units")
+
     if cls is MeltSpell:
 
         def on_init(self):
@@ -3520,7 +3542,7 @@ def modify_class(cls):
             self.upgrades['minion_damage'] = (9, 3)
             self.upgrades['orb_walk'] = (1, 3, "Void Walk", "Targeting an existing Void Orb with another detonates it, dealing its damage and melting walls in a radius equal to twice the orb's radius.\nYou are then teleported to that location if possible.")
             self.add_upgrade(VoidOrbRedGiant())
-            self.upgrades["dark"] = (1, 5, "Black Hole", "Each turn, Void Orb pulls all nearby enemies [1_tile:range] toward itself before dealing damage; the pull range is twice the orb's radius.\nVoid Orb also deals [dark] damage.")
+            self.upgrades["dark"] = (1, 5, "Black Hole", "Each turn, Void Orb pulls all nearby enemies [1_tile:range] toward itself before dealing damage; the pull range is three times the orb's radius.\nVoid Orb also deals [dark] damage.")
 
         def on_orb_walk(self, existing):
             # Burst
@@ -3567,7 +3589,7 @@ def modify_class(cls):
                 radius += 1
             if self.get_stat("dark"):
                 dtypes.append(Tags.Dark)
-                units = [unit for unit in level.get_units_in_ball(next_point, radius*2, diag=True) if are_hostile(self.caster, unit)]
+                units = [unit for unit in level.get_units_in_ball(next_point, radius*3, diag=True) if are_hostile(self.caster, unit)]
                 random.shuffle(units)
                 for unit in units:
                     pull(unit, next_point, 1)
