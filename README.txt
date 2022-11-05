@@ -394,6 +394,10 @@ Knightly Oath:
 - Promotion (6 SP): Each non-champion knight will be promoted to a champion after 20 turns.
 - Undying Oath (7 SP): Knightly Oath can now save one knight from death per turn for free, without dealing damage to the caster. This is refreshed before the beginning of each of your turns.
 
+Meteor Shower:
+- Max charges increased to 2.
+- Max Channel upgrade folded into the base spell.
+
 Multicast:
 - Now only copies the first sorcery spell you cast per turn, to make it interact more intuitively with other spell-copying mechanics and less abusive with a few things in my other mods. Resets before the beginning of your turn.
 - Adaptive Copy (6 SP): Level 5 and 4 spells are now copied 1 additional time. Level 3 and 2 spells are now copied 2 additional times. Level 1 spells are now copied 3 additional times.
