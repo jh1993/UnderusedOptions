@@ -8,7 +8,7 @@ from RareMonsters import *
 import mods.BugsAndScams.Bugfixes
 import mods.BugsAndScams.NoMoreScams
 from mods.BugsAndScams.NoMoreScams import is_immune, FloatingEyeBuff
-from mods.BugsAndScams.Bugfixes import RemoveBuffOnPreAdvance
+from mods.BugsAndScams.BugsAndScams import RemoveBuffOnPreAdvance
 
 import sys, math, random
 
