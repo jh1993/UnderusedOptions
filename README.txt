@@ -57,6 +57,7 @@ Freeze:
 
 Healing Light:
 - Cleansing Light (3 SP): Healing Light will now remove all debuffs from affected allies before healing them.
+- Now considers berserked allies as friendly, due to the above.
 
 Heavenly Blast:
 - Spirit Bind cost reduced to 4 SP, and now inflicts a Spirit Binding debuff that raises the target as a spirit on death, which is removed at the beginning of your next turn.
@@ -279,10 +280,11 @@ Orb Control:
 - Orb Duplication (5 SP): When casting this spell, every allied orb will instead continue moving in its original path, but cast a copy of its corresponding orb spell targeting the target of this spell. There is a chance to consume a charge of the corresponding orb spell, equal to the pre-existing orb's remaining duration divided by its maximum duration. The spell will not be copied if it tries but cannot consume a charge.
 
 Permanence:
-- Retroactive (3 SP): When you cast this spell, all friendly units' buffs and enemies' debuffs are extended by 5 turns. Each buff or debuff can only be extended this way once.
+- Retroactive (3 SP): When you cast this spell, all friendly units' buffs and enemies' debuffs are extended by 5 turns. Cannot extend the duration of stun, freeze, petrify, glassify, and similar incapacitating effects on units that can gain clarity.
+- Max Charges (3 SP): +4 max charges.
 
 Purity:
-- Pure Morale (4 SP): All buffs received while Purity is active will have their durations increased by 50%, rounded down.
+- Pure Aura (2 SP): Each turn, remove a random debuff from a random ally.
 
 Pyrostatic Pulse:
 - Damage is halved but now deals both fire and lightning damage.

@@ -1734,7 +1734,7 @@ def modify_class(cls):
             cleanse = self.get_stat("cleanse")
 
             for unit in self.caster.level.get_units_in_los(self.caster):
-                if not self.caster.level.are_hostile(self.caster, unit) and unit != self.caster:
+                if unit.team == TEAM_PLAYER and unit is not self.caster:
 
                     # Dont heal the player if a gold drake is casting
                     if unit.is_player_controlled:
@@ -4064,17 +4064,45 @@ def modify_class(cls):
             self.level = 4
             self.range = 0
             self.upgrades['duration'] = (20, 3)
-            self.upgrades["retroactive"] = (1, 3, "Retroactive", "When you cast this spell, all friendly units' buffs and enemies' debuffs are extended by [5_turns:duration].\nEach buff or debuff can only be extended this way once.")
+            self.upgrades["retroactive"] = (1, 3, "Retroactive", "When you cast this spell, all friendly units' remaining lifetimes and buffs and enemies' debuffs are extended by [5_turns:duration].\nCannot extend the duration of [stun], [freeze], [petrify], [glassify], and similar incapacitating effects on units that can gain clarity.")
+            self.upgrades["max_charges"] = (4, 3)
 
         def cast_instant(self, x, y):
             self.caster.apply_buff(PermenanceBuff(), self.get_stat('duration'))
             if self.get_stat("retroactive"):
                 for unit in list(self.caster.level.units):
                     buff_type = BUFF_TYPE_CURSE if are_hostile(self.caster, unit) else BUFF_TYPE_BLESS
+                    if buff_type == BUFF_TYPE_BLESS and unit.turns_to_death is not None:
+                        unit.turns_to_death += 5
                     for buff in unit.buffs:
-                        if buff.buff_type == buff_type and buff.turns_left and not hasattr(buff, "permanence_extended"):
+                        if isinstance(buff, Stun) and unit.gets_clarity:
+                            continue
+                        if buff.buff_type == buff_type and buff.turns_left:
                             buff.turns_left += 5
-                            buff.permanence_extended = True
+
+    if cls is PurityBuff:
+
+        def on_init(self):
+            self.name = "Purity"
+            self.description = "Immune to debuffs."
+            self.color = Tags.Holy.color
+            self.asset = ['status', 'purity']
+            self.stack_type = STACK_REPLACE
+            self.aura = False
+        
+        def on_advance(self):
+            if not self.aura:
+                return
+            units = [unit for unit in self.owner.level.units if unit.team == TEAM_PLAYER]
+            if not units:
+                return
+            random.shuffle(units)
+            for unit in list(units):
+                debuffs = [buff for buff in unit.buffs if buff.buff_type == BUFF_TYPE_CURSE]
+                if not debuffs:
+                    continue
+                unit.remove_buff(random.choice(debuffs))
+                return
 
     if cls is PuritySpell:
 
@@ -4087,14 +4115,10 @@ def modify_class(cls):
 
             self.upgrades['duration'] = (6, 3)
             self.upgrades['max_charges'] = (4, 3)
-            self.upgrades["morale"] = (1, 5, "Pure Morale", "All buffs received while Purity is active will have their durations increased by 50%, rounded down.")
+            self.upgrades["aura"] = (1, 2, "Pure Aura", "Each turn, remove a random debuff from a random ally.")
             self.range = 0
 
             self.tags = [Tags.Holy, Tags.Enchantment]
-
-        def extend_buff(evt):
-            if evt.buff.buff_type == BUFF_TYPE_BLESS:
-                evt.buff.turns_left = math.floor(evt.buff.turns_left*1.5)
 
         def cast_instant(self, x, y):
             buffs = list(self.caster.buffs)
@@ -4102,8 +4126,8 @@ def modify_class(cls):
                 if b.buff_type == BUFF_TYPE_CURSE:
                     self.caster.remove_buff(b)
             buff = PurityBuff()
-            if self.get_stat("morale"):
-                buff.owner_triggers[EventOnBuffApply] = extend_buff
+            if self.get_stat("aura"):
+                buff.aura = True
             self.caster.apply_buff(buff, self.get_stat('duration'))
 
     if cls is PyrostaticPulse:
@@ -5974,5 +5998,5 @@ def modify_class(cls):
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp]:
+for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp]:
     modify_class(cls)
