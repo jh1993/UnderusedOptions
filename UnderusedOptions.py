@@ -3203,7 +3203,7 @@ def modify_class(cls):
             self.max_charges = 5
 
             self.upgrades['duration'] = (10, 2)
-            self.upgrades["false"] = (1, 4, "False Pain", "Damage resisted or blocked by [SH:shields] is now also counted by Pain Mirror.")
+            self.upgrades["false"] = (1, 6, "False Pain", "Pain Mirror now counts incoming damage twice. The first time counts the raw incoming damage before resistances and [SH:shields], and the second time counts actual damage taken.\nThe first count will trigger even if all of the incoming damage is resisted or blocked.")
             self.upgrades["masochism"] = (1, 3, "Masochism", "Damage inflicted by allies will cause Pain Mirror to deal double damage.")
             self.upgrades["holy"] = (1, 6, "Holy Martyr", "[Dark] damage dealt by Pain Mirror that is resisted or blocked by [SH:shields] will be redealt as [holy] damage.")
 
@@ -3221,31 +3221,18 @@ def modify_class(cls):
             self.holy = 0
             if isinstance(self.source, PainMirrorSpell):
                 if self.source.get_stat("false"):
-                    self.owner_triggers[EventOnPreDamaged] = lambda evt: on_pre_damaged(self, evt)
-                else:
-                    self.owner_triggers[EventOnDamaged] = self.on_damage
+                    self.owner_triggers[EventOnPreDamaged] = self.on_damage
                 self.masochism = self.source.get_stat("masochism")
                 self.holy = self.source.get_stat("holy")
-            else:
-                self.owner_triggers[EventOnDamaged] = self.on_damage
+            self.owner_triggers[EventOnDamaged] = self.on_damage
             self.color = Tags.Dark.color
-
-        def is_friendly_fire(self, source):
-            return hasattr(source, "owner") and not are_hostile(source.owner, self.owner)
+            self.stack_type = STACK_REPLACE
 
         def on_damage(self, event):
             damage = event.damage
-            if self.masochism and is_friendly_fire(self, event.source):
-                damage *= 2
-            self.owner.level.queue_spell(self.reflect(damage))
-
-        def on_pre_damaged(self, evt):
-            damage = evt.damage
             if damage <= 0:
                 return
-            if self.owner.resists[evt.damage_type] < 0:
-                damage *= math.ceil(1 - self.owner.resists[evt.damage_type]/100)
-            if self.masochism and is_friendly_fire(self, evt.source):
+            if self.masochism and event.source.owner and not are_hostile(event.source.owner, self.owner):
                 damage *= 2
             self.owner.level.queue_spell(self.reflect(damage))
 

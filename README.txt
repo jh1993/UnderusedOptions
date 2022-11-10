@@ -188,7 +188,7 @@ Mystic Vision:
 
 Pain Mirror:
 - Max Charges upgrade removed.
-- False Pain (4 SP): Damage resisted or blocked by [SH:shields] is now also counted by Pain Mirror.
+- False Pain (6 SP): Pain Mirror now counts incoming damage twice. The first time counts the raw incoming damage before resistances and SH, and the second time counts actual damage taken. The first count will trigger even if all of the incoming damage is resisted or blocked.
 - Masochism (3 SP): Damage inflicted by allies will cause Pain Mirror to deal double damage.
 - Holy Martyr (6 SP): Dark damage dealt by Pain Mirror that is resisted or blocked by SH will be redealt as holy damage.
 
