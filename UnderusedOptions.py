@@ -604,10 +604,11 @@ class SightOfBloodBuff(Buff):
             self.spell.summon(unit, target=self.owner, radius=5, sort_dist=False)
 
             if self.feeding_frenzy:
+                duration = self.spell.get_stat("duration", base=10)
                 for unit in [unit for unit in self.owner.level.get_units_in_los(self.owner) if not are_hostile(self.spell.caster, unit)]:
                     existing = unit.get_buff(BloodrageBuff)
                     if existing and random.random() >= self.owner.cur_hp/self.owner.max_hp:
-                        unit.apply_buff(BloodrageBuff(existing.bonus), 10)
+                        unit.apply_buff(BloodrageBuff(existing.bonus), duration)
 
     def on_death(self, evt):
         targets = [unit for unit in self.owner.level.get_units_in_los(self.owner) if are_hostile(self.spell.caster, unit)]
@@ -4244,7 +4245,7 @@ def modify_class(cls):
             self.upgrades['duration'] = (15, 3)
             self.upgrades["shot_cooldown"] = (-1, 4)
             self.upgrades["bloodlust_bonus"] = (1, 3)
-            self.upgrades["feeding_frenzy"] = (1, 2, "Feeding Frenzy", "On each activation, each allied unit in line of sight of the target that has [bloodlust:demon] has a chance to gain another stack of [bloodlust:demon].\nThe chance is equal to the percentage of the target's missing HP.")
+            self.upgrades["feeding_frenzy"] = (1, 2, "Feeding Frenzy", "On each activation, each allied unit in line of sight of the target that has [bloodlust:demon] has a chance to gain another stack of [bloodlust:demon] for [10_turns:duration]; this duration benefits from bonuses to [duration].\nThe chance is equal to the percentage of the target's missing HP.")
             self.upgrades["unending"] = (1, 5, "Unending Bloodlust", "When the target dies, the curse is applied to another random enemy in line of sight for its remaining duration.")
             
             self.tags = [Tags.Nature, Tags.Enchantment, Tags.Conjuration, Tags.Eye]
