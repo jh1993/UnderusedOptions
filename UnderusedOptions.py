@@ -5634,7 +5634,7 @@ def modify_class(cls):
             self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
 
         def get_description(self):
-            return "Whenever you cast a [fire] spell at a tile other than your own, the unit on that tile loses [100_fire:fire] resistance, which is removed at the beginning of your next turn.\nThen deal [%d_fire:fire] damage to the targeted tile." % self.get_stat('damage')
+            return "Whenever you cast a [fire] spell, if there is an enemy on the target tile, it loses [100_fire:fire] resistance, which is removed at the beginning of your next turn.\nThen deal [%d_fire:fire] damage to that enemy." % self.get_stat('damage')
 
         def on_pre_advance(self):
             for unit in list(self.owner.level.units):
@@ -5645,13 +5645,11 @@ def modify_class(cls):
         def on_spell_cast(self, evt):
             if Tags.Fire not in evt.spell.tags:
                 return
-            # dont white flame yourself with eye of fire or whatever
-            if evt.x == self.owner.x and evt.y == self.owner.y:
-                return
             unit = self.owner.level.get_unit_at(evt.x, evt.y)
-            if unit:
-                unit.apply_buff(WhiteFlameDebuff())
-            self.owner.level.deal_damage(evt.x, evt.y, self.get_stat('damage'), Tags.Fire, self)
+            if not unit or not are_hostile(unit, self.owner):
+                return
+            unit.apply_buff(WhiteFlameDebuff())
+            unit.deal_damage(self.get_stat('damage'), Tags.Fire, self)
 
     if cls is AcidFumes:
 

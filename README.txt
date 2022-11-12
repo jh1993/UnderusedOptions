@@ -435,7 +435,7 @@ Unholy Alliance:
 - SP cost increased to 5.
 
 White Flame:
-- Is now level 5, and reduces the target's fire resistance by 100% until the beginning of your next turn.
+- Is now level 5, only affects enemies, and reduces the target's fire resistance by 100% until the beginning of your next turn.
 
 Acid Fumes:
 - Now prioritizes the closest unacidified enemy.
