@@ -5230,29 +5230,37 @@ def modify_class(cls):
         def on_init(self):
             self.name = "Searing Orb"
 
-            self.minion_damage = 3
             self.minion_health = 8
             self.max_charges = 3
             self.level = 6
             self.range = 9
-
-            self.radius = 3
 
             self.tags = [Tags.Fire, Tags.Orb, Tags.Conjuration]
 
             self.upgrades['range'] = (5, 2)
             self.upgrades['melt_walls'] = (1, 4, "Matter Melting", "Searing Orb can melt and be cast through walls")
             self.upgrades["safety"] = (1, 2, "Safety", "Searing Orb no longer damages your minions.")
+            self.upgrades["holy"] = (3, 6, "Solar Orb", "Searing Orb also deals [holy] damage.")
+
+        def get_description(self):
+            return ("Summon a searing orb next to the caster.\n"
+                    "The orb deals [3_fire:fire] damage each turn to all units in line of sight. This damage is fixed, and cannot be increased using shrines, skills, or buffs.\n"
+                    "The caster is immune to this damage.\n"
+                    "The orb has no will of its own, each turn it will float one tile towards the target.\n"
+                    "The orb can be destroyed by ice damage.").format(**self.fmt_dict())
 
         def on_orb_move(self, orb, next_point):
-            damage = self.get_stat('minion_damage')
+            dtypes = [Tags.Fire]
+            if self.get_stat("holy"):
+                dtypes.append(Tags.Holy)
             safety = self.get_stat("safety")
             for u in orb.level.get_units_in_los(next_point):
                 if u is self.caster or u is orb:
                     continue
                 if safety and not are_hostile(u, self.caster):
                     continue
-                u.deal_damage(damage, Tags.Fire, self)
+                for dtype in dtypes:
+                    u.deal_damage(3, dtype, self)
 
     if cls is SummonKnights:
 
