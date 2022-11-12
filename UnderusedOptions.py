@@ -4250,7 +4250,7 @@ def modify_class(cls):
             self.upgrades['duration'] = (15, 3)
             self.upgrades["shot_cooldown"] = (-1, 4)
             self.upgrades["bloodlust_bonus"] = (1, 3)
-            self.upgrades["feeding_frenzy"] = (1, 2, "Feeding Frenzy", "On each activation, each allied unit in line of sight of the target that has [bloodlust:demon] has a chance to gain another stack of [bloodlust:demon] for [10_turns:duration]; this duration benefits from bonuses to [duration].\nThe chance is equal to the percentage of the target's missing HP.")
+            self.upgrades["feeding_frenzy"] = (1, 2, "Feeding Frenzy", "On each activation, each allied unit in line of sight of the target that has [bloodlust:demon] has a chance to gain another stack of [bloodlust:demon].\nThe chance is equal to the percentage of the target's missing HP.\nThe strength of this bloodlust stack is equal to the strength of the strongest bloodlust stack on the unit, and the duration is equal to 10 plus this spell's [duration] bonuses.")
             self.upgrades["unending"] = (1, 5, "Unending Bloodlust", "When the target dies, the curse is applied to another random enemy in line of sight for its remaining duration.")
             
             self.tags = [Tags.Nature, Tags.Enchantment, Tags.Conjuration, Tags.Eye]
