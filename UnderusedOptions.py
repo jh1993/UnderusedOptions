@@ -581,6 +581,7 @@ class SightOfBloodBuff(Buff):
         self.feeding_frenzy = self.spell.get_stat("feeding_frenzy")
         if self.spell.get_stat("unending"):
             self.owner_triggers[EventOnDeath] = self.on_death
+        self.stack_type = STACK_REPLACE
 
     def on_advance(self):
         self.cooldown -= 1
@@ -592,9 +593,10 @@ class SightOfBloodBuff(Buff):
             unit.asset_name = "blood_hawk"
             unit.max_hp = self.minion_health
             unit.flying = True
-            claw = SimpleMeleeAttack(damage=self.minion_damage, onhit=bloodrage(self.bloodlust_bonus))
+            duration = self.spell.get_stat("duration", base=10)
+            claw = SimpleMeleeAttack(damage=self.minion_damage, onhit=lambda caster, target: caster.apply_buff(BloodrageBuff(self.bloodlust_bonus), duration))
             claw.name = "Frenzy Talons"
-            claw.description = "Gain +%i damage for 10 turns with each attack" % self.bloodlust_bonus
+            claw.description = "Gain +%i damage for %i turns with each attack" % (self.bloodlust_bonus, duration)
             dive = LeapAttack(damage=self.minion_damage, range=self.minion_range)
             dive.cool_down = 3
             dive.name = "Dive"
@@ -606,9 +608,12 @@ class SightOfBloodBuff(Buff):
             if self.feeding_frenzy:
                 duration = self.spell.get_stat("duration", base=10)
                 for unit in [unit for unit in self.owner.level.get_units_in_los(self.owner) if not are_hostile(self.spell.caster, unit)]:
-                    existing = unit.get_buff(BloodrageBuff)
-                    if existing and random.random() >= self.owner.cur_hp/self.owner.max_hp:
-                        unit.apply_buff(BloodrageBuff(existing.bonus), duration)
+                    stacks = [buff.bonus for buff in unit.buffs if isinstance(buff, BloodrageBuff)]
+                    if not stacks:
+                        continue
+                    max_bloodlust = max(stacks)
+                    if max_bloodlust > 0 and random.random() >= self.owner.cur_hp/self.owner.max_hp:
+                        unit.apply_buff(BloodrageBuff(max_bloodlust), duration)
 
     def on_death(self, evt):
         targets = [unit for unit in self.owner.level.get_units_in_los(self.owner) if are_hostile(self.spell.caster, unit)]
@@ -4264,10 +4269,15 @@ def modify_class(cls):
         def can_cast(self, x, y):
             return Spell.can_cast(self, x, y)
 
+        def fmt_dict(self):
+            stats = Spell.fmt_dict(self)
+            stats["bloodlust_duration"] = self.get_stat("duration", base=10)
+            return stats
+
         def get_description(self):
             return ("Curse a target in line of sight to attract bloodthirsty predators for [{duration}_turns:duration].\n"
                     "Every [{shot_cooldown}_turns:shot_cooldown], summon a blood vulture near the target, which is a [nature] [demon] minion with [{minion_health}_HP:minion_health] and attacks that deal [{minion_damage}_physical:physical] damage.\n"
-                    "The blood vulture's melee attack grants itself [10_turns:duration] of [bloodlust:demon] on hit, which increases all of its damage by [{bloodlust_bonus}:minion_damage]. It also has a dive attack with [{minion_range}_range:minion_range] and [3_turns:cooldown] cooldown.\n"
+                    "The blood vulture's melee attack grants itself [{bloodlust_duration}_turns:duration] of [bloodlust:demon] on hit, which increases all of its damage by [{bloodlust_bonus}:minion_damage]. It also has a dive attack with [{minion_range}_range:minion_range] and [3_turns:cooldown] cooldown.\n"
                     "This curse is not considered an [eye] buff, but its activation interval uses the [shot_cooldown:shot_cooldown] stat of [eye] spells.").format(**self.fmt_dict())
 
     if cls is ShieldSiphon:
