@@ -2911,12 +2911,10 @@ def modify_class(cls):
                 bear.spells[0].onhit = lambda caster, target: caster.apply_buff(BloodrageBuff(3), caster.get_stat(self.get_stat("duration", base=10), bear.spells[0], "duration"))
                 bear.spells[0].name = "Frenzy Bite"
                 bear.spells[0].description = ""
-                bear.spells[0].get_description = lambda: "Gain +3 damage for %i turns with each attack" % bear.get_stat(self.get_stat("duration", base=10), bear.spells[0], "duration")
+                bear.spells[0].get_description = lambda: "Gain +3 damage for %i turns with each attack.%s" % (bear.get_stat(self.get_stat("duration", base=10), bear.spells[0], "duration"), (" Attacks %i times." % bear.spells[0].attacks) if bear.spells[0].attacks > 1 else "")
                 apply_minion_bonuses(self, bear)
             
             bear.spells[0].attacks = self.get_stat('minion_attacks')
-            if self.get_stat('minion_attacks') > 1:
-                bear.spells[0].description += "\nAttacks %d times." % self.get_stat('minion_attacks')
             
             if self.get_stat("polar"):
                 bear.spells.insert(0, PolarBearFreeze(self))
