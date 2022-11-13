@@ -622,13 +622,14 @@ class SightOfBloodBuff(Buff):
             unit.max_hp = self.minion_health
             unit.flying = True
             duration = self.spell.get_stat("duration", base=10)
-            claw = SimpleMeleeAttack(damage=self.minion_damage, onhit=lambda caster, target: caster.apply_buff(BloodrageBuff(self.bloodrage_bonus), duration))
+            claw = SimpleMeleeAttack(damage=self.minion_damage, onhit=lambda caster, target: caster.apply_buff(BloodrageBuff(self.bloodrage_bonus), caster.get_stat(self.spell.get_stat("duration", base=10), claw, "duration")))
+            claw.description = ""
+            claw.get_description = lambda: "Gain %i damage for %i turns with each attack" % (self.bloodrage_bonus, unit.get_stat(self.spell.get_stat("duration", base=10), claw, "duration"))
             claw.name = "Frenzy Talons"
-            claw.description = "Gain +%i damage for %i turns with each attack" % (self.bloodrage_bonus, duration)
             dive = LeapAttack(damage=self.minion_damage, range=self.minion_range)
             dive.cool_down = 3
             dive.name = "Dive"
-            unit.spells = [dive, claw]
+            unit.spells = [claw, dive]
             unit.resists[Tags.Dark] = 75
             unit.tags = [Tags.Nature, Tags.Demon]
             self.spell.summon(unit, target=self.owner, radius=5, sort_dist=False)
@@ -1329,10 +1330,10 @@ def modify_class(cls):
                 wolf.name = "Blood Hound"
                 wolf.asset_name = "blood_wolf"
 
-                duration = self.get_stat("duration", base=10)
-                wolf.spells[0].onhit = lambda caster, target: caster.apply_buff(BloodrageBuff(2), duration)
+                wolf.spells[0].onhit = lambda caster, target: caster.apply_buff(BloodrageBuff(2), caster.get_stat(self.get_stat("duration", base=10), wolf.spells[0], "duration"))
                 wolf.spells[0].name = "Frenzy Bite"
-                wolf.spells[0].description = "Gain +2 damage for %i turns with each attack" % duration
+                wolf.spells[0].description = ""
+                wolf.spells[0].get_description = lambda: "Gain +2 damage for %i turns with each attack" % wolf.get_stat(self.get_stat("duration", base=10), wolf.spells[0], "duration")
                 
                 wolf.tags = [Tags.Demon, Tags.Nature]
                 wolf.resists[Tags.Dark] = 75
@@ -2907,9 +2908,10 @@ def modify_class(cls):
 
             elif self.get_stat('blood'):
                 bear = BloodBear()
-                duration = self.get_stat("duration", base=10)
-                bear.spells[0].onhit = lambda caster, target: caster.apply_buff(BloodrageBuff(3), duration)
-                bear.spells[0].description = "Gain +3 damage for %i turns with each attack" % duration
+                bear.spells[0].onhit = lambda caster, target: caster.apply_buff(BloodrageBuff(3), caster.get_stat(self.get_stat("duration", base=10), bear.spells[0], "duration"))
+                bear.spells[0].name = "Frenzy Bite"
+                bear.spells[0].description = ""
+                bear.spells[0].get_description = lambda: "Gain +3 damage for %i turns with each attack" % bear.get_stat(self.get_stat("duration", base=10), bear.spells[0], "duration")
                 apply_minion_bonuses(self, bear)
             
             bear.spells[0].attacks = self.get_stat('minion_attacks')
