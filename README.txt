@@ -157,7 +157,7 @@ Giant Bear:
 - Max Charges upgrade removed and its benefits folded into the base spell.
 - Armored Bear upgrade removed.
 - Polar Bear (5 SP): Summons a polar bear instead of a giant bear. Polar bears are resistant to ice damage, can freeze units around itself, and gains regeneration and an ice aura while frozen. For every 100 ice resistance the polar bear has above 100, the self-healing and ice aura activate once per turn. An excess of less than 100 instead has a chance to activate these effects. Not compatible with other bear species upgrades.
-- Roar (4 SP): The bear gains a roar with a cooldown of 3 turns that stuns enemies in a 7 range cone for 3 turns. The venom bear's roar will also poison enemies for 5 turns and give regeneration to allies for the same duration. The blood bear's roar will instead berserk enemies and give allies a stack of bloodlust for 10 turns. The polar bear's roar will instead freeze enemies and heal allies for an amount equal to its regeneration when frozen.
+- Roar (4 SP): The bear gains a roar with a cooldown of 3 turns that stuns enemies in a 7 range cone for 3 turns. The venom bear's roar will also poison enemies for 5 turns and give regeneration to allies for the same duration. The blood bear's roar will instead berserk enemies and give allies a stack of bloodrage for 10 turns. The polar bear's roar will instead freeze enemies and heal allies for an amount equal to its regeneration when frozen.
 
 Holy Fire:
 - Damage is halved but now deals both fire and holy damage.
@@ -302,10 +302,10 @@ Siege Golems:
 Sight of Blood:
 - Completely overhauled, because the original is thematically redundant with Eye of Rage while being too situational. Is now also an eye and conjuration spell. Every 3 turns, summon a blood vulture (same stats as thunderbird) near the target. Uses shot cooldown, but is not an eye buff. Lasts 15 turns.
 - Shot Cooldown (4 SP): -1 shot cooldown.
-- Bloodlust Bonus (3 SP): +1 bloodlust bonus.
-- Feeding Frenzy (2 SP): On each activation, each allied unit in line of sight of the target that has bloodlust has a chance to gain another stack of bloodlust. The chance is equal to the percentage of the target's missing HP. The strength of this bloodlust stack is equal to the strength of the strongest bloodlust stack on the unit, and the duration is equal to 10 plus this spell's duration bonuses.
+- Bloodrage Bonus (3 SP): +1 bloodrage bonus.
+- Feeding Frenzy (2 SP): On each activation, each allied unit in line of sight of the target that has bloodrage has a chance to gain another stack of bloodrage. The chance is equal to the percentage of the target's missing HP. The strength of this bloodrage stack is equal to the strength of the strongest bloodrage stack on the unit, and the duration is equal to 10 plus this spell's duration bonuses.
 - Duration (3 SP): +15 duration.
-- Unending Bloodlust (5 SP): When the target dies, the curse is applied to another random enemy in line of sight for its remaining duration.
+- Unending Bloodrage (5 SP): When the target dies, the curse is applied to another random enemy in line of sight for its remaining duration.
 
 Siphon Shields:
 - Shield Burn upgrade cost increased to 4 SP, but it now makes a separate hit for each SH siphoned, meaning it can remove up to twice the SH. Damage of each hit also benefits from damage bonuses.

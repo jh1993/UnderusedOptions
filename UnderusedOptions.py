@@ -232,22 +232,42 @@ class FrostfireHydraDragonMage(Upgrade):
                 return True
         return False
 
-class PolarBearFreeze(Hibernate):
+class PolarBearFreeze(Spell):
+
+    def __init__(self, spell):
+        Spell.__init__(self)
+        self.radius = spell.get_stat("radius", base=4)
+        self.duration = spell.get_stat("duration", base=4)
+
     def on_init(self):
-        Hibernate.on_init(self)
         self.name = "Mass Freeze"
-        self.description = "Freezes all units in a 4 tile radius except the wizard for 4 turns."
+        self.range = 0
+        self.cool_down = 9
+
+    def get_description(self):
+        return "Freezes all units in a %i tile radius except the wizard for %i turns." % (self.get_stat("radius"), self.get_stat("duration"))
+    
+    def can_cast(self, x, y):
+        if not Spell.can_cast(self, x, y):
+            return False
+        if self.caster.resists[Tags.Ice] < 100 and self.caster.cur_hp < self.caster.max_hp:
+            return True
+        if [unit for unit in self.caster.level.get_units_in_ball(self.caster, self.get_stat("radius")) if are_hostile(unit, self.caster) and unit.resists[Tags.Ice] < 100]:
+            return True
+        return False
+
     def cast_instant(self, x, y):
-        for unit in self.caster.level.get_units_in_ball(self.caster, 4):
+        duration = self.get_stat("duration")
+        for unit in self.caster.level.get_units_in_ball(self.caster, self.get_stat("radius")):
             if unit.is_player_controlled:
                 continue
-            unit.apply_buff(FrozenBuff(), 4)
+            unit.apply_buff(FrozenBuff(), duration)
 
 class PolarBearAura(DamageAuraBuff):
 
-    def __init__(self):
-        DamageAuraBuff.__init__(self, 1, Tags.Ice, 4)
-        self.heal = 10
+    def __init__(self, spell):
+        DamageAuraBuff.__init__(self, 1, Tags.Ice, spell.get_stat("radius", base=4))
+        self.heal = spell.get_stat("damage", base=10)
         self.description = "While frozen, heals for %i HP per turn and deals %i ice damage to all enemies in a %i radius." % (self.heal, self.damage, self.radius)
         self.name = "Icy Body"
         self.color = Tags.Ice.color
@@ -276,26 +296,34 @@ class GiantBearRoar(BreathWeapon):
     BEAR_TYPE_BLOOD = 2
     BEAR_TYPE_POLAR = 3
 
-    def __init__(self, bear_type=BEAR_TYPE_DEFAULT):
+    def __init__(self, spell, bear_type=BEAR_TYPE_DEFAULT):
         self.bear_type = bear_type
         BreathWeapon.__init__(self)
-    
-    def on_init(self):
+        self.range = spell.get_stat("minion_range", base=7)
+        self.heal = spell.get_stat("damage", base=10)
+        self.duration = spell.get_stat("duration", base=3)
         self.name = "Roar"
-        self.description = "Enemies are "
         if self.bear_type == GiantBearRoar.BEAR_TYPE_VENOM:
-            self.description += "stunned for 3 turns and poisoned for 5 turns.\nAllies regenerate 1 HP per turn for 5 turns."
             self.effect = Tags.Poison
         elif self.bear_type == GiantBearRoar.BEAR_TYPE_BLOOD:
-            self.description += "berserked for 3 turns.\nAllies gain bloodlust for 10 turns."
             self.effect = Tags.Dark
         elif self.bear_type == GiantBearRoar.BEAR_TYPE_POLAR:
-            self.description += "frozen for 3 turns.\nAllies are healed for 10 HP."
             self.effect = Tags.Ice
         else:
-            self.description += "stunned for 3 turns."
             self.effect = Tags.Physical
     
+    def get_description(self):
+        description = "Enemies are "
+        if self.bear_type == GiantBearRoar.BEAR_TYPE_VENOM:
+            description += "stunned for %i turns and poisoned for %i turns.\nAllies regenerate 1 HP per turn for %i turns." % (self.get_stat("duration"), self.get_stat("duration", base=self.duration + 2), self.get_stat("duration", base=self.duration + 2))
+        elif self.bear_type == GiantBearRoar.BEAR_TYPE_BLOOD:
+            description += "berserked for %i turns.\nAllies gain bloodrage for %i turns." % (self.get_stat("duration"), self.get_stat("duration", base=self.duration + 7))
+        elif self.bear_type == GiantBearRoar.BEAR_TYPE_POLAR:
+            description += "frozen for %i turns.\nAllies are healed for %i HP." % (self.get_stat("duration"), self.get_stat("damage", base=self.heal))
+        else:
+            description += "stunned for %i turns." % self.get_stat("duration")
+        return description
+
     def per_square_effect(self, x, y):
         self.caster.level.show_effect(x, y, self.effect, minor=True)
         unit = self.caster.level.get_unit_at(x, y)
@@ -303,23 +331,23 @@ class GiantBearRoar(BreathWeapon):
             return
         if self.bear_type == GiantBearRoar.BEAR_TYPE_VENOM:
             if are_hostile(unit, self.caster):
-                unit.apply_buff(Stun(), 3)
-                unit.apply_buff(Poison(), 5)
+                unit.apply_buff(Stun(), self.get_stat("duration"))
+                unit.apply_buff(Poison(), self.get_stat("duration", base=self.duration + 2))
             else:
-                unit.apply_buff(RegenBuff(1), 5)
+                unit.apply_buff(RegenBuff(1), self.get_stat("duration", base=self.duration + 2))
         elif self.bear_type == GiantBearRoar.BEAR_TYPE_BLOOD:
             if are_hostile(unit, self.caster):
-                unit.apply_buff(BerserkBuff(), 3)
+                unit.apply_buff(BerserkBuff(), self.get_stat("duration"))
             else:
-                unit.apply_buff(BloodrageBuff(3), 10)
+                unit.apply_buff(BloodrageBuff(3), self.get_stat("duration", base=self.duration + 7))
         elif self.bear_type == GiantBearRoar.BEAR_TYPE_POLAR:
             if are_hostile(unit, self.caster):
-                unit.apply_buff(FrozenBuff(), 3)
+                unit.apply_buff(FrozenBuff(), self.get_stat("duration"))
             else:
-                unit.deal_damage(-10, Tags.Heal, self)
+                unit.deal_damage(-self.get_stat("damage", base=self.heal), Tags.Heal, self)
         else:
             if are_hostile(unit, self.caster):
-                unit.apply_buff(Stun(), 3)
+                unit.apply_buff(Stun(), self.get_stat("duration"))
 
 class CursedBones(Upgrade):
 
@@ -577,7 +605,7 @@ class SightOfBloodBuff(Buff):
         self.minion_health = self.spell.get_stat("minion_health")
         self.minion_damage = self.spell.get_stat("minion_damage")
         self.minion_range = self.spell.get_stat("minion_range")
-        self.bloodlust_bonus = self.spell.get_stat("bloodlust_bonus")
+        self.bloodrage_bonus = self.spell.get_stat("bloodrage_bonus")
         self.feeding_frenzy = self.spell.get_stat("feeding_frenzy")
         if self.spell.get_stat("unending"):
             self.owner_triggers[EventOnDeath] = self.on_death
@@ -594,9 +622,9 @@ class SightOfBloodBuff(Buff):
             unit.max_hp = self.minion_health
             unit.flying = True
             duration = self.spell.get_stat("duration", base=10)
-            claw = SimpleMeleeAttack(damage=self.minion_damage, onhit=lambda caster, target: caster.apply_buff(BloodrageBuff(self.bloodlust_bonus), duration))
+            claw = SimpleMeleeAttack(damage=self.minion_damage, onhit=lambda caster, target: caster.apply_buff(BloodrageBuff(self.bloodrage_bonus), duration))
             claw.name = "Frenzy Talons"
-            claw.description = "Gain +%i damage for %i turns with each attack" % (self.bloodlust_bonus, duration)
+            claw.description = "Gain +%i damage for %i turns with each attack" % (self.bloodrage_bonus, duration)
             dive = LeapAttack(damage=self.minion_damage, range=self.minion_range)
             dive.cool_down = 3
             dive.name = "Dive"
@@ -611,9 +639,9 @@ class SightOfBloodBuff(Buff):
                     stacks = [buff.bonus for buff in unit.buffs if isinstance(buff, BloodrageBuff)]
                     if not stacks:
                         continue
-                    max_bloodlust = max(stacks)
-                    if max_bloodlust > 0 and random.random() >= self.owner.cur_hp/self.owner.max_hp:
-                        unit.apply_buff(BloodrageBuff(max_bloodlust), duration)
+                    max_bloodrage = max(stacks)
+                    if max_bloodrage > 0 and random.random() >= self.owner.cur_hp/self.owner.max_hp:
+                        unit.apply_buff(BloodrageBuff(max_bloodrage), duration)
 
     def on_death(self, evt):
         targets = [unit for unit in self.owner.level.get_units_in_los(self.owner) if are_hostile(self.spell.caster, unit)]
@@ -1301,9 +1329,10 @@ def modify_class(cls):
                 wolf.name = "Blood Hound"
                 wolf.asset_name = "blood_wolf"
 
-                wolf.spells[0].onhit = bloodrage(2)
+                duration = self.get_stat("duration", base=10)
+                wolf.spells[0].onhit = lambda caster, target: caster.apply_buff(BloodrageBuff(2), duration)
                 wolf.spells[0].name = "Frenzy Bite"
-                wolf.spells[0].description = "Gain +2 damage for 10 turns with each attack"
+                wolf.spells[0].description = "Gain +2 damage for %i turns with each attack" % duration
                 
                 wolf.tags = [Tags.Demon, Tags.Nature]
                 wolf.resists[Tags.Dark] = 75
@@ -2843,7 +2872,7 @@ def modify_class(cls):
             self.upgrades['venom'] = (1, 4, "Venom Bear", "Summons a venom bear instead of a giant bear.\nVenom Bears have a poison bite, and heal whenever an enemy takes poison damage.", "species")
             self.upgrades['blood'] = (1, 5, "Blood Bear", "Summons a blood bear instead of a giant bear.\nBlood bears are resistant to dark damage, and deal increasing damage with each attack.", "species")
             self.upgrades["polar"] = (1, 5, "Polar Bear", "Summons a polar bear instead of a giant bear.\nPolar bears are resistant to ice damage, can freeze units around itself, and gains regeneration and an ice aura while frozen.\nFor every [100_ice:ice] resistance the polar bear has above 100, the self-healing and ice aura activate once per turn. An excess of less than 100 instead has a chance to activate these effects.", "species")
-            self.upgrades["roar"] = (1, 4, "Roar", "The bear gains a roar with a cooldown of 3 turns that stuns enemies in a [7_range:range] cone for [3_turns:duration].\nThe venom bear's roar will also [poison] enemies for [5_turns:duration] and give regeneration to allies for the same duration.\nThe blood bear's roar will instead [berserk] enemies and give allies a stack of bloodlust for [10_turns:duration].\nThe polar bear's roar will instead [freeze] enemies and heal allies for an amount equal to its regeneration when frozen.")
+            self.upgrades["roar"] = (1, 4, "Roar", "The bear gains a roar with a cooldown of 3 turns that stuns enemies in a [7_range:range] cone for [3_turns:duration].\nThe venom bear's roar will also [poison] enemies for [5_turns:duration] and give regeneration to allies for the same duration.\nThe blood bear's roar will instead [berserk] enemies and give allies a stack of bloodrage for [10_turns:duration].\nThe polar bear's roar will instead [freeze] enemies and heal allies for an amount equal to its regeneration when frozen.")
 
             self.must_target_walkable = True
             self.must_target_empty = True
@@ -2863,7 +2892,7 @@ def modify_class(cls):
                 bear.asset_name = "giant_bear_venom"
                 bear.resists[Tags.Poison] = 100
                 bear.tags = [Tags.Living, Tags.Poison, Tags.Nature]
-                bite = SimpleMeleeAttack(damage=self.get_stat('minion_damage'), buff=Poison, buff_duration=5)
+                bite = SimpleMeleeAttack(damage=self.get_stat('minion_damage'), buff=Poison, buff_duration=self.get_stat("duration", base=5))
                 bite.name = "Poison Bite"
                 bear.spells = [bite]
                 bear.buffs = [VenomBeastHealing()]
@@ -2874,10 +2903,13 @@ def modify_class(cls):
                 bear.resists[Tags.Ice] = 50
                 bear.resists[Tags.Fire] = -50
                 bear.tags = [Tags.Ice, Tags.Living, Tags.Nature]
-                bear.buffs = [PolarBearAura()]
+                bear.buffs = [PolarBearAura(self)]
 
             elif self.get_stat('blood'):
                 bear = BloodBear()
+                duration = self.get_stat("duration", base=10)
+                bear.spells[0].onhit = lambda caster, target: caster.apply_buff(BloodrageBuff(3), duration)
+                bear.spells[0].description = "Gain +3 damage for %i turns with each attack" % duration
                 apply_minion_bonuses(self, bear)
             
             bear.spells[0].attacks = self.get_stat('minion_attacks')
@@ -2885,7 +2917,7 @@ def modify_class(cls):
                 bear.spells[0].description += "\nAttacks %d times." % self.get_stat('minion_attacks')
             
             if self.get_stat("polar"):
-                bear.spells.insert(0, PolarBearFreeze())
+                bear.spells.insert(0, PolarBearFreeze(self))
             
             if self.get_stat("roar"):
                 if self.get_stat("venom"):
@@ -2896,7 +2928,7 @@ def modify_class(cls):
                     bear_type = GiantBearRoar.BEAR_TYPE_POLAR
                 else:
                     bear_type = GiantBearRoar.BEAR_TYPE_DEFAULT
-                bear.spells.insert(0, GiantBearRoar(bear_type=bear_type))
+                bear.spells.insert(0, GiantBearRoar(self, bear_type=bear_type))
 
             self.summon(bear, Point(x, y))
             yield
@@ -4245,13 +4277,13 @@ def modify_class(cls):
             self.minion_health = 22
             self.minion_damage = 5
             self.minion_range = 5
-            self.bloodlust_bonus = 2
+            self.bloodrage_bonus = 2
 
             self.upgrades['duration'] = (15, 3)
             self.upgrades["shot_cooldown"] = (-1, 4)
-            self.upgrades["bloodlust_bonus"] = (1, 3)
-            self.upgrades["feeding_frenzy"] = (1, 2, "Feeding Frenzy", "On each activation, each allied unit in line of sight of the target that has [bloodlust:demon] has a chance to gain another stack of [bloodlust:demon].\nThe chance is equal to the percentage of the target's missing HP.\nThe strength of this bloodlust stack is equal to the strength of the strongest bloodlust stack on the unit, and the duration is equal to 10 plus this spell's [duration] bonuses.")
-            self.upgrades["unending"] = (1, 5, "Unending Bloodlust", "When the target dies, the curse is applied to another random enemy in line of sight for its remaining duration.")
+            self.upgrades["bloodrage_bonus"] = (1, 3)
+            self.upgrades["feeding_frenzy"] = (1, 2, "Feeding Frenzy", "On each activation, each allied unit in line of sight of the target that has [bloodrage:demon] has a chance to gain another stack of [bloodrage:demon].\nThe chance is equal to the percentage of the target's missing HP.\nThe strength of this bloodrage stack is equal to the strength of the strongest bloodrage stack on the unit, and the duration is equal to 10 plus this spell's [duration] bonuses.")
+            self.upgrades["unending"] = (1, 5, "Unending Bloodrage", "When the target dies, the curse is applied to another random enemy in line of sight for its remaining duration.")
             
             self.tags = [Tags.Nature, Tags.Enchantment, Tags.Conjuration, Tags.Eye]
             self.level = 4
@@ -4271,13 +4303,13 @@ def modify_class(cls):
 
         def fmt_dict(self):
             stats = Spell.fmt_dict(self)
-            stats["bloodlust_duration"] = self.get_stat("duration", base=10)
+            stats["bloodrage_duration"] = self.get_stat("duration", base=10)
             return stats
 
         def get_description(self):
             return ("Curse a target in line of sight to attract bloodthirsty predators for [{duration}_turns:duration].\n"
                     "Every [{shot_cooldown}_turns:shot_cooldown], summon a blood vulture near the target, which is a [nature] [demon] minion with [{minion_health}_HP:minion_health] and attacks that deal [{minion_damage}_physical:physical] damage.\n"
-                    "The blood vulture's melee attack grants itself [{bloodlust_duration}_turns:duration] of [bloodlust:demon] on hit, which increases all of its damage by [{bloodlust_bonus}:minion_damage]. It also has a dive attack with [{minion_range}_range:minion_range] and [3_turns:cooldown] cooldown.\n"
+                    "The blood vulture's melee attack grants itself [{bloodrage_duration}_turns:duration] of [bloodrage:demon] on hit, which increases all of its damage by [{bloodrage_bonus}:minion_damage]. It also has a dive attack with [{minion_range}_range:minion_range] and [3_turns:cooldown] cooldown.\n"
                     "This curse is not considered an [eye] buff, but its activation interval uses the [shot_cooldown:shot_cooldown] stat of [eye] spells.").format(**self.fmt_dict())
 
     if cls is ShieldSiphon:
