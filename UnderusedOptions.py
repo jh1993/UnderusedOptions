@@ -454,7 +454,7 @@ class ConductanceBuff(Buff):
     def on_pre_damaged(self, evt):
         if evt.damage <= 0 or evt.damage_type != Tags.Lightning or random.random() >= self.strikechance/100:
             return
-        targets = [unit for unit in self.owner.level.get_units_in_ball(self.owner, self.cascade_range) if are_hostile(self.spell.caster, unit) and self.owner.level.can_see(self.owner.x, self.owner.y, unit.x, unit.y)]
+        targets = [unit for unit in self.owner.level.get_units_in_ball(self.owner, self.cascade_range) if unit is not self.owner and are_hostile(self.spell.caster, unit) and self.owner.level.can_see(self.owner.x, self.owner.y, unit.x, unit.y)]
         if not targets:
             return
         self.owner.level.queue_spell(self.bolt(random.choice(targets), evt.damage))
