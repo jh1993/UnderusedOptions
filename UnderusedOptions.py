@@ -435,12 +435,6 @@ class ChimeraFamiliarSelfSufficiency(Upgrade):
         self.spell_bonuses[ChimeraFarmiliar]["minion_damage"] = 5
         self.spell_bonuses[ChimeraFarmiliar]["minion_range"] = 3
 
-class AntiConductanceBuff(Buff):
-    def __init__(self, applier):
-        Buff.__init__(self)
-        self.buff_type = BUFF_TYPE_PASSIVE
-        self.applier = applier
-
 class ConductanceBuff(Buff):
 	
     def __init__(self, spell):
@@ -452,29 +446,18 @@ class ConductanceBuff(Buff):
         self.color = Tags.Lightning.color
         self.resists[Tags.Lightning] = -self.spell.get_stat("resistance_debuff")
         self.cascade_range = self.spell.get_stat("cascade_range")
+        self.strikechance = self.spell.get_stat("strikechance")
         self.buff_type = BUFF_TYPE_CURSE
         self.asset = ['status', 'conductance']
         self.owner_triggers[EventOnPreDamaged] = self.on_pre_damaged
-    
-    def on_advance(self):
-        if not self.spell.caster.is_alive():
-            self.owner.remove_buff(self)
-            return
-        self.spell.caster.apply_buff(RemoveBuffOnPreAdvance(AntiConductanceBuff))
 
     def on_pre_damaged(self, evt):
-        if evt.damage_type != Tags.Lightning or not self.spell.caster.is_alive():
+        if evt.damage <= 0 or evt.damage_type != Tags.Lightning or random.random() >= self.strikechance/100:
             return
-        targets = [unit for unit in self.owner.level.get_units_in_ball(self.owner, self.cascade_range) if are_hostile(self.spell.caster, unit) and self.owner.level.can_see(self.owner.x, self.owner.y, unit.x, unit.y) and not unit.has_buff(AntiConductanceBuff)]
+        targets = [unit for unit in self.owner.level.get_units_in_ball(self.owner, self.cascade_range) if are_hostile(self.spell.caster, unit) and self.owner.level.can_see(self.owner.x, self.owner.y, unit.x, unit.y)]
         if not targets:
             return
-        conductive_targets = [target for target in targets if target.has_buff(curr_module.ConductanceBuff)]
-        if conductive_targets:
-            target = random.choice(conductive_targets)
-        else:
-            target = random.choice(targets)
-        target.apply_buff(AntiConductanceBuff(self.spell.caster))
-        self.owner.level.queue_spell(self.bolt(target, evt.damage))
+        self.owner.level.queue_spell(self.bolt(random.choice(targets), evt.damage))
     
     def bolt(self, target, damage):
         for point in Bolt(self.owner.level, self.owner, target):
@@ -3788,11 +3771,13 @@ def modify_class(cls):
             self.resistance_debuff = 50
             self.duration = 10
             self.cascade_range = 4
+            self.strikechance = 50
             self.can_target_empty = False
 
             self.upgrades['cascade_range'] = (4, 4)
             self.upgrades['resistance_debuff'] = (50, 2)
-            self.upgrades['max_charges'] = (6, 2)
+            self.upgrades['duration'] = (10, 3)
+            self.upgrades["strikechance"] = (25, 6, "Strikechance")
 
         def can_cast(self, x, y):
             return Spell.can_cast(self, x, y)
@@ -3804,8 +3789,7 @@ def modify_class(cls):
 
         def get_description(self):
             return ("The target enemy enemy loses [{resistance_debuff}_lightning:lightning] resistance.\n"
-                    "Whenever [lightning] damage is dealt to the target, deal the same amount of [lightning] damage, before counting resistances, to another random enemy in a [{cascade_range}_tile:cascade_range] burst. New targets with Conductance are prioritized, and a new target without Conductance is inflicted with Conductance for the same duration as conductance on the original target.\n"
-                    "A target can only be affected once per turn, refreshing before the start of your turn.\n"
+                    "Whenever [lightning] damage is dealt to a target with conductance, there is a [{strikechance}%:strikechance] chance to redeal the raw incoming damage, before counting resistances, to another random enemy in a [{cascade_range}_tile:cascade_range] burst, and apply conductance to that enemy for the same duration as the remaining duration of conductance on the original target.\n"
                     "Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
 
     if cls is ConjureMemories:
