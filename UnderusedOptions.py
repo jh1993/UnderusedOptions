@@ -387,7 +387,7 @@ class ChimeraFamiliarSpellConduit(Spell):
     def on_init(self):
         self.name = "Spell Conduit"
         self.range = 0
-        self.description = "Casts %i of the wizard's %s%s%s%s or chaos sorcery spells with the highest max charges that can be cast from this tile, consuming a charge from them and also counting as the wizard casting them." % (self.casts, "fire" if self.fire else "", ", " if self.fire and self.lightning else "", "lightning" if self.lightning else "", "," if self.fire and self.lightning else "")
+        self.description = "Copies %i of the wizard's %s%s%s%s or chaos sorcery spells with the highest max charges that can be cast from this tile, consuming a charge from them and counting as the wizard casting them." % (self.casts, "fire" if self.fire else "", ", " if self.fire and self.lightning else "", "lightning" if self.lightning else "", "," if self.fire and self.lightning else "")
     
     def copy_spell(self, spell):
         spell_copy = type(spell)()
@@ -422,7 +422,7 @@ class ChimeraFamiliarSpellConduit(Spell):
             if not target:
                 continue
             spell.cur_charges -= 1
-            self.caster.level.act_cast(self.caster, spell_copy, target.x, target.y, pay_costs=False)
+            self.caster.level.queue_spell(spell_copy.cast(target.x, target.y))
             self.caster.level.event_manager.raise_event(EventOnSpellCast(spell, self.owner.source.caster, target.x, target.y), self.owner.source.caster)
             casts_left -= 1
             if not casts_left:
@@ -3713,8 +3713,8 @@ def modify_class(cls):
 
             self.upgrades['minion_resists'] = (50, 2)
             self.upgrades["minion_health"] = (20, 3)
-            self.upgrades["casts"] = (1, 6, "Doublecast", "The chimera now casts 2 of your spells per turn.")
-            self.upgrades["morph"] = (1, 6, "Wild Metamorphosis", "The fire lion and lightning snake that the chimera transforms into upon reaching 0 HP can now also cast your spells.\nThe fire lion can only cast your [fire] and [chaos] spells.\nThe lightning snake can only cast your [lightning] and [chaos] spells.\nEach of them can only cast 1 spell per turn.")
+            self.upgrades["casts"] = (1, 6, "Doublecast", "The chimera now copies 2 of your spells per turn.")
+            self.upgrades["morph"] = (1, 6, "Wild Metamorphosis", "The fire lion and lightning snake that the chimera transforms into upon reaching 0 HP can now also copy your spells.\nThe fire lion can only copy your [fire] and [chaos] spells.\nThe lightning snake can only copy your [lightning] and [chaos] spells.\nEach of them can only copy 1 spell per turn.")
             self.add_upgrade(ChimeraFamiliarSelfSufficiency())
 
             self.casts = 1
@@ -3723,8 +3723,8 @@ def modify_class(cls):
 
         def get_description(self):
             return ("Summon a Chimera Familiar, which has [{minion_health}_HP:minion_health], and [{minion_resists}:damage] resistance to [fire], [lightning], and [physical].\n"
-                    "Each turn, the chimera will cast [{casts}:num_targets] of your [fire], [lightning], or [chaos] [sorcery] spells that can be cast from its tile, preferring spells with the highest [max_charges:max_charges], consuming 1 charge from the spells copied. This also counts as you casting the spell.\n"
-                    "If the chimera cannot cast your spells, it will use [fire] and [lightning] ranged attacks with [{minion_damage}:minion_damage] damage and [{minion_range}:minion_range] range.").format(**self.fmt_dict())
+                    "Each turn, the chimera will copy [{casts}:num_targets] of your [fire], [lightning], or [chaos] [sorcery] spells that can be cast from its tile, preferring spells with the highest [max_charges:max_charges], consuming 1 charge from the spells copied. This counts as you casting the spell.\n"
+                    "If the chimera cannot copy your spells, it will use [fire] and [lightning] ranged attacks with [{minion_damage}:minion_damage] damage and [{minion_range}:minion_range] range.").format(**self.fmt_dict())
 
         def get_lion(self):
             unit = RedLion()
@@ -3835,6 +3835,65 @@ def modify_class(cls):
             self.upgrades['damage'] = (4, 3)
             self.upgrades['max_charges'] = (6, 2)
             self.upgrades['vampiric'] = (1, 4, "Vampiric Gaze", "Each allied unit heals for 100% of the damage it causes")
+
+    if cls is DispersionFieldSpell:
+
+        def on_init(self):
+            self.name = "Dispersion Field"
+            self.level = 4
+            self.tags = [Tags.Enchantment, Tags.Arcane, Tags.Translocation]
+
+            self.max_charges = 3
+            self.duration = 7
+            self.num_targets = 3
+
+            self.range = 0
+            self.radius = 6
+
+            self.upgrades['num_targets'] = (2, 2)
+            self.upgrades['duration'] = (5, 1)
+            self.upgrades['max_charges'] = (5, 4)
+            self.upgrades["channel"] = (1, 3, "Channeling Guard", "If you are channeling a spell, Dispersion Field will [stun] each affected enemy for [1_turn:duration] before teleporting it away.\nThe [stun] duration is fixed and unaffected by bonuses.")
+
+    if cls is DispersionFieldBuff:
+
+        def on_init(self):
+            self.name = "Dispersion Field"
+            self.description = "Teleport nearby enemies away each turn"
+            self.color = Tags.Translocation.color
+            self.stack_type = STACK_REPLACE
+            self.radius = self.spell.get_stat("radius")
+            self.channel = self.spell.get_stat("channel")
+
+        def on_advance(self):
+            tped = 0
+            has_channel = self.owner.has_buff(ChannelBuff) if self.channel else False
+            units = self.owner.level.get_units_in_ball(self.owner, self.radius)
+            random.shuffle(units)
+            for u in units:
+                if not are_hostile(self.owner, u):
+                    continue
+                if has_channel:
+                    u.apply_buff(Stun(), 1)
+
+                possible_points = []
+                for i in range(len(self.owner.level.tiles)):
+                    for j in range(len(self.owner.level.tiles[i])):
+                        if self.owner.level.can_stand(i, j, u):
+                            possible_points.append(Point(i, j))
+
+                if not possible_points:
+                    continue
+
+                target_point = random.choice(possible_points)
+
+                self.owner.level.show_effect(u.x, u.y, Tags.Translocation)
+                self.owner.level.act_move(u, target_point.x, target_point.y, teleport=True)
+                self.owner.level.show_effect(u.x, u.y, Tags.Translocation)
+
+                tped += 1
+                if tped > self.spell.get_stat('num_targets'):
+                    break
 
     if cls is EssenceFlux:
 
@@ -6018,5 +6077,5 @@ def modify_class(cls):
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp]:
+for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp]:
     modify_class(cls)

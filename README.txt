@@ -231,13 +231,13 @@ Bone Barrage:
 - If you have Cursed Bones, the assembled bone shambler also deals dark damage with its melee.
 
 Chimera Familiar:
-- Overhauled. Instead of copying spells when you cast them, the chimera now copies an eligible spell every turn with its action, choosing the spell with the highest max charges and draining a charge of that spell. This also counts as you casting the spell.
+- Overhauled. Instead of copying spells when you cast them, the chimera now copies an eligible spell every turn with its action, choosing the spell with the highest max charges and draining a charge of that spell. This counts as you casting the spell.
 - Max Charges upgrade removed and folded into the base spell.
 - The chimera's base HP is increased to 26, the same as those of enemy chaos chimeras. Its default attacks have 5 damage and 5 range.
 - The chimera now starts with 50% physical resistance, and the Minion Resists upgrade affects physical resistance as well.
 - Dark/Nature/Arcane mimicry removed.
-- Doublecast (6 SP): The chimera now casts 2 of your spells per turn.
-- Wild Metamorphosis (6 SP): The fire lion and lightning snake that the chimera transforms into upon reaching 0 HP can now also cast your spells. The fire lion can only cast your fire and chaos spells. The lightning snake can only cast your lightning and chaos spells. Each of them can only cast 1 spell per turn.
+- Doublecast (6 SP): The chimera now copies 2 of your spells per turn.
+- Wild Metamorphosis (6 SP): The fire lion and lightning snake that the chimera transforms into upon reaching 0 HP can now also copy your spells. The fire lion can only copy your fire and chaos spells. The lightning snake can only copy your lightning and chaos spells. Each of them can only cast 1 spell per turn.
 - Minion Health (3 SP): +20 minion health.
 - Self Sufficiency (4 SP): +5 minion damage and +3 minion range.
 
@@ -258,6 +258,9 @@ Conjure Memories:
 
 Death Gaze:
 - Now also an eye spell.
+
+Dispersion Field:
+- Channeling Guard (3 SP): If you are channeling a spell, Dispersion Field will stun each affected enemy for 1 turn before teleporting it away. The stun duration is fixed and unaffected by bonuses.
 
 Essence Flux:
 - Level reduced to 3.
