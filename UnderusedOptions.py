@@ -8,7 +8,7 @@ from RareMonsters import *
 import mods.BugsAndScams.Bugfixes
 import mods.BugsAndScams.NoMoreScams
 from mods.BugsAndScams.NoMoreScams import is_immune, FloatingEyeBuff
-from mods.BugsAndScams.BugsAndScams import RemoveBuffOnPreAdvance
+from mods.BugsAndScams.BugsAndScams import RemoveBuffOnPreAdvance, MinionBuffAura
 
 import sys, math, random
 
@@ -892,45 +892,6 @@ class RecentMemory(Upgrade):
     def on_spell_cast(self, evt):
         if evt.spell in self.owner.spells and evt.spell is not self.prereq:
             self.recent_spell = evt.spell
-
-class MinionBuffAura(Buff):
-
-    def __init__(self, buff_class, qualifies, name, minion_desc):
-        Buff.__init__(self)
-        self.buff_class = buff_class
-        self.qualifies = qualifies
-        self.name = name
-        example = self.buff_class()
-        self.description = "All %s you summon gain %s for a duration equal to this buff's remaining duration." % (minion_desc, example.name)
-        self.color = example.color
-        self.global_triggers[EventOnUnitAdded] = self.on_unit_added
-        self.buff_dict = defaultdict(lambda: None)
-
-    def modify_unit(self, unit, duration):
-
-        if are_hostile(self.owner, unit) or (unit is self.owner):
-            return
-        if not self.qualifies(unit):
-            return
-        
-        if not unit.is_alive() and unit in self.buff_dict.keys():
-            self.buff_dict.pop(unit)
-            return
-
-        if unit not in self.buff_dict.keys() or not self.buff_dict[unit] or not self.buff_dict[unit].applied:
-            buff = self.buff_class()
-            unit.apply_buff(buff, duration)
-            self.buff_dict[unit] = buff
-
-    def on_unit_added(self, evt):
-        self.modify_unit(evt.unit, self.turns_left - 1)
-    
-    def on_advance(self):
-        for unit in list(self.buff_dict.keys()):
-            if not unit.is_alive():
-                self.buff_dict.pop(unit)
-        for unit in list(self.owner.level.units):
-            self.modify_unit(unit, self.turns_left)
 
 class InfernoEngineBuff(DamageAuraBuff):
 
