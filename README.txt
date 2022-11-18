@@ -101,7 +101,7 @@ Touch of Death:
 - All the damage type upgrades now do the same amount of damage as dark damage done, but are increased to 2 SP. Now also has a lightning damage upgrade.
 - Damage (4 SP): +200 damage.
 - Touch of the Raven and Touch of the Vampire removed. Touch of the Reaper now has the reapers use your Touch of Death as well, and it's no longer limited to living units.
-- Fear of Death (5 SP): If Touch of Death kills its target, all enemies in line of sight of the target are inflicted with a stack of the fear of death for 6 turns, which benefits from duration bonuses. Each turn, each stack of fear has a chance to stun its victim for 1 turn, equal to 100% divided by the distance between the victim and the source of its fear, if the source is visible to the victim.
+- Fear of Death (5 SP): If Touch of Death kills its target, all enemies in line of sight of the target are inflicted with a stack of the fear of death for 6 turns, which benefits from duration bonuses. Each turn, each stack of fear has a chance to stun its victim for 1 turn, equal to 100% divided by the distance between the victim and the source of its fear, if the source is visible to the victim. A stack of fear is automatically removed if its source is no longer alive.
 
 Toxic Spores:
 - Red mushboom self-destruct now benefit from minion damage bonuses. All other mushbooms now benefit from duration bonuses.

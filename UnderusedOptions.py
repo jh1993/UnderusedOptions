@@ -1092,6 +1092,8 @@ class FearOfDeathBuff(Buff):
         self.buff_type = BUFF_TYPE_CURSE
 
     def on_advance(self):
+        if not self.source.is_alive():
+            self.owner.remove_buff(self)
         if not self.owner.level.can_see(self.owner.x, self.owner.y, self.source.x, self.source.y):
             return
         if random.random() < 1/max(1, distance(self.owner, self.source)):
@@ -2122,7 +2124,7 @@ def modify_class(cls):
             self.upgrades["lightning"] = (1, 2, "Thundertouch", "Touch of Death also deals [lightning] damage.")
             self.upgrades['physical'] = (1, 2, "Wrathtouch", "Touch of Death also deals [physical] damage.")
             self.upgrades['raise']= (1, 6, 'Touch of the Reaper', 'When a target dies to touch of death, it is raise as a friendly Reaper for [6_turns:duration], which benefits from [minion_duration:minion_duration] bonuses.\nThe Reaper can cast Touch of Death with the same upgrades and bonuses as your own.')
-            self.upgrades["fear"] = (1, 5, "Fear of Death", "If Touch of Death kills its target, all enemies in line of sight of the target are inflicted with a stack of the fear of death for [6_turns:duration], which benefits from [duration] bonuses.\nEach turn, each stack of fear has a chance to [stun] its victim for [1_turn:duration], equal to 100% divided by the distance between the victim and the source of its fear, if the source is visible to the victim.")
+            self.upgrades["fear"] = (1, 5, "Fear of Death", "If Touch of Death kills its target, all enemies in line of sight of the target are inflicted with a stack of the fear of death for [6_turns:duration], which benefits from [duration] bonuses.\nEach turn, each stack of fear has a chance to [stun] its victim for [1_turn:duration], equal to 100% divided by the distance between the victim and the source of its fear, if the source is visible to the victim.\nA stack of fear is automatically removed if its source is no longer alive.")
 
         def cast_instant(self, x, y):
             unit = self.caster.level.get_unit_at(x, y)
