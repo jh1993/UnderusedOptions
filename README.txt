@@ -101,6 +101,7 @@ Touch of Death:
 - All the damage type upgrades now do the same amount of damage as dark damage done, but are increased to 2 SP. Now also has a lightning damage upgrade.
 - Damage (4 SP): +200 damage.
 - Touch of the Raven and Touch of the Vampire removed. Touch of the Reaper now has the reapers use your Touch of Death as well, and it's no longer limited to living units.
+- Fear of Death (5 SP): If Touch of Death kills its target, all enemies in line of sight of the target are inflicted with a stack of the fear of death for 6 turns, which benefits from duration bonuses. Each turn, each stack of fear has a chance to stun its victim for 1 turn, equal to 100% divided by the distance between the victim and the source of its fear, if the source is visible to the victim.
 
 Toxic Spores:
 - Red mushboom self-destruct now benefit from minion damage bonuses. All other mushbooms now benefit from duration bonuses.
@@ -226,9 +227,11 @@ Blizzard:
 - Hailstorm (6 SP): If an affected tile already has a blizzard cloud, the unit on that tile is dealt ice damage equal to twice the damage of this spell, and frozen for 1 turn.
 
 Bone Barrage:
-- Blindcasting (2 SP): Bone Barrage can be cast without line of sight.
-- Bone Spears upgrade no longer hurts allies. They already took damage from casting the spell.
-- If you have Cursed Bones, the assembled bone shambler also deals dark damage with its melee.
+- Now no longer requires line of sight.
+- All original upgrades removed. This spell is meant to give a strong single-target option to most conjuration builds, so its upgrades should support that niche instead of pull the spell toward conflicting directions in ways where the barrier to entry isn't worth the payoff.
+- Range (3 SP): +50 range.
+- Bone Regrowth (5 SP): Each ally damaged by Bone Barrage gains regeneration for 4 turns, each turn recovering HP equal to 25% of the HP lost. This duration benefits from bonuses to duration.
+- Ghost Bones (5 SP): Each ally also deals 4 dark damage to the target, regardless of the amount of damage the ally took; this damage benefits from bonuses to damage. Allies not in line of sight of the target will now also deal this additional dark damage to the target.
 
 Chimera Familiar:
 - Overhauled. Instead of copying spells when you cast them, the chimera now copies an eligible spell every turn with its action, choosing the spell with the highest max charges and draining a charge of that spell. This counts as you casting the spell.

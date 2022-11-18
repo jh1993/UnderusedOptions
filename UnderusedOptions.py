@@ -349,33 +349,6 @@ class GiantBearRoar(BreathWeapon):
             if are_hostile(unit, self.caster):
                 unit.apply_buff(Stun(), self.get_stat("duration"))
 
-class CursedBones(Upgrade):
-
-    def on_init(self):
-        self.name = "Cursed Bones"
-        self.level = 5
-        self.description = "Bone Barrage also deals [dark] damage."
-        self.global_triggers[EventOnPreDamaged] = self.on_pre_damaged
-    
-    def qualifies(self, target, source, damage_type):
-        if not are_hostile(target, self.owner):
-            return False
-        if damage_type != Tags.Physical:
-            return False
-        if source is self.prereq:
-            return True
-        if source.owner and source.owner.source is self.prereq:
-            return True
-        return False
-
-    def on_pre_damaged(self, evt):
-        if self.qualifies(evt.unit, evt.source, evt.damage_type):
-            evt.unit.deal_damage(evt.damage, Tags.Dark, evt.source)
-    
-    # For my No More Scams mod
-    def can_redeal(self, target, source, damage_type):
-        return self.qualifies(target, source, damage_type) and target.resists[Tags.Dark] < 100
-
 class ChimeraFamiliarSpellConduit(Spell):
 
     def __init__(self, fire=True, lightning=True, casts=1):
@@ -1143,6 +1116,25 @@ class SpiderPoisonResistance(Buff):
     def on_init(self):
         self.buff_type = BUFF_TYPE_PASSIVE
         self.resists[Tags.Poison] = 100
+
+class FearOfDeathBuff(Buff):
+
+    def __init__(self, source):
+        self.source = source
+        Buff.__init__(self)
+    
+    def on_init(self):
+        self.name = "Fear of Death"
+        self.asset = ["UnderusedOptions", "Statuses", "death_fear"]
+        self.color = Tags.Dark.color
+        self.stack_type = STACK_INTENSITY
+        self.buff_type = BUFF_TYPE_CURSE
+
+    def on_advance(self):
+        if not self.owner.level.can_see(self.owner.x, self.owner.y, self.source.x, self.source.y):
+            return
+        if random.random() < 1/max(1, distance(self.owner, self.source)):
+            self.owner.apply_buff(Stun(), 1)
 
 def modify_class(cls):
 
@@ -2169,6 +2161,7 @@ def modify_class(cls):
             self.upgrades["lightning"] = (1, 2, "Thundertouch", "Touch of Death also deals [lightning] damage.")
             self.upgrades['physical'] = (1, 2, "Wrathtouch", "Touch of Death also deals [physical] damage.")
             self.upgrades['raise']= (1, 6, 'Touch of the Reaper', 'When a target dies to touch of death, it is raise as a friendly Reaper for [6_turns:duration], which benefits from [minion_duration:minion_duration] bonuses.\nThe Reaper can cast Touch of Death with the same upgrades and bonuses as your own.')
+            self.upgrades["fear"] = (1, 5, "Fear of Death", "If Touch of Death kills its target, all enemies in line of sight of the target are inflicted with a stack of the fear of death for [6_turns:duration], which benefits from [duration] bonuses.\nEach turn, each stack of fear has a chance to [stun] its victim for [1_turn:duration], equal to 100% divided by the distance between the victim and the source of its fear, if the source is visible to the victim.")
 
         def cast_instant(self, x, y):
             unit = self.caster.level.get_unit_at(x, y)
@@ -2184,18 +2177,25 @@ def modify_class(cls):
             for dtype in dtypes:
                 self.caster.level.deal_damage(x, y, self.get_stat('damage'), dtype, self)
 
-            if unit and not unit.is_alive() and self.get_stat("raise"):
-                reaper = Reaper()
-                reaper.turns_to_death = self.get_stat('minion_duration', base=6)
-                spell = TouchOfDeath()
-                spell.max_charges = 0
-                spell.cur_charges = 0
-                spell.statholder = self.caster
-                spell.caster = reaper
-                spell.owner = reaper
-                reaper.spells[0] = spell
-                self.summon(reaper, Point(unit.x, unit.y))
-                unit.has_been_raised = True
+            if unit and not unit.is_alive():
+                if self.get_stat("raise"):
+                    reaper = Reaper()
+                    reaper.turns_to_death = self.get_stat('minion_duration', base=6)
+                    spell = TouchOfDeath()
+                    spell.max_charges = 0
+                    spell.cur_charges = 0
+                    spell.statholder = self.caster
+                    spell.caster = reaper
+                    spell.owner = reaper
+                    reaper.spells[0] = spell
+                    self.summon(reaper, Point(unit.x, unit.y))
+                    unit.has_been_raised = True
+                if self.get_stat("fear"):
+                    duration = self.get_stat("duration", base=6)
+                    for u in self.caster.level.get_units_in_los(unit):
+                        if not are_hostile(u, self.caster):
+                            continue
+                        u.apply_buff(FearOfDeathBuff(self.caster), duration)
 
     if cls is ToxicSpore:
 
@@ -3676,28 +3676,54 @@ def modify_class(cls):
             self.tags = [Tags.Dark, Tags.Sorcery]
             self.level = 4
             self.max_charges = 7
+            self.requires_los = False
+            self.can_target_empty = False
 
-            self.upgrades['beam'] = (1, 6, "Bone Spears", "Bone Barrage damages all enemies in a beam from the minion to the target.")
-            self.upgrades['animation'] = (1, 7, "Shambler Assembly", "Bone Barrage can target empty tiles.\nIf it does, it creates a bone shambler at that tile with HP equal to the damage it would have dealt.\nIf you have the Cursed Bones upgrade, the bone shambler will also deal [dark] damage with its melee attack.")
-            self.upgrades["requires_los"] = (-1, 2, "Blindcasting", "Bone Barrage can be cast without line of sight.")
-            self.add_upgrade(CursedBones())
+            self.upgrades["range"] = (RANGE_GLOBAL, 3)
+            self.upgrades["regrowth"] = (1, 5, "Bone Regrowth", "Each ally damaged by Bone Barrage gains regeneration for [4_turns:duration], each turn recovering HP equal to 25% of the HP lost.\nThis duration benefits from bonuses to [duration].")
+            self.upgrades["ghost"] = (1, 5, "Ghost Bones", "Each ally also deals [4_dark:dark] damage to the target, regardless of the amount of damage the ally took; this damage benefits from bonuses to [damage].\nAllies not in line of sight of the target will now also deal this additional [dark] damage to the target.")
 
-        def bolt(self, source, target, damage):
-            beam = self.get_stat('beam')
+        def bolt(self, source, target, damage, bone, ghost):
 
-            for point in Bolt(self.caster.level, source, target):
-                
-                self.caster.level.projectile_effect(point.x, point.y, proj_name='bone_arrow', proj_origin=source, proj_dest=target)
+            for point in Bolt(self.caster.level, source, target, find_clear=False):
+                if bone:
+                    self.caster.level.show_effect(point.x, point.y, Tags.Physical, minor=True)
+                if ghost:
+                    self.caster.level.show_effect(point.x, point.y, Tags.Dark, minor=True)
                 yield True
 
-                unit = self.caster.level.get_unit_at(point.x, point.y)
-                if beam and unit and are_hostile(unit, self.caster):
-                    unit.deal_damage(damage, Tags.Physical, self)
-
-            unit = self.caster.level.get_unit_at(target.x, target.y)
-            if unit:
-                unit.deal_damage(damage, Tags.Physical, self)
+            if bone:
+                self.caster.level.deal_damage(target.x, target.y, damage, Tags.Physical, self)
+            if ghost:
+                self.caster.level.deal_damage(target.x, target.y, self.get_stat("damage", base=4), Tags.Dark, self)
             yield False
+
+        def cast(self, x, y):
+            bolts = []
+            target = Point(x, y)
+            ghost = self.get_stat("ghost")
+            regrowth = self.get_stat("regrowth")
+            duration = self.get_stat("duration", base=4)
+
+            for u in (self.caster.level.units):
+                if u is self.caster:
+                    continue
+                if are_hostile(u, self.caster):
+                    continue
+                damage = 0
+                in_los = self.caster.level.can_see(x, y, u.x, u.y)
+                if in_los:
+                    damage = u.deal_damage(u.cur_hp//2, Tags.Physical, self)
+                    if regrowth:
+                        u.apply_buff(RegenBuff(damage//4), duration)
+                elif not ghost:
+                    continue
+
+                bolts.append(self.bolt(u, target, damage, bone=in_los, ghost=ghost))
+
+            while bolts:
+                bolts = [b for b in bolts if next(b)]
+                yield
 
     if cls is ChimeraFarmiliar:
 
