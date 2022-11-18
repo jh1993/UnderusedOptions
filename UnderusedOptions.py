@@ -3101,9 +3101,9 @@ def modify_class(cls):
             self.upgrades['damage'] = (4, 4)
             self.upgrades['duration'] = (10, 3)
             self.upgrades['dark'] = (1, 2, "Morbidity", "Mercurized targets also take [dark] damage.")
-            self.upgrades['noxious_aura'] = (1, 5, "Toxic Fumes", "Quicksilver Geists have a noxious aura that deals [2_poison:poison] damage to enemy units within [3_tiles:radius] each turn.")
+            self.upgrades['noxious_aura'] = (1, 5, "Toxic Fumes", "Quicksilver Geists have a noxious aura that deals [1_poison:poison] damage to enemy units within [2_tiles:radius] each turn, which benefits from bonuses to [radius].\nThis aura gains bonus [radius] equal to the square root of 10% of the geist's initial max HP, rounded up.")
             self.upgrades['vengeance'] = (1, 5, "Mercurial Vengeance", "When a Quicksilver Geist is killed by an enemy, its killer is affliected with Mercurize.")
-            self.upgrades["accumulate"] = (1, 3, "Bioaccumulate", "Each turn, the target is inflicted with [poison] for a duration equal to this spell's [damage] stat, stacking with any existing [poison] the target has.")
+            self.upgrades["accumulate"] = (1, 3, "Bioaccumulate", "Quicksilver Geists gain bonus max HP equal to the remaining [poison] duration on the units that spawned them.")
 
     if cls is MercurizeBuff:
 
@@ -3119,25 +3119,22 @@ def modify_class(cls):
         def on_advance(self):
             for dtype in self.dtypes:
                 self.owner.deal_damage(self.damage, dtype, self.spell)
-            if not self.accumulate:
-                return
-            existing = self.owner.get_buff(Poison)
-            if existing:
-                existing.turns_left += self.damage
-            else:
-                self.owner.apply_buff(Poison(), self.damage)
 
         def on_death(self, evt):
             geist = Ghost()
             geist.name = "Mercurial %s" % self.owner.name
             geist.asset_name = "mercurial_geist"
             geist.max_hp = self.owner.max_hp
+            if self.accumulate:
+                poison = self.owner.get_buff(Poison)
+                if poison:
+                    geist.max_hp += poison.turns_left
             geist.tags.append(Tags.Metallic)
             geist.resists[Tags.Ice] = 100
             trample = SimpleMeleeAttack(damage=self.spell.get_stat('minion_damage'))
             geist.spells = [trample]
             if self.spell.get_stat('noxious_aura'):
-                geist.buffs.append(DamageAuraBuff(damage=2, damage_type=Tags.Poison, radius=self.spell.get_stat("radius", base=3)))
+                geist.buffs.append(DamageAuraBuff(damage=1, damage_type=Tags.Poison, radius=self.spell.get_stat("radius", base=2 + math.ceil(math.sqrt(geist.max_hp/10)))))
             if self.spell.get_stat('vengeance'):
                 geist.buffs.append(MercurialVengeance(self.spell))
             self.spell.summon(geist, target=self.owner)
