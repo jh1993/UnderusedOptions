@@ -181,7 +181,7 @@ Lightning Halo:
 
 Mercurize:
 - Mercurial Vengeance no longer affects allies.
-- Noxious Fumes now benefits from radius bonuses, and gains bonus radius equal to the square root of 10% of the geist's initial max HP, rounded up.
+- Noxious Fumes now gains bonus radius equal to the square root of 10% of the geist's initial max HP, rounded up.
 - Corrosion upgrade replaced with Bioaccumulate (3 SP): Quicksilver Geists gain bonus max HP equal to the remaining poison duration on the units that spawned them.
 
 Mystic Vision:
