@@ -187,6 +187,10 @@ Mercurize:
 Mystic Vision:
 - Vision Aura upgrade cost increased to 7 SP, but is now retroactive, automatically applying to all newly summoned minions.
 
+Nightmare Aura:
+- The dream upgrades are changed to only summon old witches, aelves, and flame rifts, and minions summoned by those minions benefit from the spell's bonuses. Each dream upgrade summons a minion for every 25 damage dealt, which should result in roughly the same amount as before.
+- Dormancy (3 SP): If there are no enemies left in a realm, Nightmare Aura will not decrease in remaining duration. This allows an instance of the buff to persist from one realm to the next.
+
 Pain Mirror:
 - Max Charges upgrade removed.
 - False Pain (6 SP): Pain Mirror now counts incoming damage twice. The first time counts the raw incoming damage before resistances and SH, and the second time counts actual damage taken. The first count will trigger even if all of the incoming damage is resisted or blocked.

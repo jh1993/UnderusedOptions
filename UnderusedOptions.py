@@ -3172,6 +3172,70 @@ def modify_class(cls):
             if self.get_stat('aura'):
                 self.caster.apply_buff(MinionBuffAura(buff_func, lambda unit: True, "Vision Aura", "minions"), duration)
 
+    if cls is NightmareSpell:
+
+        def on_init(self):
+
+            self.range = 0
+            self.max_charges = 2
+            self.name = "Nightmare Aura"
+            self.aura_damage = 2
+            self.radius = 7
+            self.duration = 30
+
+            self.stats.append('aura_damage')
+
+            self.upgrades['radius'] = (3, 2)
+            self.upgrades['duration'] = 15
+            self.upgrades['max_charges'] = (4, 2)
+
+            self.upgrades['dark_dream'] = (1, 5, "Dark Dream", "Upon ending, summon an old witch for every 25 damage dealt by the aura. Each minion randomly lasts [4_to_13_turns:minion_duration], which benefits from bonuses to [minion_duration:minion_duration].\nOld witches fly, have life-draining ranged attacks dealing [dark] damage, and can summon temporary ghosts.", "dream")
+            self.upgrades['electric_dream'] = (1, 5, "Electric Dream", "Upon ending, summon an aelf for every 25 damage dealt by the aura. Each minion randomly lasts [4_to_13_turns:minion_duration], which benefits from bonuses to [minion_duration:minion_duration].\nAelves have melee attacks dealing [dark] damage, and weak but very long-ranged attacks dealing [lightning] damage.", "dream")
+            self.upgrades['fever_dream'] = (1, 5, "Fever Dream", "Upon ending, summon a flame rift for every 25 damage dealt by the aura. Each minion randomly lasts [4_to_13_turns:minion_duration], which benefits from bonuses to [minion_duration:minion_duration].\nFlame rifts are stationary, randomly teleport, have ranged attacks dealing [fire] damage, and have a chance to summon fire bombers each turn.", "dream")
+            self.upgrades["dormancy"] = (1, 3, "Dormancy", "If there are no enemies left in a realm, Nightmare Aura will not decrease in remaining duration.\nThis allows an instance of the buff to persist from one realm to the next.")
+
+            self.tags = [Tags.Enchantment, Tags.Dark, Tags.Arcane]
+            self.level = 3
+
+    if cls is NightmareBuff:
+
+        def __init__(self, spell):
+            self.spell = spell
+            DamageAuraBuff.__init__(self, damage=self.spell.aura_damage, radius=self.spell.get_stat('radius'), damage_type=[Tags.Arcane, Tags.Dark], friendly_fire=False)
+            self.dormancy = spell.get_stat("dormancy")
+
+        def on_advance(self):
+            if self.dormancy and all([unit.team == TEAM_PLAYER for unit in self.owner.level.units]):
+                self.turns_left += 1
+                return
+            DamageAuraBuff.on_advance(self)
+
+        def on_unapplied(self):
+            spawner = None
+
+            if self.spell.get_stat("electric_dream"):
+                spawner = Elf
+            if self.spell.get_stat("dark_dream"):
+                spawner = OldWitch
+            if self.spell.get_stat("fever_dream"):
+                spawner = FireSpawner
+            if not spawner:
+                return
+
+            def enhance_unit(unit):
+                apply_minion_bonuses(self.spell, unit)
+                return unit
+
+            for _ in range(self.damage_dealt//25):
+                unit = spawner()
+                unit.turns_to_death = random.randint(4, 13)
+                apply_minion_bonuses(self.spell, unit)
+                if spawner == OldWitch:
+                    unit.spells[0].spawn_func = lambda: enhance_unit(Ghost())
+                elif spawner == FireSpawner:
+                    unit.buffs[0].spawn_func = lambda: enhance_unit(FireBomber())
+                self.spell.summon(unit, sort_dist=False, radius=self.radius)
+
     if cls is PainMirrorSpell:
 
         def on_init(self):
@@ -6063,5 +6127,5 @@ def modify_class(cls):
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, PainMirrorSpell, ArcaneVisionSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp]:
+for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp]:
     modify_class(cls)
