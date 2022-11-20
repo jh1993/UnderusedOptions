@@ -3657,20 +3657,19 @@ def modify_class(cls):
                 self.caster.level.event_manager.raise_event(EventOnSpellCast(self, self.caster, x, y), self.caster)
             self.caster.level.act_move(self.caster, x, y, teleport=True)
             if self.get_stat("fauna"):
-                def WormBallGhostlyBuffed(HP=10):
+                def WormBallGhostlyBuffed(HP):
                     unit = WormBallGhostly(HP)
-                    apply_minion_bonuses(self, unit)
-                    unit.max_hp = HP
+                    unit.spells[0].damage = self.get_stat("minion_damage", base=unit.spells[0].damage)
                     buff = unit.get_buff(SplittingBuff)
                     if buff:
                         buff.spawner = lambda: WormBallGhostlyBuffed(unit.max_hp//2)
                     return unit
                 unit_type = random.choice([DisplacerBeastGhost, MantisGhost, GhostToad, WormBallGhostlyBuffed, GoatHeadGhost])
-                unit = unit_type()
                 if unit_type != WormBallGhostlyBuffed:
+                    unit = unit_type()
                     apply_minion_bonuses(self, unit)
                 else:
-                    unit.max_hp = self.get_stat("minion_health", base=unit.max_hp)
+                    unit = WormBallGhostlyBuffed(self.get_stat("minion_health", base=10))
                 self.summon(unit, radius=5)
 
     if cls is VoidBeamSpell:
