@@ -91,7 +91,8 @@ Melt:
 - Can now target empty tiles, and now reduces resistances before dealing damage.
 
 Petrify:
-- Stone Curse (6 SP): Whenever an enemy is inflicted with petrify or glassify, inflict Stone Curse to it, which reduces holy, dark, arcane, and poison resistances by 50. This has a 50% chance to consume a charge from Petrify, and Stone Curse will not be inflicted if it tries but fails to consume a charge.
+- Max charges increased to 20. Max charges upgrade changed to +10 charges for 2 SP.
+- Stone Curse (6 SP): Whenever an enemy is inflicted with petrify or glassify, inflict Stone Curse to it, which reduces holy, dark, arcane, and poison resistances by 50. This consumes a charge of Petrify and counts as casting Petrify on that enemy; it will not be triggered if Petrify has no more charges remaining.
 
 Soul Swap:
 - Shadow Swap (2 SP): Soul Swap can target dark units as well.
@@ -105,11 +106,13 @@ Touch of Death:
 
 Toxic Spores:
 - Red mushboom self-destruct now benefit from minion damage bonuses. All other mushbooms now benefit from duration bonuses.
-- Grey Mushbooms upgrade replaced by Toxic Mushbooms (4 SP), which is mutually exclusive with other mushboom type upgrades and gives 3-radiu 1-damage poison auras to mushbooms. Stunning is redundant with Paralyzing Venom anyways, not to mention losing poison synergy.
+- Grey Mushbooms upgrade replaced by Toxic Mushbooms (4 SP), which is mutually exclusive with other mushboom type upgrades and gives 3-radiu 1-damage poison auras to mushbooms; the aura instantly activates 3 times on death. Stunning is redundant with Paralyzing Venom anyways, not to mention losing poison synergy.
 
 Aether Swap:
 - Restriction of not working on arcane-immune targets removed.
-- Tele-Frag (4 SP): Aether Swap also deals physical damage.
+- If targeting an ally, give the target 1 SH instead of dealing damage.
+- Patsy Swap (5 SP): You can now target yourself with this spell to give yourself a stack of Swapper's Scheme, which consumes another charge of the spell and counts as casting the spell twice. Whenever you are about to take damage, you automatically consume a stack of Swapper's Scheme to swap with a random valid enemy target of this spell. You gain 1 SH, which ignores the normal 20 SH limit, while the target takes damage from both Aether Swap and the damage that you took.
+- Glitch Swap (5 SP): You can now target an empty tile with this spell to swap with a unit that does not exist, which consumes another charge of the spell and counts as casting the spell twice. This summons a glitch phantom at your old location, which is an arcane minion with 1 SH and the same max HP as you that can cast Aether Swap with the same upgrades, skills, and shrine as your own. The glitch phantom has a fixed lifetime of 1 turn.
 
 Basilisk Armor:
 - Max Charges upgrade removed.
@@ -118,6 +121,9 @@ Basilisk Armor:
 - Stunning Armor (2 SP): Basilisk Armor inflicts stun instead of petrify. Only one armor upgrade allowed.
 - Freezing Armor (2 SP): Basilisk Armor inflicts freeze instead of petrify. Only one armor upgrade allowed.
 - Glassifying Armor (2 SP): Basilisk Armor inflicts glassify instead of petrify. Only one armor upgrade allowed.
+
+Blink:
+- The damage upgrades now deal damage equal to the spell's range, and the bursts can pass through walls if the spell has blindcasting.
 
 Choir of Angels:
 - Pragmatic Faith (3 SP): The angels will no longer damage undead and demon allies, or heal living and holy enemies.
@@ -147,6 +153,7 @@ Earthquake:
 
 Flame Burst:
 - Bright Flame upgrade replaced by Phoenix Flame, which costs 4 SP and heals allies (except the wizard) instead of damaging them, and does not change the damage type. This makes it a natural extension of the base spell while providing additional healing with Pyrophilia, instead of changing the damage type to holy and losing out on all fire synergies.
+- Spreading Flame now counts as casting the spell once per charge consumed.
 
 Frostfire Hydra:
 - Beams now benefit from both minion damage and breath damage bonuses.
@@ -290,7 +297,7 @@ Lightning Storm:
 
 Orb Control:
 - Max Charges (4 SP): +9 max charges.
-- Orb Duplication (5 SP): When casting this spell, every allied orb will instead continue moving in its original path, but cast a copy of its corresponding orb spell targeting the target of this spell. There is a chance to consume a charge of the corresponding orb spell, equal to the pre-existing orb's remaining duration divided by its maximum duration. The spell will not be copied if it tries but cannot consume a charge.
+- Orb Duplication (5 SP): When casting this spell, every allied orb will instead continue moving in its original path, but create a copy of itself targeting the target of this spell, which counts as you casting the corresponding orb spell. This consumes a charge from the corresponding orb spell. If there are no charges remaining, the copying will not occur, and the orb will be redirected to the target tile.
 
 Permanence:
 - Retroactive (3 SP): When you cast this spell, all friendly units' buffs and enemies' debuffs are extended by 5 turns. Cannot extend the duration of stun, freeze, petrify, glassify, and similar incapacitating effects on units that can gain clarity.

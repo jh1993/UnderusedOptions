@@ -49,6 +49,7 @@ class StoneCurseBuff(Buff):
         self.name = "Stone Curse"
         self.buff_type = BUFF_TYPE_CURSE
         self.color = Tags.Dark.color
+        self.asset = ["UnderusedOptions", "Statuses", "stone_curse"]
         for tag in [Tags.Holy, Tags.Dark, Tags.Arcane, Tags.Poison]:
             self.resists[tag] = -50
 
@@ -57,20 +58,17 @@ class StoneCurseUpgrade(Upgrade):
     def on_init(self):
         self.name = "Stone Curse"
         self.level = 6
-        self.description = "Whenever an enemy is inflicted with [petrify] or [glassify], inflict Stone Curse to it, which reduces [holy], [dark], [arcane], and [poison] resistances by [50:damage].\nThis has a 50% chance to consume a charge from Petrify, and Stone Curse will not be inflicted if it tries but fails to consume a charge."
+        self.description = "Whenever an enemy is inflicted with [petrify] or [glassify], inflict Stone Curse to it, which reduces [holy], [dark], [arcane], and [poison] resistances by [50:damage].\nThis consumes a charge of Petrify and counts as casting Petrify on that enemy; it will not be triggered if Petrify has no more charges remaining."
         self.global_triggers[EventOnBuffApply] = self.on_buff_apply
     
     def on_buff_apply(self, evt):
         if not are_hostile(self.owner, evt.unit) or (not isinstance(evt.buff, PetrifyBuff) and not isinstance(evt.buff, GlassPetrifyBuff)):
             return
-        if evt.unit.has_buff(StoneCurseBuff):
+        if evt.unit.has_buff(StoneCurseBuff) or self.prereq.cur_charges <= 0:
             return
-        if random.random() >= 0.5:
-            if self.prereq.cur_charges > 0:
-                self.prereq.cur_charges -= 1
-            else:
-                return
+        self.prereq.cur_charges -= 1
         evt.unit.apply_buff(StoneCurseBuff())
+        self.owner.level.event_manager.raise_event(EventOnSpellCast(self.prereq, self.prereq.caster, evt.unit.x, evt.unit.y), self.prereq.caster)
 
 class RedMushboomBuff(Buff):
 
@@ -91,6 +89,18 @@ class RedMushboomBuff(Buff):
         for p in self.owner.level.get_adjacent_points(self.owner):
             self.owner.level.deal_damage(p.x, p.y, self.damage, Tags.Fire, self)
         yield
+
+class ToxicMushboomAura(DamageAuraBuff):
+    def __init__(self, radius):
+        DamageAuraBuff.__init__(self, 1, Tags.Poison, radius)
+        self.owner_triggers[EventOnDeath] = self.on_death
+    
+    def on_death(self, evt):
+        for _ in range(3):
+            self.on_advance()
+    
+    def get_tooltip(self):
+        return DamageAuraBuff.get_tooltip(self) + "\nInstantly activates 3 times on death"
 
 class BasiliskArmorBuff(Buff):
 
@@ -1099,6 +1109,52 @@ class FearOfDeathBuff(Buff):
         if random.random() < 1/max(1, distance(self.owner, self.source)):
             self.owner.apply_buff(Stun(), 1)
 
+class SwappersSchemeBuff(Buff):
+
+    def __init__(self, spell):
+        self.spell = spell
+        self.stacks = 1
+        Buff.__init__(self)
+    
+    def on_init(self):
+        self.name = "Swapper's Scheme %i" % self.stacks
+        self.color = Tags.Translocation.color
+        self.owner_triggers[EventOnPreDamaged] = self.on_pre_damaged
+    
+    def on_attempt_apply(self, owner):
+        for buff in owner.buffs:
+            if isinstance(buff, SwappersSchemeBuff):
+                buff.stacks += 1
+                buff.name = "Swapper's Scheme %i" % buff.stacks
+                return False
+        return True
+
+    def on_pre_damaged(self, evt):
+        if evt.damage <= 0:
+            return
+        penetration = evt.penetration if hasattr(evt, "penetration") else 0
+        if self.owner.resists[evt.damage_type] - penetration >= 100:
+            return
+        target = self.spell.get_ai_target()
+        if not target:
+            return
+        unit = self.owner.level.get_unit_at(target.x, target.y)
+        if not unit:
+            return
+        self.owner.shields += 1
+        self.owner.level.queue_spell(self.spell.cast(target.x, target.y))
+        self.owner.level.queue_spell(self.deal_damage(unit, evt))
+        if self.stacks <= 1:
+            self.owner.remove_buff(self)
+        else:
+            self.stacks -= 1
+            self.name = "Swapper's Scheme %i" % self.stacks
+    
+    def deal_damage(self, target, evt):
+        penetration = evt.penetration if hasattr(evt, "penetration") else 0
+        target.deal_damage(evt.damage, evt.damage_type, evt.source, penetration=penetration)
+        yield
+
 def modify_class(cls):
 
     if cls is DeathBolt:
@@ -2056,15 +2112,15 @@ def modify_class(cls):
 
         def on_init(self):
             self.range = 8
-            self.max_charges = 10
+            self.max_charges = 20
             self.name = "Petrify"
 
             self.tags = [Tags.Arcane, Tags.Enchantment]
 
             self.duration = 10
 
-            self.upgrades['max_charges'] = (5, 1)
-            self.upgrades['glassify'] = (1, 3, 'Glassify', 'Turn the target to glass instead of stone.  Glass targets have -100 physical resist.')
+            self.upgrades['max_charges'] = (10, 2)
+            self.upgrades['glassify'] = (1, 3, 'Glassify', 'Turn the target to [glass] instead of stone.\n[Glassified] targets have [-100_physical:physical] resistance.')
             self.add_upgrade(StoneCurseUpgrade())
             self.level = 2
 
@@ -2177,7 +2233,7 @@ def modify_class(cls):
             self.num_summons = 2
             self.minion_range = 2
             self.upgrades['num_summons'] = (2, 3)
-            self.upgrades['toxic_mushboom'] = (1, 4, "Toxic Mushbooms", "Summon toxic mushbooms instead, which are like green mushbooms but also have auras that deal [1_poison:poison] damage in a [3_tile:radius] radius.", "color")
+            self.upgrades['toxic_mushboom'] = (1, 4, "Toxic Mushbooms", "Summon toxic mushbooms instead, which are like green mushbooms but also have auras that deal [1_poison:poison] damage in a [3_tile:radius] radius, which benefits from bonuses to [radius].\nOn death, toxic mushbooms instantly activate their auras 3 times.", "color")
             self.upgrades['red_mushboom'] = (1, 5, "Red Mushbooms", "Summon red mushbooms instead, which do not apply [poison] but deal [fire] damage.", "color")
             self.upgrades['glass_mushboom'] = (1, 6, "Glass Mushbooms", "Summon glass mushbooms instead, which apply [glassify] instead of [poison].", "color")
 
@@ -2194,6 +2250,7 @@ def modify_class(cls):
             toxic = self.get_stat('toxic_mushboom')
             red = self.get_stat('red_mushboom')
             glass = self.get_stat('glass_mushboom')
+            radius = self.get_stat("radius", base=3)
             for _ in range(self.get_stat('num_summons')):
                 if red:
                     mushboom = RedMushboom()
@@ -2223,7 +2280,7 @@ def modify_class(cls):
                 if toxic:
                     mushboom.name = "Toxic Mushboom"
                     mushboom.asset = ["UnderusedOptions", "Units", "toxic_mushboom"]
-                    mushboom.buffs.append(DamageAuraBuff(damage=1, damage_type=Tags.Poison, radius=3))
+                    mushboom.buffs.append(ToxicMushboomAura(radius))
                     mushboom.tags.append(Tags.Poison)
                 apply_minion_bonuses(self, mushboom)
                 self.summon(mushboom, target=Point(x, y))
@@ -2238,39 +2295,70 @@ def modify_class(cls):
             self.max_charges = 8
             self.damage = 16
             self.level = 3
+            self.can_target_self = True
 
             self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "Aether Swap can be cast without line of sight")
             self.upgrades['range'] = (3, 1)
             self.upgrades['max_charges'] = (10, 3)
-            self.upgrades["physical"] = (1, 4, "Tele-Frag", "Aether Swap also deals [physical] damage.")
+            self.upgrades["patsy"] = (1, 5, "Patsy Swap", "You can now target yourself with this spell to give yourself a stack of Swapper's Scheme, which consumes another charge of the spell and counts as casting the spell twice.\nWhenever you are about to take damage, you automatically consume a stack of Swapper's Scheme to swap with a random valid enemy target of this spell. You gain [1_SH:shields], which ignores the normal [20_SH:shields] limit, while the target takes damage from both Aether Swap and the damage that you took.")
+            self.upgrades["glitch"] = (1, 5, "Glitch Swap", "You can now target an empty tile with this spell to swap with a unit that does not exist, which consumes another charge of the spell and counts as casting the spell twice.\nThis summons a glitch phantom at your old location, which is an [arcane] minion with [1_SH:shields] and the same max HP as you that can cast Aether Swap with the same upgrades, skills, and shrine as your own. The glitch phantom has a fixed lifetime of [1_turn:minion_duration].")
 
             self.tags = [Tags.Arcane, Tags.Translocation, Tags.Sorcery]
 
         def get_description(self):
             return ("Swap places with target unit.\n"
-                    "That unit takes [{damage}_arcane:arcane] damage.").format(**self.fmt_dict())
+                    "If that unit is hostile, it takes [{damage}_arcane:arcane] damage. Otherwise it gains [1_SH:shields].").format(**self.fmt_dict())
 
         def can_cast(self, x, y):
             unit = self.caster.level.get_unit_at(x, y)
-            if not unit:
+            if not unit and (not self.get_stat("glitch") or self.cur_charges <= 1):
                 return False
-            if unit == self.caster:
+            if unit is self.caster and (not self.get_stat("patsy") or self.cur_charges <= 1):
                 return False
             if not self.caster.level.tiles[x][y].can_walk:
                 return False
             return Spell.can_cast(self, x, y)
 
         def cast_instant(self, x, y):
+
+            if x == self.caster.x and y == self.caster.y:
+                if self.get_stat("patsy") and self.cur_charges > 0:
+                    self.caster.apply_buff(SwappersSchemeBuff(self))
+                    self.cur_charges -= 1
+                    self.caster.level.event_manager.raise_event(EventOnSpellCast(self, self.caster, x, y), self.caster)
+                return
+
             target = self.caster.level.get_unit_at(x, y)
             
-            # Fizzle if attempting to cast on non walkable tile
+            old = Point(self.caster.x, self.caster.y)
             if self.caster.level.tiles[x][y].can_walk:
+                self.caster.level.show_effect(x, y, Tags.Translocation)
                 self.caster.level.act_move(self.caster, x, y, teleport=True, force_swap=True)	
                 
             if target:
-                target.deal_damage(self.get_stat('damage'), Tags.Arcane, self)
-                if self.get_stat("physical"):
-                    target.deal_damage(self.get_stat('damage'), Tags.Physical, self)
+                if are_hostile(target, self.caster):
+                    target.deal_damage(self.get_stat('damage'), Tags.Arcane, self)
+                else:
+                    target.add_shields(1)
+            elif self.get_stat("glitch") and self.cur_charges > 0:
+                unit = Unit()
+                unit.asset = ["UnderusedOptions", "Units", "glitch_phantom"]
+                unit.name = "Glitch Phantom"
+                unit.tags = [Tags.Arcane]
+                unit.shields = 1
+                unit.max_hp = self.caster.max_hp
+                unit.resists[Tags.Arcane] = 100
+                spell = VoidRip()
+                spell.max_charges = 0
+                spell.cur_charges = 0
+                spell.caster = unit
+                spell.owner = unit
+                spell.statholder = self.caster
+                unit.spells = [spell]
+                unit.turns_to_death = 1
+                self.summon(unit, target=old)
+                self.cur_charges -= 1
+                self.caster.level.event_manager.raise_event(EventOnSpellCast(self, self.caster, x, y), self.caster)
 
     if cls is CockatriceSkinSpell:
 
@@ -2297,6 +2385,53 @@ def modify_class(cls):
         def get_description(self):
             return ("Whenever an enemy unit targets you with a spell or attack, that unit is [petrified] for [{petrify_duration}_turns:duration].\n"
                     "Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+
+    if cls is Teleport:
+
+        def cast(self, x, y):
+            start_loc = Point(self.caster.x, self.caster.y)
+
+            self.caster.level.show_effect(self.caster.x, self.caster.y, Tags.Translocation)
+            p = self.caster.level.get_summon_point(x, y)
+            if p:
+                yield self.caster.level.act_move(self.caster, p.x, p.y, teleport=True)
+                self.caster.level.show_effect(self.caster.x, self.caster.y, Tags.Translocation)
+
+            if self.get_stat('void_teleport'):
+                damage = self.get_stat('max_charges')
+                for unit in self.owner.level.get_units_in_los(self.caster):
+                    if are_hostile(self.owner, unit):
+                        unit.deal_damage(damage, Tags.Arcane, self)
+
+            tag = None
+            if self.get_stat('lightning_blink'):
+                tag = Tags.Lightning
+            elif self.get_stat('dark_blink'):
+                tag = Tags.Dark
+            if tag:
+                damage = 2*self.get_stat("range")
+                for stage in Burst(self.caster.level, Point(x, y), self.get_stat("radius", base=3), ignore_walls=self.get_stat("requires_los") <= 0):
+                    for point in stage:
+                        if point == Point(x, y):
+                            continue
+                        self.caster.level.deal_damage(point.x, point.y, damage, tag, self)
+                    yield
+
+    if cls is BlinkSpell:
+
+        def on_init(self):
+            self.range = 5
+            self.requires_los = True
+            self.name = "Blink"
+            self.max_charges = 6
+            self.tags = [Tags.Arcane, Tags.Sorcery, Tags.Translocation]
+            self.level = 3
+
+            self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "Blink can be cast without line of sight")
+            self.upgrades['range'] = (3, 3)
+            self.upgrades['max_charges'] = (5, 2)
+            self.upgrades['lightning_blink'] = (1, 4, "Lightning Blink", "Blink deals [lightning] damage in a [3_tile:radius] burst upon arrival, which benefits from bonuses to [radius].\n The damage is equal to twice the range of this spell.\nIf this spell has blindcasting, the burst can pass through walls.", 'damage')
+            self.upgrades['dark_blink'] = (1, 4, "Dark Blink", "Blink deals [dark] damage in a [3_tile:radius] burst upon arrival, which benefits from bonuses to [radius].\n The damage is equal to twice the range of this spell.\nIf this spell has blindcasting, the burst can pass through walls.", 'damage')
 
     if cls is AngelSong:
 
@@ -2648,7 +2783,7 @@ def modify_class(cls):
 
             self.upgrades['meltflame'] = (1, 4, "Melting Flame", "Melt walls adjacent to the blast", "flame")
             self.upgrades['healflame'] = (1, 4, "Phoenix Flame", "Flame Burst heals allied units instead of damaging them.\nThe wizard cannot be healed this way.", "flame")
-            self.upgrades['spreadflame'] = (1, 7, "Spreading Flame", "Each cast of flame burst consumes all remaining charges.\nFor each charge consumed, flame burst gets +1 radius and +1 damage.\nSlain enemies create additional explosions with half radius and damage.", "flame")
+            self.upgrades['spreadflame'] = (1, 7, "Spreading Flame", "Each cast of Flame Burst consumes all remaining charges, counting as casting the spell once per charge consumed.\nFor each charge consumed, Flame Burst gets +1 radius and +1 damage.\nSlain enemies create additional explosions with half radius and damage.", "flame")
 
         def cast(self, x, y, secondary=False, last_radius=None, last_damage=None):
 
@@ -2668,7 +2803,10 @@ def modify_class(cls):
             if not secondary and self.get_stat('spreadflame'):
                 radius += self.cur_charges
                 damage += self.cur_charges
+                charges = self.cur_charges
                 self.cur_charges = 0
+                for _ in range(charges):
+                    self.caster.level.event_manager.raise_event(EventOnSpellCast(self, self.caster, x, y), self.caster)
 
             to_melt = set([Point(self.caster.x, self.caster.y)])
             slain = []
@@ -3495,7 +3633,7 @@ def modify_class(cls):
             self.imps_summoned = 0
 
             self.upgrades['max_charges'] = 3
-            self.upgrades["seeker"] = (1, 3, "Underworld Seeker", "You can now spend 1 extra charge to cast this spell even if you are not next to a chasm.")
+            self.upgrades["seeker"] = (1, 3, "Underworld Seeker", "You can now spend 1 extra charge to cast this spell even if you are not next to a chasm, counting as casting the spell an additional time.")
             self.upgrades["fauna"] = (1, 3, "Underworld Fauna", "After teleporting, summon a spirit strider, ghost mantis, ghost toad, large ghost worm ball, or ghostly goatia near you, chosen at random.")
 
         def next_to_chasm(self, center):
@@ -3516,11 +3654,23 @@ def modify_class(cls):
         def cast_instant(self, x, y):
             if not next_to_chasm(self, self.caster):
                 self.cur_charges -= 1
+                self.caster.level.event_manager.raise_event(EventOnSpellCast(self, self.caster, x, y), self.caster)
             self.caster.level.act_move(self.caster, x, y, teleport=True)
             if self.get_stat("fauna"):
-                unit_types = [DisplacerBeastGhost, MantisGhost, GhostToad, WormBallGhostly, GoatHeadGhost]
-                unit = random.choice(unit_types)()
-                apply_minion_bonuses(self, unit)
+                def WormBallGhostlyBuffed(HP=10):
+                    unit = WormBallGhostly(HP)
+                    apply_minion_bonuses(self, unit)
+                    unit.max_hp = HP
+                    buff = unit.get_buff(SplittingBuff)
+                    if buff:
+                        buff.spawner = lambda: WormBallGhostlyBuffed(unit.max_hp//2)
+                    return unit
+                unit_type = random.choice([DisplacerBeastGhost, MantisGhost, GhostToad, WormBallGhostlyBuffed, GoatHeadGhost])
+                unit = unit_type()
+                if unit_type != WormBallGhostlyBuffed:
+                    apply_minion_bonuses(self, unit)
+                else:
+                    unit.max_hp = self.get_stat("minion_health", base=unit.max_hp)
                 self.summon(unit, radius=5)
 
     if cls is VoidBeamSpell:
@@ -4135,13 +4285,16 @@ def modify_class(cls):
             self.max_charges = 11
 
             self.upgrades["max_charges"] = (9, 4)
-            self.upgrades["dupe"] = (1, 5, "Orb Duplication", "When casting this spell, every allied [orb] will instead continue moving in its original path, but cast a copy of its corresponding [orb] spell targeting the target of this spell.\nThere is a chance to consume a charge of the corresponding spell, equal to the pre-existing orb's remaining duration divided by its maximum duration.\nThe spell will not be copied if it tries but cannot consume a charge, in which case the orb will be redirected to the target tile.")
+            self.upgrades["dupe"] = (1, 5, "Orb Duplication", "When casting this spell, every allied [orb] will instead continue moving in its original path, but create a copy of itself targeting the target of this spell, which counts as you casting the corresponding [orb] spell.\nThis consumes a charge from the corresponding [orb] spell. If there are no charges remaining, the copying will not occur, and the orb will be redirected to the target tile.")
 
         def cast_instant(self, x, y, channel_cast=False):
 
             dupe = self.get_stat("dupe")
 
-            for u in self.caster.level.units:
+            units = list(self.caster.level.units)
+            random.shuffle(units)
+
+            for u in units:
 
                 if u.team != self.caster.team:
                     continue
@@ -4151,8 +4304,7 @@ def modify_class(cls):
                 
                 if dupe:
                     spell = buff.spell
-                    spend_charge = (random.random() < u.turns_to_death/(spell.get_stat("range") - 1))
-                    if not spend_charge or spell.cur_charges > 0:
+                    if spell.cur_charges > 0:
                         spell_copy = type(spell)()
                         spell_copy.statholder = spell.caster
                         spell_copy.owner = u
@@ -4160,12 +4312,23 @@ def modify_class(cls):
                         spell_copy.range = RANGE_GLOBAL
                         spell_copy.cur_charges = 0
                         spell_copy.max_charges = 0
-                        self.caster.level.act_cast(u, spell_copy, x, y, pay_costs=False)
-                        # Change caster to the player so that the duplicated orbs don't hurt the player
-                        spell_copy.owner = spell.owner
-                        spell_copy.caster = spell.caster
-                        if spend_charge:
-                            spell.cur_charges -= 1
+                        self.caster.level.queue_spell(spell_copy.cast(x, y))
+                        # Change caster to the player so that the duplicated orbs don't hurt the player,
+                        # and to make repeated dupes work properly.
+                        def change_caster(spell_copy, spell):
+                            spell_copy.owner = spell.owner
+                            spell_copy.caster = spell.caster
+                            for unit in spell.caster.level.units:
+                                buff = unit.get_buff(OrbBuff)
+                                if not buff:
+                                    continue
+                                if unit.source is spell_copy:
+                                    unit.source = spell
+                                    buff.spell = spell
+                            yield
+                        self.caster.level.queue_spell(change_caster(spell_copy, spell))
+                        spell.cur_charges -= 1
+                        self.caster.level.event_manager.raise_event(EventOnSpellCast(spell, self.caster, x, y), self.caster)
                         continue
 
                 path = self.caster.level.get_points_in_line(u, Point(x, y))[1:]
@@ -6127,5 +6290,5 @@ def modify_class(cls):
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp]:
+for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp]:
     modify_class(cls)
