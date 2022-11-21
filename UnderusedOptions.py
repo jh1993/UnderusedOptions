@@ -1185,6 +1185,24 @@ class CurseOfRageBuff(Buff):
         self.spell.summon(unit, target=target, radius=5)
         yield
 
+def BoneBarrageBoneShambler(self, hp, extra_damage):
+    unit = BoneShambler(hp)
+    if self.get_stat("regrowth"):
+        regen = hp//8
+        if regen:
+            unit.buffs.append(RegenBuff(regen))
+    if self.get_stat("ghost"):
+        damage = self.get_stat("minion_damage", base=extra_damage)
+        if damage:
+            unit.spells[0].onhit = lambda caster, target: target.deal_damage(damage, Tags.Dark, unit.spells[0])
+            # For my No More Scams mod
+            unit.spells[0].can_redeal = lambda target: target.resists[Tags.Dark] < 100
+            unit.spells[0].description = "Deals %i additional dark damage." % damage
+    buff = unit.get_buff(SplittingBuff)
+    if buff:
+        buff.spawner = lambda: BoneBarrageBoneShambler(self, hp//2, extra_damage)
+    return unit
+
 def modify_class(cls):
 
     if cls is DeathBolt:
@@ -3386,18 +3404,10 @@ def modify_class(cls):
             if not spawner:
                 return
 
-            def enhance_unit(unit):
-                apply_minion_bonuses(self.spell, unit)
-                return unit
-
             for _ in range(self.damage_dealt//25):
                 unit = spawner()
                 unit.turns_to_death = random.randint(4, 13)
                 apply_minion_bonuses(self.spell, unit)
-                if spawner == OldWitch:
-                    unit.spells[0].spawn_func = lambda: enhance_unit(Ghost())
-                elif spawner == FireSpawner:
-                    unit.buffs[0].spawn_func = lambda: enhance_unit(FireBomber())
                 self.spell.summon(unit, sort_dist=False, radius=self.radius)
 
     if cls is PainMirrorSpell:
@@ -3869,11 +3879,12 @@ def modify_class(cls):
             self.level = 4
             self.max_charges = 7
             self.requires_los = False
-            self.can_target_empty = False
 
             self.upgrades["range"] = (RANGE_GLOBAL, 3)
             self.upgrades["regrowth"] = (1, 5, "Bone Regrowth", "Each ally damaged by Bone Barrage gains regeneration for [4_turns:duration], each turn recovering HP equal to 25% of the HP lost.\nThis duration benefits from bonuses to [duration].")
             self.upgrades["ghost"] = (1, 5, "Ghost Bones", "Each ally also deals [4_dark:dark] damage to the target, regardless of the amount of damage the ally took; this damage benefits from bonuses to [damage].\nAllies not in line of sight of the target will now also deal this additional [dark] damage to the target.")
+            self.upgrades['animation'] = (1, 7, "Shambler Assembly", "Bone Barrage can target empty tiles.\nIf it does, it creates a bone shambler at that tile with HP equal to the total damage dealt to your minions.\nThe bone shambler splits into two bone shamblers with half its max HP when destroyed if its initial max HP is at least 8, and has a melee attack dealing [physical] damage equal to 1/4 of its initial max HP.\nIf you have the Bone Regrowth upgrade, the bone shambler has a passive regeneration that heals each turn for 1/8 of its initial max HP.\nIf you have the Ghost Bones upgrade, the bone shambler's melee attack deals additional [dark] damage equal to your number of minions at the time of casting this spell, plus [minion_damage:minion_damage] bonuses.")
+
 
         def bolt(self, source, target, damage, bone, ghost):
 
@@ -3893,19 +3904,24 @@ def modify_class(cls):
         def cast(self, x, y):
             bolts = []
             target = Point(x, y)
+            unit = self.caster.level.get_unit_at(x, y)
             ghost = self.get_stat("ghost")
             regrowth = self.get_stat("regrowth")
             duration = self.get_stat("duration", base=4)
 
+            total_damage = 0
+            num_minions = 0
             for u in (self.caster.level.units):
                 if u is self.caster:
                     continue
                 if are_hostile(u, self.caster):
                     continue
                 damage = 0
+                num_minions += 1
                 in_los = self.caster.level.can_see(x, y, u.x, u.y)
                 if in_los:
                     damage = u.deal_damage(u.cur_hp//2, Tags.Physical, self)
+                    total_damage += damage
                     if regrowth:
                         u.apply_buff(RegenBuff(damage//4), duration)
                 elif not ghost:
@@ -3916,6 +3932,10 @@ def modify_class(cls):
             while bolts:
                 bolts = [b for b in bolts if next(b)]
                 yield
+
+            if not unit and self.get_stat('animation') and total_damage:
+                monster = BoneBarrageBoneShambler(self, total_damage, num_minions)
+                self.summon(monster, target=Point(x, y))
 
     if cls is ChimeraFarmiliar:
 
@@ -3945,7 +3965,6 @@ def modify_class(cls):
         def get_lion(self):
             unit = RedLion()
             unit.name = "Lion Familiar"
-            apply_minion_bonuses(self, unit)
             if self.get_stat("morph"):
                 unit.spells.insert(0, ChimeraFamiliarSpellConduit(lightning=False))
             if self.get_stat("resists"):
@@ -3956,7 +3975,6 @@ def modify_class(cls):
         def get_snake(self):
             unit = GoldenSnake()
             unit.name = "Snake Familiar"
-            apply_minion_bonuses(self, unit)
             if self.get_stat("morph"):
                 unit.spells.insert(0, ChimeraFamiliarSpellConduit(fire=False))
             if self.get_stat("resists"):
@@ -5616,7 +5634,6 @@ def modify_class(cls):
             promotion = self.get_stat("promotion")
             def promote(knight):
                 unit = Champion(knight)
-                apply_minion_bonuses(self, unit)
                 unit.buffs.append(KnightlyOathBuff(self))
                 return unit
 

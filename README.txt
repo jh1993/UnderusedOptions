@@ -239,10 +239,11 @@ Blizzard:
 
 Bone Barrage:
 - Now no longer requires line of sight.
-- All original upgrades removed. This spell is meant to give a strong single-target option to most conjuration builds, so its upgrades should support that niche instead of pull the spell toward conflicting directions in ways where the barrier to entry isn't worth the payoff.
+- All original upgrades except Shambler Assembly removed. This spell is meant to give a strong single-target option to most conjuration builds, so its upgrades should support that niche instead of pull the spell toward conflicting directions in ways where the barrier to entry isn't worth the payoff.
 - Range (3 SP): +50 range.
 - Bone Regrowth (5 SP): Each ally damaged by Bone Barrage gains regeneration for 4 turns, each turn recovering HP equal to 25% of the HP lost. This duration benefits from bonuses to duration.
 - Ghost Bones (5 SP): Each ally also deals 4 dark damage to the target, regardless of the amount of damage the ally took; this damage benefits from bonuses to damage. Allies not in line of sight of the target will now also deal this additional dark damage to the target.
+- Shambler Assembly now gives the shambler regen equal to 1/8 of its initial max HP if you have Bone Regrowth, and its attack deals additional dark damage equal to your number of minions at the time of casting plus minion damage bonus if you have Ghost Bones.
 
 Chimera Familiar:
 - Overhauled. Instead of copying spells when you cast them, the chimera now copies an eligible spell every turn with its action, choosing the spell with the highest max charges and draining a charge of that spell. This counts as you casting the spell.
