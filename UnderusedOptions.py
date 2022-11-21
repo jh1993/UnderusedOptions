@@ -5,10 +5,10 @@ from Upgrades import *
 from Variants import *
 from RareMonsters import *
 
-import mods.BugsAndScams.Bugfixes
-import mods.BugsAndScams.NoMoreScams
-from mods.BugsAndScams.NoMoreScams import is_immune, FloatingEyeBuff
-from mods.BugsAndScams.BugsAndScams import RemoveBuffOnPreAdvance, MinionBuffAura
+import mods.Bugfixes.Bugfixes
+import mods.NoMoreScams.NoMoreScams
+from mods.NoMoreScams.NoMoreScams import is_immune, FloatingEyeBuff
+from mods.Bugfixes.Bugfixes import RemoveBuffOnPreAdvance, MinionBuffAura
 
 import sys, math, random
 
@@ -1927,7 +1927,7 @@ def modify_class(cls):
             for p in points:
                 unit = self.caster.level.get_unit_at(p.x, p.y)
                 if unit:
-                    buff = mods.BugsAndScams.Bugfixes.RotBuff(self)
+                    buff = mods.Bugfixes.Bugfixes.RotBuff(self)
                     if self.get_stat("friendly") and not are_hostile(unit, self.caster):
                         buff.buff_type = BUFF_TYPE_BLESS
                     else:
@@ -1935,7 +1935,7 @@ def modify_class(cls):
                     unit.apply_buff(buff)
                     yield
 
-    if cls is mods.BugsAndScams.Bugfixes.RotBuff:
+    if cls is mods.Bugfixes.Bugfixes.RotBuff:
 
         def on_init(self):
             self.color = Tags.Undead.color
@@ -2943,7 +2943,7 @@ def modify_class(cls):
 
         def set_hydra_stats(self, unit, hydra_type=HYDRA_FROSTFIRE):
 
-            unit.max_hp = self.get_stat('minion_health')
+            unit.max_hp = self.minion_health
 
             if hydra_type == HYDRA_FROST:
                 unit.name = "Frost Hydra"
@@ -2955,11 +2955,11 @@ def modify_class(cls):
                 unit.name = "Frostfire Hydra"
                 unit.asset_name = 'fire_and_ice_hydra'
 
-            fire = SimpleRangedAttack(damage=self.get_stat('minion_damage') + self.get_stat("breath_damage", base=0), range=self.get_stat('minion_range'), damage_type=Tags.Fire, beam=True)
+            fire = SimpleRangedAttack(damage=self.minion_damage + self.get_stat("breath_damage", base=0), range=self.minion_range, damage_type=Tags.Fire, beam=True)
             fire.name = "Hydra Beam"
             fire.cool_down = 2
 
-            ice = SimpleRangedAttack(damage=self.get_stat('minion_damage') + self.get_stat("breath_damage", base=0), range=self.get_stat('minion_range'), damage_type=Tags.Ice, beam=True)
+            ice = SimpleRangedAttack(damage=self.minion_damage + self.get_stat("breath_damage", base=0), range=self.minion_range, damage_type=Tags.Ice, beam=True)
             ice.name = "Hydra Beam"
             ice.cool_down = 2
 
@@ -2979,6 +2979,7 @@ def modify_class(cls):
         def cast_instant(self, x, y):
             unit = Unit()
             set_hydra_stats(self, unit)
+            apply_minion_bonuses(self, unit)
             if self.get_stat("splitting"):
                 unit.buffs = [RespawnAs(lambda: get_frost_hydra(self)), RespawnAs(lambda: get_fire_hydra(self))]
             self.summon(unit, Point(x, y))
@@ -6324,5 +6325,5 @@ def modify_class(cls):
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.BugsAndScams.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp]:
+for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp]:
     modify_class(cls)
