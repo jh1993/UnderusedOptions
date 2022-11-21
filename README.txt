@@ -46,7 +46,7 @@ Eye of Lightning:
 - Eye of Arcing (3 SP): On hit, Eye of Lightning also deals damage to a random enemy in line of sight of the target.
 
 Eye of Rage:
-- Lycanthropy upgrade reduced to 4 SP and changed to also work on nature and demon units, no longer berserk the werewolf, and no longer trigger on-death effects.
+- Lycanthropy upgrade replaced by Curse of Rage (5 SP): Eye of Rage now also permanently inflicts Curse of Rage on hit. If an enemy has both berserk and Curse of Rage, it and units it kills will spawn bloodghasts allied to you on death.
 
 Fan of Flames:
 - Previously, if you're somehow moved into the target square while channeling, you'll hit all tiles in range except yourself. Now, if this happens, you'll only hit all tiles in a radius of 5 plus bonuses, but there's now a Wheel of Flames upgrade (4 SP) that lets you simply target yourself with the spell to reproduce the effect.
@@ -248,10 +248,9 @@ Chimera Familiar:
 - Overhauled. Instead of copying spells when you cast them, the chimera now copies an eligible spell every turn with its action, choosing the spell with the highest max charges and draining a charge of that spell. This counts as you casting the spell.
 - Max Charges upgrade removed and folded into the base spell.
 - The chimera's base HP is increased to 26, the same as those of enemy chaos chimeras. Its default attacks have 5 damage and 5 range.
-- The chimera now starts with 50% physical resistance, and the Minion Resists upgrade affects physical resistance as well.
+- The chimera now starts with 75% fire and lightning resistance, and the Minion Resists upgrade is replaced by a 3 SP upgrade that gives +25% fire, +25% lightning, and +100% physical resistances (fire lion and lightning snake get +50% of the resistance they don't have instead of +25% to both).
 - Dark/Nature/Arcane mimicry removed.
-- Doublecast (6 SP): The chimera now copies 2 of your spells per turn.
-- Wild Metamorphosis (6 SP): The fire lion and lightning snake that the chimera transforms into upon reaching 0 HP can now also copy your spells. The fire lion can only copy your fire and chaos spells. The lightning snake can only copy your lightning and chaos spells. Each of them can only cast 1 spell per turn.
+- Wild Metamorphosis (7 SP): The chimera now copies two of your spells per turn. The fire lion and lightning snake that the chimera transforms into upon reaching 0 HP can now also copy your spells. The fire lion can only copy your fire and chaos spells. The lightning snake can only copy your lightning and chaos spells. Each of them can only cast one spell per turn.
 - Minion Health (3 SP): +20 minion health.
 - Self Sufficiency (4 SP): +5 minion damage and +3 minion range.
 

@@ -1155,6 +1155,36 @@ class SwappersSchemeBuff(Buff):
         target.deal_damage(evt.damage, evt.damage_type, evt.source, penetration=penetration)
         yield
 
+class CurseOfRageBuff(Buff):
+
+    def __init__(self, spell):
+        self.spell = spell
+        Buff.__init__(self)
+    
+    def on_init(self):
+        self.name = "Curse of Rage"
+        self.buff_type = BUFF_TYPE_CURSE
+        self.color = Color(255, 0, 0)
+        self.global_triggers[EventOnDeath] = self.on_death
+    
+    def on_death(self, evt):
+        if not self.owner.has_buff(BerserkBuff):
+            return
+        should_summon = False
+        if evt.unit is self.owner:
+            should_summon = True
+        if evt.damage_event and evt.damage_event.source and evt.damage_event.source.owner is self.owner:
+            should_summon = True
+        if not should_summon:
+            return
+        self.owner.level.queue_spell(self.summon_ghost(evt.unit))
+    
+    def summon_ghost(self, target):
+        unit = Bloodghast()
+        apply_minion_bonuses(self.spell, unit)
+        self.spell.summon(unit, target=target, radius=5)
+        yield
+
 def modify_class(cls):
 
     if cls is DeathBolt:
@@ -1640,13 +1670,9 @@ def modify_class(cls):
         def on_shoot(self, target):
             unit = self.owner.level.get_unit_at(target.x, target.y)
             if unit:
-                if self.spell.get_stat('lycanthropy') and (Tags.Living in unit.tags or Tags.Nature in unit.tags or Tags.Demon in unit.tags) and unit.cur_hp <= 25:
-                    unit.kill(trigger_death_event=False)
-                    newunit = Werewolf()
-                    apply_minion_bonuses(self.spell, newunit)
-                    self.spell.summon(newunit, target=unit)
-                else:
-                    unit.apply_buff(BerserkBuff(), self.berserk_duration)
+                unit.apply_buff(BerserkBuff(), self.berserk_duration)
+                if self.spell.get_stat("curse"):
+                    unit.apply_buff(CurseOfRageBuff(self.spell))
 
     if cls is EyeOfRageSpell:
 
@@ -1662,7 +1688,7 @@ def modify_class(cls):
             self.upgrades['shot_cooldown'] = (-1, 1)
             self.upgrades['duration'] = 15
             self.upgrades['berserk_duration'] = 2
-            self.upgrades['lycanthropy'] = (1, 4, "Lycanthropy", "When Eye of Rage targets a [living], [nature], or [demon] unit with 25 or less HP, that unit is transformed into a friendly Werewolf.")
+            self.upgrades['curse'] = (1, 5, "Curse of Rage", "Eye of Rage now also permanently inflicts Curse of Rage on hit.\nIf an enemy has both [berserk] and Curse of Rage, it and units it kills will spawn bloodghasts allied to you on death.")
 
             self.tags = [Tags.Nature, Tags.Enchantment, Tags.Eye]
             self.level = 2
@@ -3657,19 +3683,12 @@ def modify_class(cls):
                 self.caster.level.event_manager.raise_event(EventOnSpellCast(self, self.caster, x, y), self.caster)
             self.caster.level.act_move(self.caster, x, y, teleport=True)
             if self.get_stat("fauna"):
-                def WormBallGhostlyBuffed(HP):
-                    unit = WormBallGhostly(HP)
-                    unit.spells[0].damage = self.get_stat("minion_damage", base=unit.spells[0].damage)
-                    buff = unit.get_buff(SplittingBuff)
-                    if buff:
-                        buff.spawner = lambda: WormBallGhostlyBuffed(unit.max_hp//2)
-                    return unit
-                unit_type = random.choice([DisplacerBeastGhost, MantisGhost, GhostToad, WormBallGhostlyBuffed, GoatHeadGhost])
-                if unit_type != WormBallGhostlyBuffed:
+                unit_type = random.choice([DisplacerBeastGhost, MantisGhost, GhostToad, WormBallGhostly, GoatHeadGhost])
+                if unit_type != WormBallGhostly:
                     unit = unit_type()
                     apply_minion_bonuses(self, unit)
                 else:
-                    unit = WormBallGhostlyBuffed(self.get_stat("minion_health", base=10))
+                    unit = WormBallGhostly(self.get_stat("minion_health", base=10))
                 self.summon(unit, radius=5)
 
     if cls is VoidBeamSpell:
@@ -3908,12 +3927,10 @@ def modify_class(cls):
             self.minion_health = 26
             self.minion_damage = 5
             self.minion_range = 5
-            self.minion_resists = 50
 
-            self.upgrades['minion_resists'] = (50, 2)
+            self.upgrades['resists'] = (1, 3, "Resistances", "The chimera gains [25_fire:fire] and [25_lightning:lightning] resistances. The fire lion and lightning snake it splits into gain [50_lightning:lightning] and [50_fire:fire] resistances respectively.\nAll minions summoned by this spell gain [100_physical:physical] resistance.")
             self.upgrades["minion_health"] = (20, 3)
-            self.upgrades["casts"] = (1, 6, "Doublecast", "The chimera now copies 2 of your spells per turn.")
-            self.upgrades["morph"] = (1, 6, "Wild Metamorphosis", "The fire lion and lightning snake that the chimera transforms into upon reaching 0 HP can now also copy your spells.\nThe fire lion can only copy your [fire] and [chaos] spells.\nThe lightning snake can only copy your [lightning] and [chaos] spells.\nEach of them can only copy 1 spell per turn.")
+            self.upgrades["morph"] = (1, 7, "Wild Metamorphosis", "The chimera now copies two of your spells per turn.\nThe fire lion and lightning snake that the chimera transforms into upon reaching 0 HP can now also copy your spells.\nThe fire lion can only copy your [fire] and [chaos] spells.\nThe lightning snake can only copy your [lightning] and [chaos] spells.\nThe lion and snake can only copy one spell per turn.")
             self.add_upgrade(ChimeraFamiliarSelfSufficiency())
 
             self.casts = 1
@@ -3921,8 +3938,8 @@ def modify_class(cls):
             self.must_target_empty = True
 
         def get_description(self):
-            return ("Summon a Chimera Familiar, which has [{minion_health}_HP:minion_health], and [{minion_resists}:damage] resistance to [fire], [lightning], and [physical].\n"
-                    "Each turn, the chimera will copy [{casts}:num_targets] of your [fire], [lightning], or [chaos] [sorcery] spells that can be cast from its tile, preferring spells with the highest [max_charges:max_charges], consuming 1 charge from the spells copied. This counts as you casting the spell.\n"
+            return ("Summon a Chimera Familiar, which has [{minion_health}_HP:minion_health], [75_fire:fire] resistance, and [75_lightning:lightning] resistance.\n"
+                    "Each turn, the chimera will copy one of your [fire], [lightning], or [chaos] [sorcery] spells that can be cast from its tile, preferring spells with the highest [max_charges:max_charges], consuming 1 charge from the spells copied. This counts as you casting the spell.\n"
                     "If the chimera cannot copy your spells, it will use [fire] and [lightning] ranged attacks with [{minion_damage}:minion_damage] damage and [{minion_range}:minion_range] range.").format(**self.fmt_dict())
 
         def get_lion(self):
@@ -3931,9 +3948,9 @@ def modify_class(cls):
             apply_minion_bonuses(self, unit)
             if self.get_stat("morph"):
                 unit.spells.insert(0, ChimeraFamiliarSpellConduit(lightning=False))
-            bonus = self.get_stat("minion_resists") - self.minion_resists
-            for tag in [Tags.Lightning, Tags.Physical]:
-                unit.resists[tag] = bonus
+            if self.get_stat("resists"):
+                unit.resists[Tags.Lightning] = 50
+                unit.resists[Tags.Physical] = 100
             return unit
 
         def get_snake(self):
@@ -3942,9 +3959,9 @@ def modify_class(cls):
             apply_minion_bonuses(self, unit)
             if self.get_stat("morph"):
                 unit.spells.insert(0, ChimeraFamiliarSpellConduit(fire=False))
-            bonus = self.get_stat("minion_resists") - self.minion_resists
-            for tag in [Tags.Fire, Tags.Physical]:
-                unit.resists[tag] = bonus
+            if self.get_stat("resists"):
+                unit.resists[Tags.Fire] = 50
+                unit.resists[Tags.Physical] = 100
             return unit
 
         def cast_instant(self, x, y):
@@ -3952,10 +3969,11 @@ def modify_class(cls):
             chimera.asset_name = "chaos_chimera"
             chimera.name = "Chimera Familiar"
             apply_minion_bonuses(self, chimera)
-            chimera.spells.insert(0, ChimeraFamiliarSpellConduit(casts=self.get_stat("casts")))
-            minion_resists = self.get_stat("minion_resists")
-            for tag in [Tags.Fire, Tags.Lightning, Tags.Physical]:
-                chimera.resists[tag] = minion_resists
+            chimera.spells.insert(0, ChimeraFamiliarSpellConduit(casts=2 if self.get_stat("morph") else 1))
+            if self.get_stat("resists"):
+                chimera.resists[Tags.Fire] = 100
+                chimera.resists[Tags.Lightning] = 100
+                chimera.resists[Tags.Physical] = 100
             chimera.buffs[0].spawner = lambda: get_lion(self)
             chimera.buffs[1].spawner = lambda: get_snake(self)
             self.summon(chimera, Point(x, y))
