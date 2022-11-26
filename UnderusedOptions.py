@@ -3287,7 +3287,19 @@ def modify_class(cls):
             self.upgrades['dark'] = (1, 2, "Morbidity", "Mercurized targets also take [dark] damage.")
             self.upgrades['noxious_aura'] = (1, 5, "Toxic Fumes", "Quicksilver Geists have a noxious aura that deals [1_poison:poison] damage to enemy units within [2_tiles:radius] each turn, which benefits from bonuses to [radius].\nThis aura gains bonus [radius] equal to the square root of 10% of the geist's initial max HP, rounded up.")
             self.upgrades['vengeance'] = (1, 5, "Mercurial Vengeance", "When a Quicksilver Geist is killed by an enemy, its killer is affliected with Mercurize.")
-            self.upgrades["recursive"] = (1, 2, "Recursive Mercurize", "Mercurize now lasts indefinitely and is considered a buff if applied to a Quicksilver Geist, granting it [50_dark:dark] resistance.\nThis allows the geist to take no damage from the effect and spawn another geist on death.")
+            self.upgrades["recursive"] = (1, 2, "Recursive Mercurize", "Mercurize now lasts indefinitely and is considered a buff if applied to a Quicksilver Geist, instead healing it each turn by an amount equal to this spell's [damage] stat.\nThis still allows the geist to spawn another geist on death.")
+
+        def cast_instant(self, x, y):
+            for p in self.owner.level.get_points_in_line(self.caster, Point(x, y))[1:-1]:
+                self.owner.level.show_effect(p.x, p.y, Tags.Dark, minor=True)
+            unit = self.caster.level.get_unit_at(x, y)
+            if unit:
+                buff = MercurizeBuff(self)
+                duration = self.get_stat('duration')
+                if self.get_stat("recursive") and isinstance(unit.source, MercurizeSpell):
+                    buff.buff_type = BUFF_TYPE_BLESS
+                    duration = 0
+                unit.apply_buff(buff, duration)
 
     if cls is MercurizeBuff:
 
@@ -3300,14 +3312,11 @@ def modify_class(cls):
             Buff.__init__(self)
 
         def on_advance(self):
+            if self.buff_type != BUFF_TYPE_CURSE:
+                self.owner.deal_damage(-self.damage, Tags.Heal, self.spell)
+                return
             for dtype in self.dtypes:
                 self.owner.deal_damage(self.damage, dtype, self.spell)
-
-        def on_applied(self, owner):
-            if self.spell.get_stat("recursive") and self.owner.source is self.spell:
-                self.resists[Tags.Dark] = 50
-                self.buff_type = BUFF_TYPE_BLESS
-                self.turns_left = 0
 
         def on_death(self, evt):
             geist = Ghost()
