@@ -5646,12 +5646,17 @@ def modify_class(cls):
             # Purely for shrine bonuses
             self.minion_range = 6
 
-            self.upgrades['void_court'] = (1, 5, "Void Court", "Summon only void knights, which benefits from bonuses to [num_summons:num_summons].\nSummon a void champion as well.", "court")
-            self.upgrades['storm_court'] = (1, 5, "Storm Court","Summon only storm knights, which benefits from bonuses to [num_summons:num_summons].\nSummon a storm champion as well.", "court")
-            self.upgrades['chaos_court'] = (1, 5, "Chaos Court", "Summon only chaos knights, which benefits from bonuses to [num_summons:num_summons].\nSummon a chaos champion as well.", "court")
+            self.upgrades['void_court'] = (1, 5, "Void Court", "Instead summon a void champion and [{num_summons}:num_summons] void knights.", "court")
+            self.upgrades['storm_court'] = (1, 5, "Storm Court", "Instead summon a storm champion and [{num_summons}:num_summons] storm knights.", "court")
+            self.upgrades['chaos_court'] = (1, 5, "Chaos Court", "Instead summon a chaos champion and [{num_summons}:num_summons] chaos knights.", "court")
             self.upgrades["promotion"] = (1, 6, "Promotion", "Each non-champion knight will be promoted to a champion after [20_turns:duration].")
             self.upgrades['max_charges'] = (1, 3)
             self.add_upgrade(KnightlyOathUndyingOath())
+
+        def fmt_dict(self):
+            stats = Spell.fmt_dict(self)
+            stats["num_summons"] = self.get_stat("num_summons", base=3)
+            return stats
 
         def get_description(self):
             return ("Summon a void knight, a chaos knight, and a storm knight.\n"
