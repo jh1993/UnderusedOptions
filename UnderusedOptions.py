@@ -3930,7 +3930,7 @@ def modify_class(cls):
 
             self.upgrades["range"] = (RANGE_GLOBAL, 3)
             self.upgrades["regrowth"] = (1, 5, "Bone Regrowth", "Each ally damaged by Bone Barrage gains regeneration for [{duration}_turns:duration], each turn recovering HP equal to 25% of the HP lost.")
-            self.upgrades["ghost"] = (1, 5, "Ghost Bones", "Each ally also deals [{damage}_dark:dark] damage to the target, regardless of the amount of damage the ally took.\nAllies not in line of sight of the target will now also deal this additional [dark] damage to the target.")
+            self.upgrades["ghost"] = (1, 5, "Ghost Bones", "Each ally also deals [{damage}_dark:dark] damage to the target, regardless of the amount of damage the ally took; this damage benefits from bonuses to [damage].\nAllies not in line of sight of the target will now also deal this additional [dark] damage to the target.")
             self.upgrades['animation'] = (1, 7, "Shambler Assembly", "Bone Barrage can target empty tiles.\nIf it does, it creates a bone shambler at that tile with HP equal to the total damage dealt to your minions.\nThe bone shambler splits into two bone shamblers with half its max HP when destroyed if its initial max HP is at least 8, and has a melee attack dealing [physical] damage equal to 1/4 of its initial max HP.\nIf you have the Bone Regrowth upgrade, the bone shambler has a passive regeneration that heals each turn for 1/8 of its initial max HP.\nIf you have the Ghost Bones upgrade, the bone shambler's melee attack deals additional [dark] damage equal to your number of minions at the time of casting this spell, plus [minion_damage:minion_damage] bonuses.")
 
         def fmt_dict(self):

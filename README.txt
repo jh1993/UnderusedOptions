@@ -103,7 +103,7 @@ Touch of Death:
 - All the damage type upgrades now do the same amount of damage as dark damage done, but are increased to 2 SP. Now also has a lightning damage upgrade.
 - Damage (4 SP): +200 damage.
 - Touch of the Raven and Touch of the Vampire removed. Touch of the Reaper now has the reapers use your Touch of Death as well, and it's no longer limited to living units.
-- Fear of Death (5 SP): If Touch of Death kills its target, all enemies in line of sight of the target are inflicted with a stack of the fear of death for 6 turns, which benefits from duration bonuses. Each turn, each stack of fear has a chance to stun its victim for 1 turn, equal to 100% divided by the distance between the victim and the source of its fear, if the source is visible to the victim. A stack of fear is automatically removed if its source is no longer alive.
+- Fear of Death (5 SP): If Touch of Death kills its target, all enemies in line of sight of the target are inflicted with a stack of the fear of death for 6 turns. Each turn, each stack of fear has a chance to stun its victim for 1 turn, equal to 100% divided by the distance between the victim and the source of its fear, if the source is visible to the victim. A stack of fear is automatically removed if its source is no longer alive.
 
 Toxic Spores:
 - Grey Mushbooms upgrade replaced by Toxic Mushbooms (4 SP), which is mutually exclusive with other mushboom type upgrades and gives 3-radiu 1-damage poison auras to mushbooms; the aura instantly activates 3 times on death. Stunning is redundant with Paralyzing Venom anyways, not to mention losing poison synergy.
@@ -194,7 +194,7 @@ Mystic Vision:
 - Vision Aura upgrade cost increased to 7 SP, but is now retroactive, automatically applying to all newly summoned minions.
 
 Nightmare Aura:
-- The dream upgrades are changed to only summon old witches, aelves, and flame rifts, and minions summoned by those minions benefit from the spell's bonuses. Each dream upgrade summons a minion for every 25 damage dealt, which should result in roughly the same amount as before.
+- The dream upgrades are changed to only summon old witches, aelves, and flame rifts. Each dream upgrade summons a minion for every 25 damage dealt, which should result in roughly the same amount as before.
 - Dormancy (3 SP): If there are no enemies left in a realm, Nightmare Aura will not decrease in remaining duration. This allows an instance of the buff to persist from one realm to the next.
 
 Pain Mirror:
@@ -240,7 +240,7 @@ Bone Barrage:
 - Now no longer requires line of sight.
 - All original upgrades except Shambler Assembly removed. This spell is meant to give a strong single-target option to most conjuration builds, so its upgrades should support that niche instead of pull the spell toward conflicting directions in ways where the barrier to entry isn't worth the payoff.
 - Range (3 SP): +50 range.
-- Bone Regrowth (5 SP): Each ally damaged by Bone Barrage gains regeneration for 4 turns, each turn recovering HP equal to 25% of the HP lost. This duration benefits from bonuses to duration.
+- Bone Regrowth (5 SP): Each ally damaged by Bone Barrage gains regeneration for 4 turns, each turn recovering HP equal to 25% of the HP lost.
 - Ghost Bones (5 SP): Each ally also deals 4 dark damage to the target, regardless of the amount of damage the ally took; this damage benefits from bonuses to damage. Allies not in line of sight of the target will now also deal this additional dark damage to the target.
 - Shambler Assembly now gives the shambler regen equal to 1/8 of its initial max HP if you have Bone Regrowth, and its attack deals additional dark damage equal to your number of minions at the time of casting plus minion damage bonus if you have Ghost Bones.
 
