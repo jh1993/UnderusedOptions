@@ -63,7 +63,6 @@ Healing Light:
 
 Heavenly Blast:
 - Spirit Bind cost reduced to 4 SP, and now inflicts a Spirit Binding debuff that raises the target as a spirit on death, which is removed at the beginning of your next turn.
-- Echo Heal now benefits from duration bonuses.
 
 Hollow Flesh:
 - As per my No More Scams mod, no longer limited to living units.
@@ -79,7 +78,7 @@ Hungry Maw:
 Invoke Savagery:
 - As per my No More Scams mod, no longer tries to attack physical-immune targets unless the minion doing the attack has physical redeals.
 - Blood Savagery (3 SP): Now also affects nature and demon units.
-- Stampede (5 SP): If no melee targets are available, each ally will instead try to perform a charge attack with a range of 6 tiles. This attack benefits from bonuses to minion range, and does not stun.
+- Stampede (5 SP): If no melee targets are available, each ally will instead try to perform a charge attack with a range of 6 tiles. This attack does not stun.
 
 Magnetize:
 - Base radius and radius upgrade increased by 1 each.
@@ -107,7 +106,6 @@ Touch of Death:
 - Fear of Death (5 SP): If Touch of Death kills its target, all enemies in line of sight of the target are inflicted with a stack of the fear of death for 6 turns, which benefits from duration bonuses. Each turn, each stack of fear has a chance to stun its victim for 1 turn, equal to 100% divided by the distance between the victim and the source of its fear, if the source is visible to the victim. A stack of fear is automatically removed if its source is no longer alive.
 
 Toxic Spores:
-- Red mushboom self-destruct now benefit from minion damage bonuses. All other mushbooms now benefit from duration bonuses.
 - Grey Mushbooms upgrade replaced by Toxic Mushbooms (4 SP), which is mutually exclusive with other mushboom type upgrades and gives 3-radiu 1-damage poison auras to mushbooms; the aura instantly activates 3 times on death. Stunning is redundant with Paralyzing Venom anyways, not to mention losing poison synergy.
 
 Aether Swap:
@@ -150,7 +148,6 @@ Dominate:
 - Recruitment Bonus (3 SP): The target is now healed to full HP after being dominated, and all of its debuffs are dispelled.
 
 Earthquake:
-- Description changed to clarify that it also turns chasms into floor tiles.
 - Added a 3 SP +25% strikechance upgrade.
 
 Flame Burst:
@@ -167,7 +164,7 @@ Giant Bear:
 - Max Charges upgrade removed and its benefits folded into the base spell.
 - Armored Bear upgrade removed.
 - Polar Bear (5 SP): Summons a polar bear instead of a giant bear. Polar bears are resistant to ice damage, can freeze units around itself, and gains regeneration and an ice aura while frozen. For every 100 ice resistance the polar bear has above 100, the self-healing and ice aura activate once per turn. An excess of less than 100 instead has a chance to activate these effects. Not compatible with other bear species upgrades.
-- Roar (4 SP): The bear gains a roar with a cooldown of 3 turns that stuns enemies in a 7 range cone for 3 turns. The venom bear's roar will also poison enemies for 5 turns and give regeneration to allies for the same duration. The blood bear's roar will instead berserk enemies and give allies a stack of bloodrage for 10 turns. The polar bear's roar will instead freeze enemies and heal allies for an amount equal to its regeneration when frozen.
+- Roar (4 SP): The bear gains a roar with a cooldown of 3 turns that stuns enemies in a 7 range cone for 3 turns. The venom bear's roar will also poison enemies for 5 turns and give regeneration to allies for the same duration. The blood bear's roar will instead berserk enemies for 3 turns and give allies a stack of bloodrage for 10 turns. The polar bear's roar will instead freeze enemies for 3 turns and heal allies for an amount equal to its regeneration when frozen.
 
 Holy Fire:
 - Damage is halved but now deals both fire and holy damage.
@@ -176,7 +173,7 @@ Holy Fire:
 - Nightbane (2 SP): Dark and ice units will also be stunned.
 
 Holy Armor:
-- Divine Riposte (4 SP): While Holy Armor is active, if you pass your turn, you will gain Divine Riposte until the end of your next turn. When you have Divine Riposte, you retaliate for 18 holy damage whenever an enemy damages you. This damage benefits from bonuses. The duration of Divine Riposte is fixed and unaffected by bonuses.
+- Divine Riposte (4 SP): While Holy Armor is active, if you pass your turn, you will retaliate for 18 holy damage whenever an enemy damages you, until the beginning of your next turn.
 
 Ironize:
 - No longer a conjuration spell.
@@ -220,7 +217,7 @@ Shrapnel Blast:
 Suspend Mortality:
 - Can no longer be cast on units that already have reincarnations, unless you have the Additive upgrade (see below).
 - Additive (4 SP): If the target already has reincarnations, you can now cast this spell on the target to add its number of lives to said reincarnations.
-- Eternity (7 SP): Suspend Mortality now adds reincarnations as a passive buff, which is permanent and cannot be dispelled.
+- Eternity (7 SP): Suspend Mortality now adds reincarnations as a passive effect, which is permanent and cannot be dispelled.
 
 Underworld Passage:
 - Underworld Seeker (3 SP): You can now spend 1 extra charge to cast this spell even if you are not next to a chasm.
@@ -292,7 +289,7 @@ Ice Drake:
 Lightning Form:
 - Is now also a translocation spell.
 - Cloud Form (3 SP): When inside a thunderstorm cloud, Lightning Form will not run out, and you will automatically generate a thunderstorm cloud within 3 tiles every turn. If you have Ice Infusion, this upgrade also works with blizzard clouds.
-- Frost Infusion (4 SP): Now also gives 100 ice resistance and functions with ice spells.
+- Ice Infusion (4 SP): Now also gives 100 ice resistance and functions with ice spells.
 
 Lightning Storm:
 - Strike Twice (5 SP): If an affected tile already has a thunderstorm cloud, the unit on that tile is dealt lightning damage equal to the damage of this spell. If you have the Strikechance upgrade, there is a 50% chance to deal damage again.
@@ -325,7 +322,7 @@ Sight of Blood:
 - Completely overhauled, because the original is thematically redundant with Eye of Rage while being too situational. Is now also an eye and conjuration spell. Every 3 turns, summon a blood vulture (same stats as thunderbird) near the target. Uses shot cooldown, but is not an eye buff. Lasts 15 turns.
 - Shot Cooldown (4 SP): -1 shot cooldown.
 - Bloodrage Bonus (3 SP): +1 bloodrage bonus.
-- Feeding Frenzy (2 SP): On each activation, each allied unit in line of sight of the target that has bloodrage has a chance to gain another stack of bloodrage. The chance is equal to the percentage of the target's missing HP. The strength of this bloodrage stack is equal to the strength of the strongest bloodrage stack on the unit, and the duration is equal to 10 plus this spell's duration bonuses.
+- Feeding Frenzy (2 SP): On each activation, each allied unit in line of sight of the target that has bloodrage has a chance to gain another stack of bloodrage for 10 turns. The chance is equal to the percentage of the target's missing HP. The strength of this bloodrage stack is equal to the strength of the strongest bloodrage stack on the unit.
 - Duration (3 SP): +15 duration.
 - Unending Bloodrage (5 SP): When the target dies, the curse is applied to another random enemy in line of sight for its remaining duration.
 
@@ -343,7 +340,7 @@ Storm Drake:
 - Cloud Surge (3 SP): If an affected tile already has a thunderstorm cloud, the unit on that tile is dealt lightning damage equal to the storm drake's breath damage. If you have the Strikechance upgrade, there is a 50% chance to deal damage again.
 
 Wall of Ice:
-- Forceful Construction (4 SP): "Wall of Ice no longer requires line of sight to cast. Wall and chasm tiles in the affected area are converted to floor tiles before summoning the ice elementals. Units in the affected area take 22 ice damage and are frozen for 3 turns, which benefit from stat bonuses. If a unit is killed then an ice elemental is summoned in its tile.
+- Forceful Construction (4 SP): "Wall of Ice no longer requires line of sight to cast. Wall and chasm tiles in the affected area are converted to floor tiles before summoning the ice elementals. Units in the affected area take 22 ice damage and are frozen for 3 turns. If a unit is killed then an ice elemental is summoned in its tile.
 
 Watcher Form:
 - Now also an eye spell.
@@ -373,7 +370,7 @@ Fae Court:
 - Glass Faery cost reduced to 6. It's anti-synergistic with Cracklevoid so the cost shouldn't be that high.
 
 Floating Eye:
-- Independent Eye (3 SP): The floating eye now has an attack with unlimited range that deals 2 arcane damage. This attack benefits from minion damage bonuses.
+- Independent Eye (3 SP): The floating eye now has an attack with unlimited range that deals 2 arcane damage.
 
 Flock of Eagles:
 - Dive Attack upgrade folded into the base spell.
@@ -381,7 +378,6 @@ Flock of Eagles:
 
 Ice Phoenix:
 - Max charges increased to 2.
-- Self destruct now benefits from minion damage and radius bonuses.
 - Freeze Chance (4 SP): All of the ice phoenix's ice damage will freeze enemies for 3 turns.
 - Icy Judgment (5 SP): Half of all of the ice phoenix's ice damage will be redealt as holy damage.
 
@@ -396,7 +392,7 @@ Ring of Spiders:
 Slime Form:
 - As per my No More Scams mod, slimes now have a chance to gain max HP if their max HP divided by 10 isn't a whole number.
 - The slime type upgrades now replace all of your slimes with the chosen variant, and are incompatible with each other. Fire and Ice Slime cost 3 SP, Void Slime costs 4 SP.
-- Natural Slimes (4 SP): Summoned green slimes become nature minions. nSummoned green slimes gain 10 HP and 7 damage. Incompatible with other slime color upgrades.
+- Natural Slimes (4 SP): Summoned green slimes become nature minions. Summoned green slimes gain 10 HP and 7 damage. Incompatible with other slime color upgrades.
 - Minion Health (3 SP): +10 minion health.
 - Empowered Slimes (5 SP): Green slimes will acidify targets with their melee attacks, reducing poison resistance by 100. The attacks of red slimes gain 1 radius. The attacks of ice slimes will freeze targets for 1 turn. The attacks of void slimes gain 3 range.
 
@@ -442,6 +438,9 @@ Word of Ice:
 
 Arcane Accounting:
 - Now instead lasts 2 turns (starting from the next turn) with only 50% chance to refund 1 spell charge. Duration can be extended by Permanence.
+
+Ghostfire:
+- Fire ghosts now have 100% dark resistance, to not anti-synergize with ghostfire tormentors.
 
 Hibernation:
 - Now also works on nature minions.
