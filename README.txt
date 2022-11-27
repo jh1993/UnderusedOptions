@@ -156,7 +156,7 @@ Flame Burst:
 
 Frostfire Hydra:
 - Beams now benefit from both minion damage and breath damage bonuses.
-- Is now a permanent minion; minion duration upgrade removed. Try not to box yourself in and softlock yourself.
+- Is now a permanent minion; minion duration upgrade removed.
 - Dragon Mage (6 SP): The hydra will cast Melt on the target of its fire beam, and Freeze on the target of its ice beam. These spells gains all of your upgrades and bonuses.
 - Splitting (4 SP): Upon reaching 0 HP, the hydra splits into a frost hydra and a fire hydra. Each hydra inherits one of the frostfire hydra's beams and resistances.
 
