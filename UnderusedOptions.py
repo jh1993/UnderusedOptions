@@ -2759,6 +2759,7 @@ def modify_class(cls):
                     continue
                 unit.team = self.caster.team
                 unit.source = self
+                unit.level.event_manager.raise_event(EventOnUnitPreAdded(unit), unit)
                 unit.level.event_manager.raise_event(EventOnUnitAdded(unit), unit)
                 if heal:
                     for buff in unit.buffs:
