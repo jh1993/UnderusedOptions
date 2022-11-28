@@ -371,6 +371,7 @@ Fae Court:
 
 Floating Eye:
 - Independent Eye (3 SP): The floating eye now has an attack with unlimited range that deals 2 arcane damage.
+- Eternal Gaze (2 SP): When the floating eye loses an [eye] buff, that buff will be reapplied with unlimited duration.
 
 Flock of Eagles:
 - Dive Attack upgrade folded into the base spell.
