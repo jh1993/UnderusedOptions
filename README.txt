@@ -245,14 +245,13 @@ Bone Barrage:
 - Shambler Assembly now gives the shambler regen equal to 1/8 of its initial max HP if you have Bone Regrowth, and its attack deals additional dark damage equal to your number of minions at the time of casting plus minion damage bonus if you have Ghost Bones.
 
 Chimera Familiar:
-- Overhauled. Instead of copying spells when you cast them, the chimera now copies an eligible spell every turn with its action, choosing the spell with the highest max charges and draining a charge of that spell. This counts as you casting the spell.
+- Overhauled. Instead of copying spells when you cast them, the chimera now automatically copies an eligible spell every turn with its action, choosing the spell with the highest max charges and draining a charge of that spell. This counts as you casting the spell.
 - Max Charges upgrade removed and folded into the base spell.
 - The chimera's base HP is increased to 26, the same as those of enemy chaos chimeras. Its default attacks have 5 damage and 5 range.
 - The chimera now starts with 75% fire and lightning resistance, and the Minion Resists upgrade is replaced by a 3 SP upgrade that gives +25% fire, +25% lightning, and +100% physical resistances (fire lion and lightning snake get +50% of the resistance they don't have instead of +25% to both).
 - Dark/Nature/Arcane mimicry removed.
 - Wild Metamorphosis (7 SP): The chimera now copies two of your spells per turn. The fire lion and lightning snake that the chimera transforms into upon reaching 0 HP can now also copy your spells. The fire lion can only copy your fire and chaos spells. The lightning snake can only copy your lightning and chaos spells. Each of them can only cast one spell per turn.
-- Minion Health (3 SP): +20 minion health.
-- Self Sufficiency (4 SP): +5 minion damage and +3 minion range.
+- Wild Metamorphosis (1 SP): Chimera Familiar randomly gains 7 minion health, 3 minion damage, or 1 minion range. This upgrade can be purchased an unlimited number of times.
 
 Conductance:
 - Instead of copying lightning spells cast at the target, the debuff will have a 50% chance to cause any lightning damage dealt to the target, before resistances, to also be redealt to a target in line of sight up to 4 tiles away, and apply Conductance with duration equal to the current remaining duration to it after dealing damage.

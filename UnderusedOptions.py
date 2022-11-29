@@ -338,24 +338,21 @@ class GiantBearRoar(BreathWeapon):
             if are_hostile(unit, self.caster):
                 unit.apply_buff(Stun(), self.get_stat("duration"))
 
-class ChimeraFamiliarSpellConduit(Spell):
+class SpellConduitBuff(Buff):
 
     def __init__(self, fire=True, lightning=True, casts=1):
         self.fire = fire
         self.lightning = lightning
         self.casts = casts
-        Spell.__init__(self)
-
-    def on_init(self):
-        self.name = "Spell Conduit"
-        self.range = 0
+        Buff.__init__(self)
         self.description = "Copies %i of the wizard's %s%s%s%s or chaos sorcery spells with the highest max charges that can be cast from this tile, consuming a charge from them and counting as the wizard casting them." % (self.casts, "fire" if self.fire else "", ", " if self.fire and self.lightning else "", "lightning" if self.lightning else "", "," if self.fire and self.lightning else "")
+        self.color = Tags.Sorcery.color
     
     def copy_spell(self, spell):
         spell_copy = type(spell)()
         spell_copy.statholder = self.owner.source.caster
         spell_copy.owner = self.owner
-        spell_copy.caster = self.caster
+        spell_copy.caster = self.owner
         spell_copy.max_charges = 0
         spell_copy.cur_charges = 0
         return spell_copy
@@ -370,13 +367,7 @@ class ChimeraFamiliarSpellConduit(Spell):
         spells.sort(reverse=True, key=lambda spell: spell.get_stat("max_charges"))
         return spells
     
-    def can_cast(self, x, y):
-        for spell in self.get_wizard_spells():
-            if self.copy_spell(spell).get_ai_target():
-                return True
-        return False
-    
-    def cast_instant(self, x, y):
+    def on_advance(self):
         casts_left = self.casts
         for spell in self.get_wizard_spells():
             spell_copy = self.copy_spell(spell)
@@ -384,18 +375,35 @@ class ChimeraFamiliarSpellConduit(Spell):
             if not target:
                 continue
             spell.cur_charges -= 1
-            self.caster.level.queue_spell(spell_copy.cast(target.x, target.y))
-            self.caster.level.event_manager.raise_event(EventOnSpellCast(spell, self.owner.source.caster, target.x, target.y), self.owner.source.caster)
+            self.owner.level.queue_spell(spell_copy.cast(target.x, target.y))
+            self.owner.level.event_manager.raise_event(EventOnSpellCast(spell, self.owner.source.caster, target.x, target.y), self.owner.source.caster)
             casts_left -= 1
             if not casts_left:
                 return
 
-class ChimeraFamiliarSelfSufficiency(Upgrade):
+class WildMetamorphosis(Upgrade):
+
+    def __init__(self, num=1):
+        self.num = num
+        Upgrade.__init__(self)
+
     def on_init(self):
-        self.name = "Self Sufficiency"
-        self.level = 4
-        self.spell_bonuses[ChimeraFarmiliar]["minion_damage"] = 5
-        self.spell_bonuses[ChimeraFarmiliar]["minion_range"] = 3
+        self.name = "Wild Metamorphosis%s" % ((" %i" % self.num) if self.num > 1 else "")
+        self.level = 1
+    
+    def get_description(self):
+        if not self.spell_bonuses:
+            return "Chimera Familiar randomly gains [7_minion_health:minion_health], [3_minion_damage:minion_damage], or [1_minion_range:minion_range].\nThis upgrade can be purchased an unlimited number of times."
+        else:
+            return None
+
+    def on_applied(self, owner):
+        if self.spell_bonuses:
+            return
+        bonuses = {"minion_health": 7, "minion_damage": 3, "minion_range": 1}
+        stat = random.choice(list(bonuses.keys()))
+        self.spell_bonuses[ChimeraFarmiliar][stat] = bonuses[stat]
+        self.prereq.add_upgrade(WildMetamorphosis(self.num + 1))
 
 class ConductanceBuff(Buff):
 	
@@ -4003,24 +4011,23 @@ def modify_class(cls):
             self.minion_range = 5
 
             self.upgrades['resists'] = (1, 3, "Resistances", "The chimera gains [25_fire:fire] and [25_lightning:lightning] resistances. The fire lion and lightning snake it splits into gain [50_lightning:lightning] and [50_fire:fire] resistances respectively.\nAll minions summoned by this spell gain [100_physical:physical] resistance.")
-            self.upgrades["minion_health"] = (20, 3)
-            self.upgrades["morph"] = (1, 7, "Wild Metamorphosis", "The chimera now copies two of your spells per turn.\nThe fire lion and lightning snake that the chimera transforms into upon reaching 0 HP can now also copy your spells.\nThe fire lion can only copy your [fire] and [chaos] spells.\nThe lightning snake can only copy your [lightning] and [chaos] spells.\nThe lion and snake can only copy one spell per turn.")
-            self.add_upgrade(ChimeraFamiliarSelfSufficiency())
+            self.upgrades["casts"] = (1, 7, "Doublecast", "The chimera now copies two of your spells per turn.\nThe fire lion and lightning snake that the chimera transforms into upon reaching 0 HP can now also copy your spells.\nThe fire lion can only copy your [fire] and [chaos] spells.\nThe lightning snake can only copy your [lightning] and [chaos] spells.\nThe lion and snake can only copy one spell per turn.")
+            self.add_upgrade(WildMetamorphosis())
 
             self.casts = 1
             self.must_target_walkable = True
             self.must_target_empty = True
 
         def get_description(self):
-            return ("Summon a Chimera Familiar, which has [{minion_health}_HP:minion_health], [75_fire:fire] resistance, and [75_lightning:lightning] resistance.\n"
-                    "Each turn, the chimera will copy one of your [fire], [lightning], or [chaos] [sorcery] spells that can be cast from its tile, preferring spells with the highest [max_charges:max_charges], consuming 1 charge from the spells copied. This counts as you casting the spell.\n"
-                    "If the chimera cannot copy your spells, it will use [fire] and [lightning] ranged attacks with [{minion_damage}:minion_damage] damage and [{minion_range}:minion_range] range.").format(**self.fmt_dict())
+            return ("Summon a Chimera Familiar, which has [{minion_health}_HP:minion_health], [75_fire:fire] resistance, [75_lightning:lightning] resistance, and [fire] and [lightning] ranged attacks with [{minion_damage}:minion_damage] damage and [{minion_range}:minion_range] range.\n"
+                    "Each turn, the chimera automatically copies [{casts}:sorcery] of your [fire], [lightning], or [chaos] [sorcery] spells that can be cast from its tile, preferring spells with the highest [max_charges:max_charges], consuming 1 charge from the spells copied. This counts as you casting the spell.\n"
+                    "The chimera cannot channel different copies of the same spell simultaneously.").format(**self.fmt_dict())
 
         def get_lion(self):
             unit = RedLion()
             unit.name = "Lion Familiar"
-            if self.get_stat("morph"):
-                unit.spells.insert(0, ChimeraFamiliarSpellConduit(lightning=False))
+            if self.get_stat("casts") > 1:
+                unit.buffs.append(SpellConduitBuff(lightning=False))
             if self.get_stat("resists"):
                 unit.resists[Tags.Lightning] = 50
                 unit.resists[Tags.Physical] = 100
@@ -4029,8 +4036,8 @@ def modify_class(cls):
         def get_snake(self):
             unit = GoldenSnake()
             unit.name = "Snake Familiar"
-            if self.get_stat("morph"):
-                unit.spells.insert(0, ChimeraFamiliarSpellConduit(fire=False))
+            if self.get_stat("casts") > 1:
+                unit.buffs.append(SpellConduitBuff(fire=False))
             if self.get_stat("resists"):
                 unit.resists[Tags.Fire] = 50
                 unit.resists[Tags.Physical] = 100
@@ -4041,7 +4048,7 @@ def modify_class(cls):
             chimera.asset_name = "chaos_chimera"
             chimera.name = "Chimera Familiar"
             apply_minion_bonuses(self, chimera)
-            chimera.spells.insert(0, ChimeraFamiliarSpellConduit(casts=2 if self.get_stat("morph") else 1))
+            chimera.buffs.append(SpellConduitBuff(casts=self.get_stat("casts")))
             if self.get_stat("resists"):
                 chimera.resists[Tags.Fire] = 100
                 chimera.resists[Tags.Lightning] = 100
