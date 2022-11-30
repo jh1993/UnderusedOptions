@@ -604,11 +604,11 @@ class SightOfBloodBuff(Buff):
 
 class SummonedStormDrakeBreath(StormBreath):
     def __init__(self, spell):
+        StormBreath.__init__(self)
         self.damage = spell.get_stat("breath_damage")
         self.range = spell.get_stat("minion_range")
         self.strikechance = spell.get_stat("strikechance")/100
         self.surge = spell.get_stat("surge")
-        StormBreath.__init__(self)
     def per_square_effect(self, x, y):
         if self.surge:
             existing = self.caster.level.tiles[x][y].cloud
@@ -616,7 +616,8 @@ class SummonedStormDrakeBreath(StormBreath):
                 self.caster.level.deal_damage(x, y, self.get_stat("damage"), Tags.Lightning, self)
                 if self.strikechance > 0.5 and random.random() < 0.5:
                     self.caster.level.deal_damage(x, y, self.get_stat("damage"), Tags.Lightning, self)
-        cloud = StormCloud(self.caster, self.damage)
+        cloud = StormCloud(self.caster, self.get_stat("damage"))
+        cloud.source = self
         cloud.strikechance = self.strikechance
         self.caster.level.add_obj(cloud, x, y)
 
