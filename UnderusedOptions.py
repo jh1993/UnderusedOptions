@@ -2136,7 +2136,7 @@ def modify_class(cls):
         def cast_instant(self, x, y):
             unit = self.caster.level.get_unit_at(x, y)
             if unit:
-                unit.apply_buff(MeltBuff(self), self.get_stat('duration'))
+                unit.apply_buff(MeltBuff(self))
             self.caster.level.deal_damage(x, y, self.get_stat('damage'), Tags.Fire, self)
 
         def get_description(self):
