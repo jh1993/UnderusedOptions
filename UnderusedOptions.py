@@ -2502,41 +2502,31 @@ def modify_class(cls):
 
         def on_init(self):
             self.name = "Sing"
-            self.description = "Living and holy units are healed, undead, demons, and dark units take holy and fire damage."
             self.radius = 5
-            self.damage = 2
             self.heal = 1
             self.range = 0
-            self.pragmatic = False
+
+        def get_description(self):
+            return "Living and holy allies are healed for %i HP. Undead, demon, and dark enemies take 2 fire and 2 holy damage." % self.heal
 
         def cast_instant(self, x, y):
-            heal = self.get_stat('heal')
-            damage = self.get_stat('damage')
             for unit in self.caster.level.get_units_in_ball(Point(x, y), self.get_stat('radius')):
                 if unit.is_player_controlled:
                     continue
-                if (Tags.Living in unit.tags or Tags.Holy in unit.tags) and unit.cur_hp < unit.max_hp:
-                    if self.pragmatic and are_hostile(unit, self.caster):
-                        continue
-                    unit.deal_damage(-heal, Tags.Heal, self)
-                if Tags.Dark in unit.tags or Tags.Undead in unit.tags or Tags.Demon in unit.tags:
-                    if self.pragmatic and not are_hostile(unit, self.caster):
-                        continue
-                    unit.deal_damage(damage, Tags.Fire, self)
-                    unit.deal_damage(damage, Tags.Holy, self)
+                if (Tags.Living in unit.tags or Tags.Holy in unit.tags) and not are_hostile(unit, self.caster) and unit.cur_hp < unit.max_hp:
+                    unit.deal_damage(-self.heal, Tags.Heal, self)
+                if (Tags.Dark in unit.tags or Tags.Undead in unit.tags or Tags.Demon in unit.tags) and are_hostile(unit, self.caster):
+                    unit.deal_damage(2, Tags.Fire, self)
+                    unit.deal_damage(2, Tags.Holy, self)
 
         def get_ai_target(self):
             units = self.caster.level.get_units_in_ball(self.caster, self.get_stat('radius'))
             for unit in units:
                 if unit.is_player_controlled:
                     continue
-                if (Tags.Living in unit.tags or Tags.Holy in unit.tags) and unit.cur_hp < unit.max_hp:
-                    if self.pragmatic and are_hostile(unit, self.caster):
-                        continue
+                if (Tags.Living in unit.tags or Tags.Holy in unit.tags) and not are_hostile(unit, self.caster) and unit.cur_hp < unit.max_hp:
                     return self.caster
-                if Tags.Undead in unit.tags or Tags.Demon in unit.tags or Tags.Dark in unit.tags:
-                    if self.pragmatic and not are_hostile(unit, self.caster):
-                        continue
+                if (Tags.Undead in unit.tags or Tags.Demon in unit.tags or Tags.Dark in unit.tags) and are_hostile(unit, self.caster):
                     return self.caster
             return None
 
@@ -2550,7 +2540,6 @@ def modify_class(cls):
             self.minion_duration = 10
             self.num_summons = 3
             self.heal = 1
-            self.minion_damage = 2
             self.radius = 5
 
             self.range = 7
@@ -2564,31 +2553,63 @@ def modify_class(cls):
             self.upgrades['num_summons'] = (3, 4)
             self.upgrades['minion_duration'] = (10, 2)
             self.upgrades['heal'] = (2, 3)
-            self.upgrades["pragmatic"] = (1, 3, "Pragmatic Faith", "The angels will no longer damage [undead] and [demon] allies, or heal [living] and [holy] enemies.")
+            self.upgrades["fallen"] = (1, 7, "Fallen Choir", "The angels become [demon] units and gain [100_dark:dark] resistance.\nThey gain a wailing attack with a cooldown of [7_turns:duration] that deals [{cacophony_damage}_dark:dark] damage to enemies in the same radius as their song, and an attack with [{minion_range}_range:minion_range] that deals [{hellfire_damage}_fire:fire] damage.\nUnlike their song, these attacks benefit from bonuses to [minion_damage:minion_damage].")
+
+        def fmt_dict(self):
+            stats = Spell.fmt_dict(self)
+            stats["cacophony_damage"] = self.get_stat("minion_damage", base=7)
+            stats["hellfire_damage"] = self.get_stat("minion_damage", base=4)
+            stats["minion_range"] = self.get_stat("minion_range", base=4)
+            return stats
+
+        def get_description(self):
+            return ("Summons a choir of [{num_summons}:num_summons] angelic singers.\n"
+                    "The singers have [{minion_health}_HP:minion_health], [{shields}_SH:shields], and immunity to [fire] and [holy] damage.\n"
+                    "The angels can sing, dealing [2_fire:fire] and [2_holy:holy] damage to all [undead], [demon], and [dark] enemies in a [{radius}_tile:radius] radius. This damage is fixed, and cannot be increased using shrines, skills, or buffs.\n"
+                    "[Living] and [holy] allies in the song's radius except the Wizard are healed for [{heal}_HP:heal].\n"
+                    "The angels vanish after [{minion_duration}:minion_duration] turns.").format(**self.fmt_dict())
 
         def cast(self, x, y):
+
+            fallen = self.get_stat("fallen")
+            health = self.get_stat('minion_health')
+            shields = self.get_stat('shields')
+            duration = self.get_stat('minion_duration')
+            heal = self.get_stat('heal')
+            radius = self.get_stat('radius')
+            cacophony_damage = self.get_stat("minion_damage", base=7)
+            hellfire_damage = self.get_stat("minion_damage", base=4)
+            minion_range = self.get_stat("minion_range", base=4)
+
 
             for _ in range(self.get_stat('num_summons')):
                 angel = Unit()
                 angel.name = "Angelic Singer"
-                angel.max_hp = self.get_stat('minion_health')
-                angel.shields = self.get_stat('shields')
+                angel.max_hp = health
+                angel.shields = shields
                 
                 song = AngelSong()
-                song.damage = self.get_stat('minion_damage')
-                song.heal = self.get_stat('heal')
-                song.radius = self.get_stat('radius')
-                song.pragmatic = self.get_stat("pragmatic")
-                
+                song.heal = heal
+                song.radius = radius
                 angel.spells.append(song)
 
                 angel.flying = True
                 angel.tags = [Tags.Holy]
-                angel.resists[Tags.Holy] = 50
-                angel.resists[Tags.Fire] = 50
-                angel.resists[Tags.Dark] = 100
+                angel.resists[Tags.Holy] = 100
+                angel.resists[Tags.Fire] = 100
+                angel.resists[Tags.Poison] = 100
+                
+                if fallen:
+                    angel.name = "Fallen Angelic Singer"
+                    angel.asset_name = "fallen_angel"
+                    angel.resists[Tags.Dark] = 100
+                    angel.tags.append(Tags.Demon)
+                    cacophony = WailOfPain()
+                    cacophony.damage = cacophony_damage
+                    cacophony.radius = radius
+                    angel.spells.extend([cacophony, SimpleRangedAttack(name="Hellfire", damage=hellfire_damage, damage_type=Tags.Fire, range=minion_range)])
 
-                angel.turns_to_death = self.get_stat('minion_duration')
+                angel.turns_to_death = duration
 
                 self.summon(angel, Point(x, y))
                 yield

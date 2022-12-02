@@ -126,7 +126,9 @@ Blink:
 - The damage upgrades now deal damage equal to the spell's range, and the bursts can pass through walls if the spell has blindcasting.
 
 Choir of Angels:
-- Pragmatic Faith (3 SP): The angels will no longer damage undead and demon allies, or heal living and holy enemies.
+- For consistency with other aura-type effects, the angels' song are no longer affected by damage bonuses, instead dealing fixed 2 fire and 2 holy damage. To compensate, they no longer damage allies or heal enemies.
+- The angels' default resistances changed to 100% fire, 100% holy, and 0% dark.
+- Fallen Choir (7 SP): The angels become demon units and gain 100 dark resistance. They gain a wailing attack with a cooldown of 7 turns that deals 7 dark damage to enemies in the same radius as their song, and an attack with 4 range that deals 4 fire damage. Unlike their song, these attacks benefit from bonuses to minion damage.
 
 Darkness:
 - Max Charges upgrade removed.
