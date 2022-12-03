@@ -6092,7 +6092,11 @@ def modify_class(cls):
             if not unit or not are_hostile(unit, self.owner):
                 return
             unit.apply_buff(WhiteFlameDebuff())
+            self.owner.level.queue_spell(deal_damage(self, unit))
+
+        def deal_damage(self, unit):
             unit.deal_damage(self.get_stat('damage'), Tags.Fire, self)
+            yield
 
     if cls is AcidFumes:
 
