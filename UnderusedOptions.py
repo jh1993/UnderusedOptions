@@ -3319,11 +3319,7 @@ def modify_class(cls):
         def on_death(self, evt):
             # cast a Mercurize with the summoner's buffs
             if evt.damage_event and are_hostile(evt.damage_event.source.owner, self.owner):
-                spell = MercurizeSpell()
-                spell.owner = self.owner
-                spell.caster = self.owner
-                spell.statholder = self.spell.statholder or self.spell.caster
-                self.owner.level.act_cast(self.owner, spell, evt.damage_event.source.owner.x, evt.damage_event.source.owner.y, pay_costs=False)
+                self.owner.level.queue_spell(self.spell.cast(evt.damage_event.source.owner.x, evt.damage_event.source.owner.y))
 
     if cls is MercurizeSpell:
 
