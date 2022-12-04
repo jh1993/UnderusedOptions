@@ -441,6 +441,9 @@ Word of Ice:
 Arcane Accounting:
 - Now instead lasts 2 turns (starting from the next turn) with only 50% chance to refund 1 spell charge. Duration can be extended by Permanence.
 
+Faestone:
+- Using a mana potion now resurrects the faestone if it's dead.
+
 Ghostfire:
 - Fire ghosts now have 100% dark resistance, to not anti-synergize with ghostfire tormentors.
 
@@ -474,6 +477,9 @@ Frozen Fragility:
 Glittering Dance:
 - Now has the nature tag.
 
+Houndlord:
+- Using a mana potion now tries to replenish the number of hounds to the maximum.
+
 Hypocrisy:
 - Now also works on spells of equal level, but you cannot gain the Hypocrisy buff with a spell that benefitted from Hypocrisy.
 
@@ -487,6 +493,7 @@ Storm Caller:
 
 Bone Guard:
 - Now also summons a bone archer, and all summoned units have +1 reincarnation.
+- Using a mana potion now replenishes the summons.
 
 Frostbite:
 - Now instead inflicts a Frostbite debuff equal to the duration of the freeze inflicted, which persists after unfreezing. If freeze duration is refreshed or extended, frostbite duration will be adjusted to match if shorter.

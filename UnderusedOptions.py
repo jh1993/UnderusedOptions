@@ -4,10 +4,11 @@ from Monsters import *
 from Upgrades import *
 from Variants import *
 from RareMonsters import *
+from Consumables import *
 
 import mods.Bugfixes.Bugfixes
 import mods.NoMoreScams.NoMoreScams
-from mods.NoMoreScams.NoMoreScams import is_immune, FloatingEyeBuff
+from mods.NoMoreScams.NoMoreScams import is_immune, FloatingEyeBuff, is_conj_skill_summon
 from mods.Bugfixes.Bugfixes import RemoveBuffOnPreAdvance, MinionBuffAura
 
 import sys, math, random
@@ -5924,6 +5925,59 @@ def modify_class(cls):
             if Tags.Arcane in evt.spell.tags and evt.spell.cur_charges == 0:
                 self.owner.apply_buff(ArcaneCredit(), self.get_stat("duration") + 1)
 
+    if cls is Faestone:
+
+        def on_init(self):
+            self.name = "Faestone"
+            self.level = 4
+            self.tags = [Tags.Arcane, Tags.Nature, Tags.Conjuration]
+            self.minion_damage = 20
+            self.minion_health = 120
+            self.owner_triggers[EventOnUnitAdded] = self.on_unit_added
+            self.owner_triggers[EventOnSpellCast] = lambda evt: on_spell_cast(self, evt)
+
+        def get_description(self):
+            return ("Whenever you enter a new level, summon a Fae Stone nearby.\n"
+                    "The Fae Stone has [{minion_health}_HP:minion_health], and is stationary.\n"
+                    "Whenever you cast a [nature] spell, the Fae Stone heals for [10_HP:heal].\n"
+                    "Whenever you cast an [arcane] spell, the Fae Stone teleports near the target and gains [1_SH:shields].\n"
+                    "If the Fae Stone is dead, using a mana potion will resurrect it.").format(**self.fmt_dict())
+
+        def on_unit_added(self, evt):
+            summon_faestone(self)
+
+        def on_spell_cast(self, evt):
+            if not isinstance(evt.spell, SpellCouponSpell):
+                return
+            for unit in self.owner.level.units:
+                if unit.source is self:
+                    return
+            summon_faestone(self)
+
+        def summon_faestone(self):
+
+            faestone = Unit()
+            faestone.name = "Fae Stone"
+
+            faestone.max_hp = self.minion_health
+            faestone.shields = 1
+
+            faestone.spells.append(SimpleMeleeAttack(self.minion_damage))
+            buff = FaestoneBuff()
+            buff.master = self.owner
+            faestone.buffs.append(buff)
+
+            faestone.stationary = True
+
+            faestone.resists[Tags.Physical] = 50
+            faestone.resists[Tags.Fire] = 50
+            faestone.resists[Tags.Lightning] = 50
+            faestone.tags = [Tags.Nature, Tags.Arcane]
+
+            apply_minion_bonuses(self, faestone)
+
+            self.summon(faestone, sort_dist=False)
+
     if cls is GhostfireUpgrade:
 
         def do_summon(self, x, y):
@@ -6190,6 +6244,55 @@ def modify_class(cls):
             self.num_summons = 2
             self.cast_last = False
 
+    if cls is Houndlord:
+
+        def on_init(self):
+            self.name = "Houndlord"
+            self.level = 5
+            self.tags = [Tags.Fire, Tags.Conjuration]
+            self.minion_damage = 6
+            self.minion_health = 19
+            self.minion_range = 4
+
+            self.owner_triggers[EventOnUnitAdded] = self.on_unit_added
+            self.owner_triggers[EventOnSpellCast] = lambda evt: on_spell_cast(self, evt)
+
+        def get_description(self):
+            return ("Begin each level surrounded by friendly hell hounds.\n"
+                    "Hell hounds have [{minion_health}_HP:minion_health], [100_fire:fire] resist, [50_dark:dark] resist, and [-50_ice:ice] resist.\n"
+                    "Hell hounds have fiery bodies which deal [4_fire:fire] damage to melee attackers.\n"
+                    "Hell hounds a melee attack which deals [{minion_damage}_fire:fire] damage.\n"
+                    "Hell hounds have a leap attack which deals [{minion_damage}_fire:fire] damage with a range of [{minion_range}_tiles:minion_range].\n"
+                    "You attempt to replenish missing hell hounds whenever you use a mana potion.").format(**self.fmt_dict())
+
+        def on_spell_cast(self, evt):
+            if not isinstance(evt.spell, SpellCouponSpell):
+                return
+            missing_hounds = 8
+            for unit in self.owner.level.units:
+                if unit.source is not self:
+                    continue
+                missing_hounds -= 1
+            if missing_hounds:
+                summon_hounds(self, missing_hounds)
+
+        def on_unit_added(self, evt):
+            summon_hounds(self, 8)
+
+        def summon_hounds(self, num):
+            for p in self.owner.level.get_adjacent_points(self.owner, check_unit=False):
+                if num <= 0:
+                    return
+                existing = self.owner.level.tiles[p.x][p.y].unit
+                if existing:
+                    if not is_conj_skill_summon(existing):
+                        continue
+                    p = self.owner.level.get_summon_point(self.owner.x, self.owner.y)
+                unit = HellHound()
+                apply_minion_bonuses(self, unit)
+                self.summon(unit, p)
+                num -= 1
+
     if cls is Hypocrisy:
 
         def on_init(self):
@@ -6314,21 +6417,44 @@ def modify_class(cls):
             self.minion_damage = 9
             self.minion_range = 7
             self.num_summons = 4
+            self.owner_triggers[EventOnSpellCast] = lambda evt: on_spell_cast(self, evt)
 
         def get_description(self):
             return ("Begin each level accompanied by [{num_summons}:num_summons] bone knights and a bone archer, all of which have 1 reincarnation.\n"
                     "Bone knights have [{minion_health}_HP:minion_health], [1_SH:shields], [100_dark:dark] resist, and [50_ice:ice] resist.\n"
                     "Bone knights have a melee attack which deals [{minion_damage}_dark:dark] damage and drains 2 max HP from [living] targets.\n"
-                    "The bone archer has a ranged attack with the same damage and [{minion_range}_range:minion_range], which drains 1 max HP from [living] targets.").format(**self.fmt_dict())
+                    "The bone archer has a ranged attack with the same damage and [{minion_range}_range:minion_range], which drains 1 max HP from [living] targets.\n"
+                    "Missing knights and archers are automatically replenished when you use a mana potion.").format(**self.fmt_dict())
 
         def on_unit_added(self, evt):
-            if evt.unit != self.owner:
+            summon_knights(self, self.get_stat("num_summons"))
+            summon_archer(self)
+
+        def on_spell_cast(self, evt):
+            if not isinstance(evt.spell, SpellCouponSpell):
                 return
-            for _ in range(self.get_stat('num_summons')):
+            missing_knights = self.get_stat("num_summons")
+            missing_archer = True
+            for unit in self.owner.level.units:
+                if unit.source is not self:
+                    continue
+                if unit.name == "Bone Knight":
+                    missing_knights -= 1
+                elif unit.name == "Bone Archer":
+                    missing_archer = False
+            if missing_knights:
+                summon_knights(self, missing_knights)
+            if missing_archer:
+                summon_archer(self)
+
+        def summon_knights(self, num):
+            for _ in range(num):
                 unit = BoneKnight()
                 apply_minion_bonuses(self, unit)
                 unit.buffs.append(ReincarnationBuff(1))
                 self.summon(unit, target=self.owner, radius=5)
+
+        def summon_archer(self):
             unit = BoneKnightArcher()
             apply_minion_bonuses(self, unit)
             unit.buffs.append(ReincarnationBuff(1))
@@ -6430,5 +6556,5 @@ def modify_class(cls):
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp]:
+for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp]:
     modify_class(cls)
