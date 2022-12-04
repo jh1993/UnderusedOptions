@@ -49,17 +49,22 @@ class StoneCurseBuff(Buff):
     def on_init(self):
         self.name = "Stone Curse"
         self.buff_type = BUFF_TYPE_CURSE
-        self.color = Tags.Dark.color
-        self.asset = ["UnderusedOptions", "Statuses", "stone_curse"]
+        self.color = PetrifyBuff().color
+        self.owner_triggers[EventOnBuffApply] = self.on_buff_apply
+    
+    def on_buff_apply(self, evt):
+        if not isinstance(evt.buff, PetrifyBuff) and not isinstance(evt.buff, GlassPetrifyBuff):
+            return
         for tag in [Tags.Holy, Tags.Dark, Tags.Arcane, Tags.Poison]:
-            self.resists[tag] = -50
+            self.owner.resists[tag] = -50
+            evt.buff.resists[tag] -= 50
 
 class StoneCurseUpgrade(Upgrade):
 
     def on_init(self):
         self.name = "Stone Curse"
         self.level = 6
-        self.description = "Whenever an enemy is inflicted with [petrify] or [glassify], inflict Stone Curse to it, which reduces [holy], [dark], [arcane], and [poison] resistances by [50:damage].\nThis consumes a charge of Petrify and counts as casting Petrify on that enemy; it will not be triggered if Petrify has no more charges remaining."
+        self.description = "Whenever an enemy is inflicted with [petrify] or [glassify], permanently inflict Stone Curse to it, which reduces [holy], [dark], [arcane], and [poison] resistances by 50 as long as the target is [petrified] or [glassified].\nThis consumes a charge of Petrify and counts as casting Petrify on that enemy; it will not be triggered if Petrify has no more charges remaining."
         self.global_triggers[EventOnBuffApply] = self.on_buff_apply
     
     def on_buff_apply(self, evt):
@@ -69,6 +74,9 @@ class StoneCurseUpgrade(Upgrade):
             return
         self.prereq.cur_charges -= 1
         evt.unit.apply_buff(StoneCurseBuff())
+        for tag in [Tags.Holy, Tags.Dark, Tags.Arcane, Tags.Poison]:
+            evt.unit.resists[tag] = -50
+            evt.buff.resists[tag] -= 50
         self.owner.level.event_manager.raise_event(EventOnSpellCast(self.prereq, self.prereq.caster, evt.unit.x, evt.unit.y), self.prereq.caster)
 
 class ToxicMushboomAura(DamageAuraBuff):

@@ -93,7 +93,7 @@ Melt:
 
 Petrify:
 - Max charges increased to 20. Max charges upgrade changed to +10 charges for 2 SP.
-- Stone Curse (6 SP): Whenever an enemy is inflicted with petrify or glassify, inflict Stone Curse to it, which reduces holy, dark, arcane, and poison resistances by 50. This consumes a charge of Petrify and counts as casting Petrify on that enemy; it will not be triggered if Petrify has no more charges remaining.
+- Stone Curse (6 SP): Whenever an enemy is inflicted with petrify or glassify, permanently inflict Stone Curse to it, which reduces holy, dark, arcane, and poison resistances by 50 as long as the target is petrified or glassified. This consumes a charge of Petrify and counts as casting Petrify on that enemy; it will not be triggered if Petrify has no more charges remaining.
 
 Soul Swap:
 - Shadow Swap (2 SP): Soul Swap can target dark units as well.
