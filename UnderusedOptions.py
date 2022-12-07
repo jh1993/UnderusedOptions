@@ -1191,7 +1191,7 @@ def BoneBarrageBoneShambler(self, hp, extra_damage):
             unit.spells[0].description = "Deals %i additional dark damage." % damage
     buff = unit.get_buff(SplittingBuff)
     if buff:
-        buff.spawner = lambda: BoneBarrageBoneShambler(self, hp//2, extra_damage)
+        buff.spawner = lambda: BoneBarrageBoneShambler(self, unit.max_hp//2, extra_damage)
     return unit
 
 def modify_class(cls):
