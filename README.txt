@@ -386,6 +386,12 @@ Ice Phoenix:
 Mega Annihilate:
 - Inescapable Annihilation (7 SP): Mega Annihilate will now remove all SH and buffs from the target before dealing damage.
 
+Pyrostatic Curse:
+- Base radius increased to 5 and base duration increased to 6.
+- No longer requires line of sight, and can now target your own tile.
+- Num Targets (4 SP): +2 num targets.
+- Hex Ignition (5 SP): Targets that are already inflicted with Pyrostatic Hex will also take 6 fire damage when you cast this spell. This damage is equal to this spell's duration stat plus bonuses to damage.
+
 Ring of Spiders:
 - Damage upgrade SP cost reduced to 2.
 - Minion Health upgrade SP cost increased to 3.
