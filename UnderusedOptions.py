@@ -15,6 +15,24 @@ import sys, math, random
 
 curr_module = sys.modules[__name__]
 
+# Avoid exceeding maximum recursion depth when saving by avoiding long chains of spell duplication.
+class ReaperMinionTouch(TouchOfDeath):
+
+    def __init__(self, spell):
+        self.spell = spell
+        TouchOfDeath.__init__(self)
+        self.max_charges = 0
+        self.cur_charges = 0
+    
+    def get_stat(self, attr, base=None):
+        return self.spell.get_stat(attr, base)
+
+    def get_description(self):
+        return "Casts this unit's summoner's Touch of Death."
+    
+    def cast(self, x, y):
+        yield from self.spell.cast(x, y)
+
 class AbsoluteZeroBuff(Buff):
     def on_init(self):
         self.name = "Absolute Zero"
@@ -2235,7 +2253,7 @@ def modify_class(cls):
             self.upgrades['fire'] = (1, 2, "Flametouch", "Touch of Death also deals [fire] damage.")
             self.upgrades["lightning"] = (1, 2, "Thundertouch", "Touch of Death also deals [lightning] damage.")
             self.upgrades['physical'] = (1, 2, "Wrathtouch", "Touch of Death also deals [physical] damage.")
-            self.upgrades['raise']= (1, 6, 'Touch of the Reaper', 'When a target dies to Touch of Death, it is raise as a friendly Reaper for [{minion_duration}_turns:minion_duration].\nThe Reaper can cast Touch of Death with the same upgrades and bonuses as your own.')
+            self.upgrades['raise']= (1, 6, 'Touch of the Reaper', 'When a target dies to Touch of Death, it is raise as a friendly Reaper for [{minion_duration}_turns:minion_duration].\nThe Reaper can cast your Touch of Death through itself. You are considered the caster, but it does not consume charges and does not count as you casting the spell.')
             self.upgrades["fear"] = (1, 5, "Fear of Death", "If Touch of Death kills its target, all enemies in line of sight of the target are inflicted with a stack of the fear of death for [{duration}_turns:duration].\nEach turn, each stack of fear has a chance to [stun] its victim for [1_turn:duration], equal to 100% divided by the distance between the victim and the source of its fear, if the source is visible to the victim.\nA stack of fear is automatically removed if its source is no longer alive.")
 
         def fmt_dict(self):
@@ -2262,13 +2280,7 @@ def modify_class(cls):
                 if self.get_stat("raise"):
                     reaper = Reaper()
                     reaper.turns_to_death = self.get_stat('minion_duration', base=6)
-                    spell = TouchOfDeath()
-                    spell.max_charges = 0
-                    spell.cur_charges = 0
-                    spell.statholder = self.caster
-                    spell.caster = reaper
-                    spell.owner = reaper
-                    reaper.spells[0] = spell
+                    reaper.spells[0] = ReaperMinionTouch(self)
                     self.summon(reaper, Point(unit.x, unit.y))
                     unit.has_been_raised = True
                 if self.get_stat("fear"):
@@ -3384,9 +3396,8 @@ def modify_class(cls):
             self.description = "If an enemy kills this unit, it is inflicted with Mercurize."
 
         def on_death(self, evt):
-            # cast a Mercurize with the summoner's buffs
-            if evt.damage_event and are_hostile(evt.damage_event.source.owner, self.owner):
-                self.owner.level.queue_spell(self.spell.cast(evt.damage_event.source.owner.x, evt.damage_event.source.owner.y))
+            if evt.damage_event and evt.damage_event.source and evt.damage_event.source.owner and are_hostile(evt.damage_event.source.owner, self.owner):
+                evt.damage_event.source.owner.apply_buff(MercurizeBuff(self.spell), self.spell.get_stat("duration"))
 
     if cls is MercurizeSpell:
 
