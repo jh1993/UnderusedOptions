@@ -4449,7 +4449,7 @@ def modify_class(cls):
                     continue
 
                 if beam:
-                    if all(u.resists[tag] >= 100 for tag in u.resists.keys()):
+                    if all(u.resists[tag] >= 100 for tag in u.resists.keys() if tag != Tags.Heal):
                         continue
                     melt = buff.spell.get_stat('melt_walls')
                     path = self.caster.level.get_points_in_line(u, dest)[1:]
@@ -4460,6 +4460,8 @@ def modify_class(cls):
                             else:
                                 break
                         for tag in u.resists.keys():
+                            if tag == Tags.Heal:
+                                continue
                             if u.resists[tag] >= 100:
                                 continue
                             unit = self.caster.level.get_unit_at(p.x, p.y)
