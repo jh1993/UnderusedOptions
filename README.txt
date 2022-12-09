@@ -298,6 +298,7 @@ Lightning Storm:
 
 Orb Control:
 - Max Charges (4 SP): +9 max charges.
+- Range (2 SP): +5 range.
 - Anti-Particle Beam (5 SP): When casting this spell, every allied orb will shoot a beam at the target tile. Each beam deals damage of each damage type the orb is not immune to, multiplied by 100% minus the orb's resistance to that damage type. The base damage is equal to 4 times the orb's level, and does not harm allies. A beam melts through walls if its corresponding orb can melt through walls; otherwise it is stopped by the first wall it encounters.
 
 Permanence:
