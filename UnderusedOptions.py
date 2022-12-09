@@ -377,6 +377,8 @@ class SpellConduitBuff(Buff):
         return spells
     
     def on_advance(self):
+        if self.owner.has_buff(ChannelBuff):
+            return
         casts_left = self.casts
         for spell in self.get_wizard_spells():
             spell_copy = self.copy_spell(spell)
@@ -2758,9 +2760,9 @@ def modify_class(cls):
 
             self.upgrades['max_charges'] = (2, 2)
             self.upgrades['damage'] = (40, 3)
-            self.upgrades['check_cur_hp'] = (1, 4, 'Brute Force', 'Dominate targets based on current HP instead of maximum HP.')
-            self.upgrades["mass"] = (1, 6, "Mass Dominate", "When cast, Dominate now also affects all eligible enemies with the same name as the target within [{radius}_tiles:radius].")
-            self.upgrades["heal"] = (1, 3, "Recruitment Bonus", "The target is now healed to full HP after being dominated, and all of its debuffs are dispelled.")
+            self.upgrades['check_cur_hp'] = (1, 4, 'Brute Force', 'Dominate enemies based on current HP instead of maximum HP.')
+            self.upgrades["mass"] = (1, 6, "Mass Dominate", "When cast, Dominate now also affects all eligible units with the same name as the target within [{radius}_tiles:radius].")
+            self.upgrades["heal"] = (1, 3, "Recruitment Bonus", "The target enemy is now healed to full HP after being dominated, and all of its debuffs are dispelled.")
 
         def fmt_dict(self):
             stats = Spell.fmt_dict(self)
@@ -2771,8 +2773,10 @@ def modify_class(cls):
             if not Spell.can_cast(self, x, y):
                 return False
             unit = self.caster.level.get_unit_at(x, y)
-            if not unit or not are_hostile(unit, self.caster):
+            if not unit:
                 return False
+            if unit.team == self.caster.team:
+                return unit.has_buff(BerserkBuff)
             hp = unit.cur_hp if self.get_stat('check_cur_hp') else unit.max_hp
             return hp <= self.get_stat('damage')
 
@@ -2783,10 +2787,13 @@ def modify_class(cls):
             origin = self.caster.level.get_unit_at(x, y)
             if origin and self.get_stat("mass"):
                 for unit in self.caster.level.get_units_in_ball(origin, self.get_stat("radius", base=3)):
-                    if unit is origin:
+                    if unit is origin or unit.name != origin.name:
                         continue
-                    hp = unit.cur_hp if check_cur_hp else unit.max_hp
-                    if are_hostile(self.caster, unit) and hp <= damage and unit.name == origin.name:
+                    if unit.team == self.caster.team:
+                        if unit.has_buff(BerserkBuff):
+                            points.append(Point(unit.x, unit.y))
+                        continue
+                    if (unit.cur_hp if check_cur_hp else unit.max_hp) <= damage:
                         points.append(Point(unit.x, unit.y))
             return points
 
@@ -2796,6 +2803,13 @@ def modify_class(cls):
                 unit = self.caster.level.get_unit_at(point.x, point.y)
                 if not unit:
                     continue
+                if unit.team == self.caster.team:
+                    buff = unit.get_buff(BerserkBuff)
+                    if buff:
+                        unit.remove_buff(buff)
+                        self.caster.level.show_effect(unit.x, unit.y, Tags.Arcane)
+                    continue
+                self.caster.level.show_effect(unit.x, unit.y, Tags.Arcane)
                 unit.team = self.caster.team
                 unit.source = self
                 unit.level.event_manager.raise_event(EventOnUnitPreAdded(unit), unit)
@@ -2805,11 +2819,12 @@ def modify_class(cls):
                         if buff.buff_type == BUFF_TYPE_CURSE:
                             unit.remove_buff(buff)
                     unit.deal_damage(-unit.max_hp, Tags.Heal, self)
-                yield
+            yield
 
         def get_description(self):
             return ("Target enemy unit with [{damage}:damage] max HP or lower becomes your minion. The HP threshold benefits from your bonuses to [damage].\n"
-                    "This counts as summoning, and the dominated enemy counts as a minion summoned by this spell.").format(**self.fmt_dict())
+                    "This counts as summoning, and the dominated enemy counts as a minion summoned by this spell.\n"
+                    "Allies with [berserk] can also be targeted, which removes [berserk] from them.").format(**self.fmt_dict())
 
     if cls is EarthquakeSpell:
 
@@ -4414,11 +4429,13 @@ def modify_class(cls):
             self.max_charges = 11
 
             self.upgrades["max_charges"] = (9, 4)
-            self.upgrades["dupe"] = (1, 5, "Orb Duplication", "When casting this spell, every allied [orb] will instead continue moving in its original path, but create a copy of itself targeting the target of this spell, which counts as you casting the corresponding [orb] spell.\nThis consumes a charge from the corresponding [orb] spell. If there are no charges remaining, the copying will not occur, and the orb will be redirected to the target tile.")
+            self.upgrades['range'] = (5, 2)
+            self.upgrades["beam"] = (1, 5, "Anti-Particle Beam", "When casting this spell, every allied [orb] will shoot a beam at the target tile.\nEach beam deals damage of each damage type the orb is not immune to, multiplied by 100% minus the orb's resistance to that damage type. The base damage is equal to 4 times the orb's level, and does not harm allies.\nA beam melts through walls if its corresponding orb can melt through walls; otherwise it is stopped by the first wall it encounters.")
 
         def cast_instant(self, x, y, channel_cast=False):
 
-            dupe = self.get_stat("dupe")
+            beam = self.get_stat("beam")
+            dest = Point(x, y)
 
             units = list(self.caster.level.units)
             random.shuffle(units)
@@ -4430,39 +4447,30 @@ def modify_class(cls):
                 buff = u.get_buff(OrbBuff)
                 if not buff:
                     continue
-                
-                if dupe:
-                    spell = buff.spell
-                    if spell.cur_charges > 0:
-                        spell_copy = type(spell)()
-                        spell_copy.statholder = spell.caster
-                        spell_copy.owner = u
-                        spell_copy.caster = u
-                        spell_copy.range = RANGE_GLOBAL
-                        spell_copy.cur_charges = 0
-                        spell_copy.max_charges = 0
-                        self.caster.level.queue_spell(spell_copy.cast(x, y))
-                        # Change caster to the player so that the duplicated orbs don't hurt the player,
-                        # and to make repeated dupes work properly.
-                        def change_caster(spell_copy, spell):
-                            spell_copy.owner = spell.owner
-                            spell_copy.caster = spell.caster
-                            for unit in spell.caster.level.units:
-                                buff = unit.get_buff(OrbBuff)
-                                if not buff:
-                                    continue
-                                if unit.source is spell_copy:
-                                    unit.source = spell
-                                    buff.spell = spell
-                            yield
-                        self.caster.level.queue_spell(change_caster(spell_copy, spell))
-                        spell.cur_charges -= 1
-                        self.caster.level.event_manager.raise_event(EventOnSpellCast(spell, self.caster, x, y), self.caster)
-                        continue
 
-                path = self.caster.level.get_points_in_line(u, Point(x, y))[1:]
+                if beam:
+                    if all(u.resists[tag] >= 100 for tag in u.resists.keys()):
+                        continue
+                    melt = buff.spell.get_stat('melt_walls')
+                    path = self.caster.level.get_points_in_line(u, dest)[1:]
+                    for p in path:
+                        if self.caster.level.tiles[p.x][p.y].is_wall():
+                            if melt:
+                                self.caster.level.make_floor(p.x, p.y)
+                            else:
+                                break
+                        for tag in u.resists.keys():
+                            if u.resists[tag] >= 100:
+                                continue
+                            unit = self.caster.level.get_unit_at(p.x, p.y)
+                            if not unit or not are_hostile(unit, self.caster):
+                                self.caster.level.show_effect(p.x, p.y, tag)
+                            else:
+                                unit.deal_damage(math.ceil(buff.spell.level*4*(100 - u.resists[tag])/100), tag, self)
+
+                path = self.caster.level.get_points_in_line(u, dest)[1:]
                 u.turns_to_death = len(path)
-                buff.dest = Point(x, y)
+                buff.dest = dest
 
     if cls is Permenance:
 
@@ -5426,7 +5434,7 @@ def modify_class(cls):
             self.upgrades['radius'] = (3, 2)
             self.upgrades['duration'] = (6, 3)
             self.upgrades["num_targets"] = (2, 4)
-            self.upgrades['beam'] = (1, 5, "Linear Conductance", "Redealt lightning damage is dealt along a beam instead of just to one target.")
+            self.upgrades['beam'] = (1, 5, "Linear Conductance", "Redealt [lightning] damage is dealt to enemies along a beam instead of just to one target.")
             self.upgrades["ignition"] = (1, 5, "Hex Ignition", "Targets that are already inflicted with Pyrostatic Hex will also take [{ignition_damage}_fire:fire] damage when you cast this spell.\nThis damage is equal to this spell's [duration] stat plus bonuses to [damage].")
 
         def fmt_dict(self):
@@ -5444,6 +5452,40 @@ def modify_class(cls):
                     if ignition and u.has_buff(PyroStaticHexBuff):
                         u.deal_damage(damage, Tags.Fire, self)
                     u.apply_buff(PyroStaticHexBuff(self), duration)
+
+    if cls is PyroStaticHexBuff:
+
+        def __init__(self, spell):
+            self.spell = spell
+            Buff.__init__(self)
+
+        def on_init(self):
+            self.name = "Pyrostatic Hex"
+            self.beam = self.spell.get_stat("beam")
+            self.buff_type = BUFF_TYPE_CURSE
+            self.stack_type = STACK_REPLACE
+            self.color = Tags.Fire.color
+            self.owner_triggers[EventOnDamaged] = self.on_damage
+            self.asset = ['status', 'pyrostatic_hex']
+
+        def deal_damage(self, evt):
+
+            redeal_targets = [u for u in self.owner.level.get_units_in_los(self.owner) if are_hostile(u, self.spell.owner) and u != self.owner]
+            random.shuffle(redeal_targets)
+
+            damage = evt.damage//2
+            for t in redeal_targets[:self.spell.get_stat("num_targets")]:
+                for p in self.owner.level.get_points_in_line(self.owner, t)[1:-1]:
+                    if self.beam:
+                        unit = self.owner.level.get_unit_at(p.x, p.y)
+                        if not unit or not are_hostile(self.spell.caster, unit):
+                            self.owner.level.show_effect(p.x, p.y, Tags.Lightning)
+                        else:
+                            unit.deal_damage(damage, Tags.Lightning, self.spell)
+                    else:
+                        self.owner.level.show_effect(p.x, p.y, Tags.Lightning, minor=True)
+                t.deal_damage(damage, Tags.Lightning, self.spell)
+            yield
 
     if cls is RingOfSpiders:
 
@@ -6603,5 +6645,5 @@ def modify_class(cls):
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp]:
+for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp]:
     modify_class(cls)

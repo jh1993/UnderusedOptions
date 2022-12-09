@@ -146,8 +146,9 @@ Devour Mind:
 Dominate:
 - HP threshold is now based on the damage stat, and the HP threshold upgrade is changed to a damage upgrade.
 - Dominating an enemy now procs on-summon effects, and it now counts as a minion summoned by Dominate.
-- Mass Dominate (6 SP): When cast, Dominate now also affects all eligible enemies with the same name as the target within 3 tiles.
-- Recruitment Bonus (3 SP): The target is now healed to full HP after being dominated, and all of its debuffs are dispelled.
+- Can now be used to remove berserk from allies.
+- Mass Dominate (6 SP): When cast, Dominate now also affects all eligible units with the same name as the target within 3 tiles.
+- Recruitment Bonus (3 SP): The target enemy is now healed to full HP after being dominated, and all of its debuffs are dispelled.
 
 Earthquake:
 - Added a 3 SP +25% strikechance upgrade.
@@ -297,7 +298,7 @@ Lightning Storm:
 
 Orb Control:
 - Max Charges (4 SP): +9 max charges.
-- Orb Duplication (5 SP): When casting this spell, every allied orb will instead continue moving in its original path, but create a copy of itself targeting the target of this spell, which counts as you casting the corresponding orb spell. This consumes a charge from the corresponding orb spell. If there are no charges remaining, the copying will not occur, and the orb will be redirected to the target tile.
+- Anti-Particle Beam (5 SP): When casting this spell, every allied orb will shoot a beam at the target tile. Each beam deals damage of each damage type the orb is not immune to, multiplied by 100% minus the orb's resistance to that damage type. The base damage is equal to 4 times the orb's level, and does not harm allies. A beam melts through walls if its corresponding orb can melt through walls; otherwise it is stopped by the first wall it encounters.
 
 Permanence:
 - Retroactive (3 SP): When you cast this spell, all friendly units' buffs and enemies' debuffs are extended by 5 turns. Cannot extend the duration of stun, freeze, petrify, glassify, and similar incapacitating effects on units that can gain clarity.
@@ -389,6 +390,7 @@ Mega Annihilate:
 Pyrostatic Curse:
 - Base radius increased to 5 and base duration increased to 6.
 - No longer requires line of sight, and can now target your own tile.
+- Linear Conductance no longer damages allies.
 - Num Targets (4 SP): +2 num targets.
 - Hex Ignition (5 SP): Targets that are already inflicted with Pyrostatic Hex will also take 6 fire damage when you cast this spell. This damage is equal to this spell's duration stat plus bonuses to damage.
 
