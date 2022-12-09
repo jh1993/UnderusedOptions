@@ -122,6 +122,10 @@ Basilisk Armor:
 - Freezing Armor (2 SP): Basilisk Armor inflicts freeze instead of petrify. Only one armor upgrade allowed.
 - Glassifying Armor (2 SP): Basilisk Armor inflicts glassify instead of petrify. Only one armor upgrade allowed.
 
+Blinding Light:
+- Dark Units upgrade was superfluous and thus folded into the base spell.
+- Safety (3 SP): No longer affects friendly units.
+
 Blink:
 - The damage upgrades now deal damage equal to the spell's range, and the bursts can pass through walls if the spell has blindcasting.
 
@@ -170,10 +174,11 @@ Giant Bear:
 - Roar (4 SP): The bear gains a roar with a cooldown of 3 turns that stuns enemies in a 7 range cone for 3 turns. The venom bear's roar will also poison enemies for 5 turns and give regeneration to allies for the same duration. The blood bear's roar will instead berserk enemies for 3 turns and give allies a stack of bloodrage for 10 turns. The polar bear's roar will instead freeze enemies for 3 turns and heal allies for an amount equal to its regeneration when frozen.
 
 Holy Fire:
+- No longer requires damages the caster.
 - Damage is halved but now deals both fire and holy damage.
 - Duration upgrade SP cost reduced to 2.
 - Blindcasting (2 SP): Holy Fire no longer requires line of sight to cast.
-- Nightbane (2 SP): Dark and ice units will also be stunned.
+- Fractal Cross (6 SP): Each tile in an affected horizontal line has a 10% chance to create a vertical line, and each tile in an affected vertical line has a 10% chance to create a horizontal line. Each line can create at most one additional line.
 
 Holy Armor:
 - Divine Riposte (4 SP): While Holy Armor is active, if you pass your turn, you will retaliate for 18 holy damage whenever an enemy damages you, until the beginning of your next turn.

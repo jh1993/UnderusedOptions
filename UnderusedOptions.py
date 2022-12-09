@@ -2462,6 +2462,44 @@ def modify_class(cls):
             return ("Whenever an enemy unit targets you with a spell or attack, that unit is [petrified] for [{petrify_duration}_turns:duration].\n"
                     "Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
 
+    if cls is BlindingLightSpell:
+
+        def on_init(self):
+            self.name = "Blinding Light"
+
+            self.range = 0
+            self.max_charges = 4
+            self.duration = 4
+            self.damage = 5
+
+            self.tags = [Tags.Holy, Tags.Sorcery]
+            self.level = 3
+            self.upgrades['damage'] = (9, 4)
+            self.upgrades['duration'] = (4, 2)
+            self.upgrades["safety"] = (1, 3, "Safety", "No longer affects friendly units.")
+
+        def get_description(self):
+            return ("[Blind] all units in line of sight of the caster for [{duration}_turns:duration].\n"
+                    + text.blind_desc +
+                    "\nDeals [{damage}_holy:holy] damage to affected [undead], [demon], and [dark] units.").format(**self.fmt_dict())
+
+        def cast(self, x, y):
+            targets = [u for u in self.caster.level.get_units_in_los(self.caster) if u is not self.caster]
+            if self.get_stat("safety"):
+                targets = [u for u in targets if are_hostile(u, self.caster)]
+            random.shuffle(targets)
+
+            duration = self.get_stat('duration')
+            damage = self.get_stat('damage')
+            for target in targets:
+                target.apply_buff(BlindBuff(), duration)
+
+                if not (Tags.Undead in target.tags or Tags.Demon in target.tags or Tags.Dark in target.tags):
+                    continue
+                target.deal_damage(damage, Tags.Holy, self)
+
+                yield
+
     if cls is Teleport:
 
         def cast(self, x, y):
@@ -3156,14 +3194,13 @@ def modify_class(cls):
             self.damage = 11
             self.duration = 3
             self.radius = 2
-
             self.range = 7
 
             self.upgrades['duration'] = (3, 2)
             self.upgrades['damage'] = (7, 3)
             self.upgrades['radius'] = (2, 2)
             self.upgrades["requires_los"] = (-1, 2, "Blindcasting", "Holy Fire no longer requires line of sight to cast.")
-            self.upgrades["nightbane"] = (1, 2, "Nightbane", "[Dark] and [ice] units will also be stunned.")
+            self.upgrades["fractal"] = (1, 6, "Fractal Cross", "Each tile in an affected horizontal line has a 10% chance to create a vertical line, and each tile in an affected vertical line has a 10% chance to create a horizontal line.\nEach line can create at most one additional line.")
 
             self.level = 3
 
@@ -3173,50 +3210,55 @@ def modify_class(cls):
             return stats
 
         def get_description(self):
-            return ("Deal [{damage}_fire:fire] damage and [{damage}_holy:holy] damage in a vertical line and in a horizontal line, each [{length}_tiles:radius] long.\n"
+            return ("Deal [{damage}_fire:fire] damage and [{damage}_holy:holy] damage in a vertical line and in a horizontal line, each [{length}_tiles:radius] long. The caster is unaffected.\n"
                     "The lines intersect at the target point, which is hit by both lines.\n"
                     "[Stun] [demon] and [undead] units in the affected area for [{duration}_turns:duration].").format(**self.fmt_dict())
 
-        def get_impacted_tiles(self, x, y):
-            rad = self.get_stat('radius')
-            for i in range(-rad, rad + 1):
-                yield Point(x+i, y)
-                if i != 0:
-                    yield Point(x, y+i)
-
-        def cast(self, x, y):
+        def hit_line(self, x, y, horizontal):
             damage = self.get_stat('damage')
             duration = self.get_stat('duration')
-            dtypes = [Tags.Holy, Tags.Fire]
-            stun_types = [Tags.Demon, Tags.Undead]
-            if self.get_stat("nightbane"):
-                stun_types.extend([Tags.Dark, Tags.Ice])
-
             rad = self.get_stat('radius')
-            for i in range(y - rad, y + rad + 1):
-                if not self.caster.level.is_point_in_bounds(Point(x, i)):
+            fractal = self.get_stat("fractal")
+            branched = False
+
+            if horizontal:
+                line = range(x - rad, x + rad + 1)
+            else:
+                line = range(y - rad, y + rad + 1)
+            
+            for i in line:
+
+                if horizontal:
+                    p_x = i
+                    p_y = y
+                else:
+                    p_x = x
+                    p_y = i
+
+                if not self.caster.level.is_point_in_bounds(Point(p_x, p_y)):
                     continue
 
-                for dtype in dtypes:
-                    self.caster.level.deal_damage(x, i, damage, dtype, self)
-                unit = self.caster.level.get_unit_at(x, i)
-                if unit and [tag for tag in stun_types if tag in unit.tags]:
+                unit = self.caster.level.get_unit_at(p_x, p_y)
+                if unit is self.caster:
+                    self.caster.level.show_effect(p_x, p_y, Tags.Fire)
+                    self.caster.level.show_effect(p_x, p_y, Tags.Holy)
+                else:
+                    self.caster.level.deal_damage(p_x, p_y, damage, Tags.Fire, self)
+                    self.caster.level.deal_damage(p_x, p_y, damage, Tags.Holy, self)
+                unit = self.caster.level.get_unit_at(p_x, p_y)
+                if unit and [tag for tag in [Tags.Demon, Tags.Undead] if tag in unit.tags]:
                     unit.apply_buff(Stun(), duration)
+                
+                if fractal and not branched and random.random() < 0.1:
+                    branched = True
+                    self.caster.level.queue_spell(hit_line(self, p_x, p_y, not horizontal))
+                
                 yield
 
-            for i in range(2):
-                yield
-
-            for i in range(x - rad, x + rad + 1):
-                if not self.caster.level.is_point_in_bounds(Point(i, y)):
-                    continue
-
-                for dtype in dtypes:
-                    self.caster.level.deal_damage(i, y, damage, dtype, self)
-                unit = self.caster.level.get_unit_at(i, y)
-                if unit and [tag for tag in stun_types if tag in unit.tags]:
-                    unit.apply_buff(Stun(), duration)
-                yield
+        def cast(self, x, y):
+            self.caster.level.queue_spell(hit_line(self, x, y, True))
+            self.caster.level.queue_spell(hit_line(self, x, y, False))
+            yield
 
     if cls is HolyShieldSpell:
 
@@ -6647,5 +6689,5 @@ def modify_class(cls):
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp]:
+for cls in [DeathBolt, FireballSpell, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp]:
     modify_class(cls)
