@@ -15,6 +15,25 @@ import sys, math, random
 
 curr_module = sys.modules[__name__]
 
+class MeteorRecycle(Upgrade):
+
+    def on_init(self):
+        self.name = "Meteor Recycle"
+        self.level = 3
+        self.description = "Whenever you stop channeling this spell, it has a 10% chance to regain a charge per turn of channeling it had remaining.\nIf you are channeling multiple instances of the spell, only the first instance can trigger this effect."
+        self.tried = False
+        self.owner_triggers[EventOnBuffRemove] = self.on_buff_remove
+    
+    def on_pre_advance(self):
+        self.tried = False
+    
+    def on_buff_remove(self, evt):
+        if not isinstance(evt.buff, ChannelBuff) or evt.buff.spell.__self__ is not self.prereq or self.tried:
+            return
+        self.tried = True
+        if random.random() < evt.buff.turns_left/10:
+            self.prereq.cur_charges = min(self.prereq.cur_charges + 1, self.prereq.get_stat("max_charges"))
+
 # Avoid exceeding maximum recursion depth when saving by avoiding long chains of spell duplication.
 class ReaperMinionTouch(TouchOfDeath):
 
@@ -5897,7 +5916,8 @@ def modify_class(cls):
             self.radius = 2
             self.range = RANGE_GLOBAL
             self.requires_los = False
-            self.duration = 2
+            self.duration = 5
+            self.can_target_self = True
 
             self.max_charges = 2
 
@@ -5907,8 +5927,44 @@ def modify_class(cls):
             self.max_channel = 10
 
             self.upgrades['num_targets'] = (3, 4)
-            self.upgrades['duration'] = (3, 2, "Stun Duration")
-            self.upgrades['rock_size'] = (1, 2, "Meteor Size", "Increase the physical damage and stun radius from 0 to 1")
+            self.upgrades["radius"] = (1, 4)
+            self.upgrades['large'] = (1, 4, "Large Meteors", "The [physical] damage and [stun] radius of each meteor now gains a radius equal to half of this spell's [radius] stat, with a 50% chance to round up or down per meteor.")
+            self.add_upgrade(MeteorRecycle())
+
+        def cast(self, x, y, channel_cast=False):
+
+            if not channel_cast:
+                self.caster.apply_buff(ChannelBuff(self.cast, Point(x, y)), self.get_stat('max_channel'))
+                return
+
+            points_in_ball = list(self.caster.level.get_points_in_ball(x, y, self.get_stat('storm_radius')))
+
+            large = self.get_stat('large')
+            damage = self.get_stat('damage')
+            duration = self.get_stat('duration')
+            radius = self.get_stat('radius')
+
+            for _ in range(self.get_stat('num_targets')):
+                target = random.choice(points_in_ball)
+
+                rock_size = random.choice([math.ceil, math.floor])(radius/2) if large else 0
+                for stage in Burst(self.caster.level, target, rock_size, ignore_walls=True):
+                    for point in stage:
+                        self.caster.level.make_floor(point.x, point.y)
+                        self.caster.level.deal_damage(point.x, point.y, damage, Tags.Physical, self)
+                        unit = self.caster.level.get_unit_at(point.x, point.y)
+                        if unit:
+                            unit.apply_buff(Stun(), duration)
+                    yield
+
+                self.caster.level.show_effect(0, 0, Tags.Sound_Effect, 'hit_enemy')
+                yield
+
+                for stage in Burst(self.caster.level, target, radius):
+                    for point in stage:
+                        self.caster.level.deal_damage(point.x, point.y, damage, Tags.Fire, self)
+                    yield
+                yield
 
     if cls is MulticastBuff:
 
