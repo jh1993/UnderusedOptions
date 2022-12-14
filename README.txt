@@ -146,7 +146,7 @@ Devour Mind:
 - Spirit Eater upgrade now also lets it work on holy and undead units.
 - Mind Gouge (3 SP): If the target is over 50% HP after taking arcane damage, instead deal half dark damage to it.
 - Mindless Eater (3 SP): Can now target all units. When targeting a unit outside of this spell's previously valid target groups, only the initial arcane damage is dealt.
-- Mind Rot (4 SP): If the target dies to arcane damage, summon a void imp and an insanity imp near it. If the target dies to dark damage, summon a rot imp near it.
+- Mind Rot (4 SP): If the target takes arcane damage from this spell and dies, summon a void imp and an insanity imp near it. If the target takes dark damage from this spell and dies, summon a rot imp near it.
 
 Dominate:
 - HP threshold is now based on the damage stat, and the HP threshold upgrade is changed to a damage upgrade.

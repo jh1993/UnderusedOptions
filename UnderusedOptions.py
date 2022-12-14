@@ -2800,7 +2800,7 @@ def modify_class(cls):
             self.upgrades["gouge"] = (1, 3, "Mind Gouge", "If the target is over 50% HP after taking [arcane] damage, instead deal half [dark] damage to it.")
             self.upgrades["mindless"] = (1, 3, "Mindless Eater", "Can now target all enemies.\nWhen targeting a unit outside of this spell's previously valid target groups, only the initial [arcane] damage is dealt.")
             self.upgrades['gluttony'] = (1, 2, "Gluttony", "If Devour Mind kills the target, the charge cost is refunded.")
-            self.upgrades["rot"] = (1, 4, "Mind Rot", "If the target dies to [arcane] damage, summon a void imp and an insanity imp near it.\nIf the target dies to [dark] damage, summon a rot imp near it.")
+            self.upgrades["rot"] = (1, 4, "Mind Rot", "If the target takes [arcane] damage from this spell and dies, summon a void imp and an insanity imp near it.\nIf the target takes [dark] damage from this spell and dies, summon a rot imp near it.")
 
         def get_description(self):
             return ("Deal [{damage}_arcane:arcane] to an enemy unit.\n"
