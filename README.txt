@@ -136,8 +136,9 @@ Choir of Angels:
 
 Darkness:
 - Max Charges upgrade removed.
-- Dark Horizon (3 SP): Hostile demon and undead units have a 5% chance to be blinded per tile away from you.
-- Dark Echoes (6 SP): While Darkness is active, if you are blind, your demon and undead minions redeal half of all their damage as the original damage type. Damage dealt by spells inherited from the caster of this spell, and damage done by spells inherited from the unit that this spell is inherited from, cannot be echoed, in cases of minions inheriting or copying your spells.
+- Dark Horizon (3 SP): Hostile demon and undead units also have a chance to be blinded each turn. The chance for this skill to fail is equal to 100% divided by half the distance between you and each enemy, up to 100%.
+- Clinging Darkness (4 SP): When affecting an enemy, this spell now inflicts blind for 2 turns, which stacks in duration with pre-existing blind it has.
+- Dark Echoes (6 SP): While Darkness is active and you are blind, whenever your demon and undead minions deal damage to an enemy, the target loses current HP equal to half of the damage dealt.
 
 Devour Mind:
 - All of the HP threshold effects are now calculated after redeals, to make the spell more forgiving.

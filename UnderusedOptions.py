@@ -167,23 +167,28 @@ class DarknessBuff(Spells.DarknessBuff):
     def __init__(self, spell):
         self.spell = spell
         Spells.DarknessBuff.__init__(self)
+        self.stack_type = STACK_REPLACE
         self.horizon = spell.get_stat("horizon")
+        self.clinging = spell.get_stat("clinging")
         if spell.get_stat("echo"):
-            self.global_triggers[EventOnPreDamaged] = self.on_pre_damaged
+            self.global_triggers[EventOnDamaged] = self.on_damaged
 
     def effect_unit(self, unit):
+        hostile = are_hostile(unit, self.owner)
         if Tags.Undead in unit.tags or Tags.Demon in unit.tags:
-            if not self.horizon or not are_hostile(unit, self.owner) or random.random() >= distance(unit, self.owner)*0.05:
+            if not self.horizon or not hostile or random.random() < 2/distance(unit, self.owner):
                 return
-        existing = unit.get_buff(BlindBuff)
-        if existing and existing.turns_left == 1:
-            unit.remove_buff(existing, trigger_buff_remove_event=False)
-            unit.apply_buff(BlindBuff(), 1, trigger_buff_apply_event=False)
+        if self.clinging and hostile:
+            existing = unit.get_buff(BlindBuff)
+            if existing:
+                existing.turns_left += 2
+            else:
+                unit.apply_buff(BlindBuff(), 2)
         else:
-            unit.apply_buff(BlindBuff(), 1)
+            unit.apply_buff(BlindBuff(), 1, prepend=unit is self.owner)
     
-    def on_pre_damaged(self, evt):
-        if evt.damage <= 0 or not are_hostile(evt.unit, self.owner) or not self.owner.is_blind():
+    def on_damaged(self, evt):
+        if not are_hostile(evt.unit, self.owner) or not self.owner.is_blind():
             return
         if evt.source and evt.source.owner and (Tags.Undead in evt.source.owner.tags or Tags.Demon in evt.source.owner.tags) and not are_hostile(evt.source.owner, self.owner):
             evt.unit.cur_hp -= evt.damage//2
@@ -2705,8 +2710,9 @@ def modify_class(cls):
             self.range = 0
 
             self.upgrades['duration'] = (3, 2)
-            self.upgrades["horizon"] = (1, 3, "Dark Horizon", "Hostile [demon] and [undead] units have a 5% chance to be [blinded:blind] per tile away from you.")
-            self.upgrades["echo"] = (1, 6, "Dark Echoes", "While Darkness is active and you are [blind], whenever your [demon] and [undead] minions deal damage, the target loses current HP equal to half of the damage dealt.")
+            self.upgrades["horizon"] = (1, 3, "Dark Horizon", "Hostile [demon] and [undead] units also have a chance to be [blinded] each turn.\nThe chance for this skill to fail is equal to 100% divided by half the distance between you and each enemy, up to 100%.")
+            self.upgrades["clinging"] = (1, 4, "Clinging Darkness", "When affecting an enemy, this spell now inflicts [blind] for [2_turns:duration], which stacks in duration with pre-existing [blind] it has.")
+            self.upgrades["echo"] = (1, 6, "Dark Echoes", "While Darkness is active and you are [blind], whenever your [demon] and [undead] minions deal damage to an enemy, the target loses current HP equal to half of the damage dealt.")
 
         def cast_instant(self, x, y):
             self.caster.apply_buff(curr_module.DarknessBuff(self), self.get_stat('duration'))
