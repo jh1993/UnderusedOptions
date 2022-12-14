@@ -1681,14 +1681,14 @@ def modify_class(cls):
                 target_point = random.choice(possible_points)
 
                 self.caster.level.show_effect(target.x, target.y, Tags.Translocation)
-                yield 
                 self.caster.level.act_move(target, target_point.x, target_point.y, teleport=True)
-                yield
                 self.caster.level.show_effect(target.x, target.y, Tags.Translocation)
                 if shadow and not self.caster.level.get_unit_at(old.x, old.y):
                     ghost = GhostVoid()
                     apply_minion_bonuses(self, ghost)
                     self.summon(ghost, target=old)
+                
+                yield
 
     if cls is FireEyeBuff:
 
