@@ -388,6 +388,7 @@ Flock of Eagles:
 
 Ice Phoenix:
 - Max charges increased to 2.
+- Quillmaker (6 SP): On death, the ice phoenix now summons a cerulean quill for 18 turns. The cerulean quill can summon living scrolls of Icicle and Heavenly Blast, which gain all of your upgrades and bonuses.
 - Freeze Chance (4 SP): All of the ice phoenix's ice damage will freeze enemies for 3 turns.
 - Icy Judgment (5 SP): Half of all of the ice phoenix's ice damage will be redealt as holy damage.
 

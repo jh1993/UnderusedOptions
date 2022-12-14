@@ -15,6 +15,70 @@ import sys, math, random
 
 curr_module = sys.modules[__name__]
 
+class LivingScrollIcicle(Icicle):
+
+    def __init__(self, statholder=None):
+        Icicle.__init__(self)
+        self.max_charges = 0
+        self.cur_charges = 0
+        self.statholder = statholder
+    
+    def get_description(self):
+        return "Kills the caster"
+    
+    def cast(self, x, y):
+        yield from Icicle.cast(self, x, y)
+        self.caster.kill()
+
+class LivingScrollHeavenlyBlast(HolyBlast):
+
+    def __init__(self, statholder=None):
+        HolyBlast.__init__(self)
+        self.max_charges = 0
+        self.cur_charges = 0
+        self.statholder = statholder
+    
+    def get_description(self):
+        return "Kills the caster"
+    
+    def cast(self, x, y):
+        yield from HolyBlast.cast(self, x, y)
+        self.caster.kill()
+
+class WriteCeruleanScrolls(Spell):
+
+    def on_init(self):
+        self.name = "Scribe Cerulean Scrolls"
+        self.num_summons = 0
+        self.range = 0
+        self.cool_down = 6
+
+    def get_description(self):
+        bonus = self.get_stat("num_summons")
+        return "Summon %i-%i living icicle or heavenly blast scrolls" % (2 + bonus, 4 + bonus)
+
+    def cast(self, x, y):
+        minion_health = self.caster.source.get_stat("minion_health", base=5)
+        num_summons = self.get_stat("num_summons") + random.randint(2, 4)
+        for _ in range(num_summons):
+            tag = random.choice([Tags.Ice, Tags.Holy])
+            unit = Unit()
+            unit.max_hp = minion_health
+            unit.flying = True
+            unit.resists[Tags.Arcane] = 100
+            unit.resists[tag] = 100
+            unit.tags = [Tags.Arcane, tag, Tags.Construct]
+            if tag == Tags.Ice:
+                unit.name = "Living Scroll of Icicle"
+                unit.asset = ["UnderusedOptions", "Units", "living_icicle_scroll"]
+                unit.spells = [LivingScrollIcicle(statholder=self.caster.source.caster)]
+            else:
+                unit.name = "Living Scroll of Heavenly Blast"
+                unit.asset = ["UnderusedOptions", "Units", "living_heavenly_blast_scroll"]
+                unit.spells = [LivingScrollHeavenlyBlast(statholder=self.caster.source.caster)]
+            self.summon(unit, sort_dist=False)
+            yield
+
 class MeteorRecycle(Upgrade):
 
     def on_init(self):
@@ -5474,10 +5538,64 @@ def modify_class(cls):
 
             self.upgrades['lives'] = (2, 3, "Reincarnations", "The phoenix will reincarnate 2 more times")
             self.upgrades['minion_damage'] = (9, 2)
+            self.upgrades["quillmaker"] = (1, 6, "Quillmaker", "On death, the ice phoenix now summons a cerulean quill for [{minion_duration}_turns:minion_duration].\nThe cerulean quill can summon living scrolls of Icicle and Heavenly Blast, which gain all of your upgrades and bonuses.")
             self.add_upgrade(IcePhoenixFreeze())
             self.add_upgrade(IcePhoenixIcyJudgment())
 
             self.must_target_empty = True
+
+        def fmt_dict(self):
+            stats = Spell.fmt_dict(self)
+            stats["explosion_damage"] = self.get_stat("minion_damage", base=25)
+            stats["minion_duration"] = self.get_stat("minion_duration", base=18)
+            return stats
+
+        def get_quill(self):
+            unit = Unit()
+            unit.name = "Cerulean Quill"
+            unit.asset = ["UnderusedOptions", "Units", "cerulean_quill"]
+            unit.turns_to_death = 18
+
+            unit.max_hp = 15
+            unit.shields = 6
+
+            spell = WriteCeruleanScrolls()
+            spell.num_summons = self.get_stat("num_summons")
+            unit.spells.append(spell)
+
+            unit.resists[Tags.Ice] = 75
+            unit.resists[Tags.Holy] = 75
+            unit.resists[Tags.Arcane] = 100
+
+            unit.stationary = True
+            unit.flying = True
+            unit.tags = [Tags.Ice, Tags.Holy, Tags.Arcane, Tags.Construct]
+            unit.buffs.append(TeleportyBuff(chance=.1, radius=5))
+            unit.source = self
+            return unit
+
+        def cast_instant(self, x, y):
+            phoenix = Unit()
+            phoenix.max_hp = self.get_stat('minion_health')
+            phoenix.name = "Ice Phoenix"
+
+            phoenix.tags = [Tags.Ice, Tags.Holy]
+
+            buff = IcePhoenixBuff()
+            buff.radius = self.get_stat("radius")
+            buff.damage = self.get_stat("minion_damage", base=25)
+            phoenix.buffs.append(buff)
+            phoenix.buffs.append(ReincarnationBuff(self.get_stat('lives')))
+            if self.get_stat("quillmaker"):
+                phoenix.buffs.append(SpawnOnDeath(lambda: get_quill(self), 1))
+
+            phoenix.flying = True
+
+            phoenix.resists[Tags.Ice] = 100
+            phoenix.resists[Tags.Dark] = -50
+
+            phoenix.spells.append(SimpleRangedAttack(damage=self.get_stat('minion_damage'), range=self.get_stat('minion_range'), damage_type=Tags.Ice))
+            self.summon(phoenix, target=Point(x, y))
 
     if cls is MegaAnnihilateSpell:
 
