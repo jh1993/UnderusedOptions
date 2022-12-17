@@ -1254,36 +1254,6 @@ class SwappersSchemeBuff(Buff):
         target.deal_damage(evt.damage, evt.damage_type, evt.source, penetration=penetration)
         yield
 
-class CurseOfRageBuff(Buff):
-
-    def __init__(self, spell):
-        self.spell = spell
-        Buff.__init__(self)
-    
-    def on_init(self):
-        self.name = "Curse of Rage"
-        self.buff_type = BUFF_TYPE_CURSE
-        self.color = Color(255, 0, 0)
-        self.global_triggers[EventOnDeath] = self.on_death
-    
-    def on_death(self, evt):
-        if not self.owner.has_buff(BerserkBuff):
-            return
-        should_summon = False
-        if evt.unit is self.owner:
-            should_summon = True
-        if evt.damage_event and evt.damage_event.source and evt.damage_event.source.owner is self.owner:
-            should_summon = True
-        if not should_summon:
-            return
-        self.owner.level.queue_spell(self.summon_ghost(evt.unit))
-    
-    def summon_ghost(self, target):
-        unit = Bloodghast()
-        apply_minion_bonuses(self.spell, unit)
-        self.spell.summon(unit, target=target, radius=5)
-        yield
-
 def BoneBarrageBoneShambler(self, hp, extra_damage):
     unit = BoneShambler(hp)
     if self.get_stat("regrowth"):
@@ -1789,12 +1759,27 @@ def modify_class(cls):
 
     if cls is RageEyeBuff:
 
-        def on_shoot(self, target):
-            unit = self.owner.level.get_unit_at(target.x, target.y)
-            if unit:
-                unit.apply_buff(BerserkBuff(), self.berserk_duration)
-                if self.spell.get_stat("curse"):
-                    unit.apply_buff(CurseOfRageBuff(self.spell))
+        def on_shoot(self, target_point):
+            unit = self.owner.level.get_unit_at(target_point.x, target_point.y)
+            if not unit:
+                return
+            already_berserk = unit.has_buff(BerserkBuff)
+            unit.apply_buff(BerserkBuff(), self.berserk_duration)
+            if not already_berserk or not self.spell.get_stat("psychosis"):
+                return
+            for spell in unit.spells:
+                if not spell.can_pay_costs():
+                    continue
+                target_point = spell.get_ai_target()
+                if not target_point:
+                    continue
+                target = unit.level.get_unit_at(target_point.x, target_point.y)
+                if not target:
+                    continue
+                if are_hostile(target, self.spell.caster):
+                    unit.level.act_cast(unit, spell, target_point.x, target_point.y)
+                    return
+            unit.apply_buff(Stun(), 1)
 
     if cls is EyeOfRageSpell:
 
@@ -1810,7 +1795,7 @@ def modify_class(cls):
             self.upgrades['shot_cooldown'] = (-1, 1)
             self.upgrades['duration'] = 15
             self.upgrades['berserk_duration'] = 2
-            self.upgrades['curse'] = (1, 5, "Curse of Rage", "Eye of Rage now also permanently inflicts Curse of Rage on hit.\nIf an enemy has both [berserk] and Curse of Rage, it and units it kills will spawn bloodghasts allied to you on death.")
+            self.upgrades['psychosis'] = (1, 5, "Psychosis", "When an already [berserk] enemy is targeted by Eye of Rage, it now chooses a random valid target for one of its abilities.\nIf the new target is another enemy, the first enemy is forced to use that ability on the new target. Otherwise the first enemy is [stunned] for [1_turn:duration].")
 
             self.tags = [Tags.Nature, Tags.Enchantment, Tags.Eye]
             self.level = 2
