@@ -3451,7 +3451,7 @@ def modify_class(cls):
                 for unit in self.owner.level.get_units_in_ball(self.owner, self.radius):
                     if unit is self.owner:
                         continue
-                    push(unit, self.owner, 1)
+                    mods.Bugfixes.Bugfixes.push(unit, self.owner, 1)
             self.owner.level.queue_spell(self.nova())
 
         def nova(self):
