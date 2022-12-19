@@ -189,10 +189,13 @@ Ironize:
 - Retroactive (4 SP): You now gain Iron Aura when you cast this spell, during which all minions you summon will automatically gain Ironize for the remaining duration.
 
 Lightning Halo:
-- In addition to dealing damage every turn, units are also damaged whenever they enter an affected tile.
+- Now only damages enemies, and has a chance to damage all enemies in the radius equal to the distance between the enemy and the caster divided by the halo's radius.
 - Max Charges upgrade removed.
+- Base radius changed to 4. Radius upgrade changed to +2 radius for 2 SP.
+- Damage upgrade cost increased to 3 SP.
+- Duration upgrade changed to +6 duration for 3 SP.
 - Divine Halo (5 SP): Lightning Halo also deals holy damage.
-- Repelling Halo (3 SP): Units inside the halo are pushed away by 1 tile each turn.
+- Repelling Halo (4 SP): Enemies inside the halo are pushed away by 1 tile each turn until they are at the edge, before calculating whether they take damage.
 
 Mercurize:
 - Mercurial Vengeance no longer affects allies.
@@ -459,7 +462,9 @@ Word of Ice:
 - Damage (5 SP): +30 damage.
 
 Arcane Accounting:
-- Now instead lasts 2 turns (starting from the next turn) with only 50% chance to refund 1 spell charge. Duration can be extended by Permanence.
+- Level increased to 5.
+- Now has a chance to trigger on every arcane spell cast, equal to the spell's percentage of missing charges.
+- Arcane Credit now instead lasts 2 turns (starting from the next turn) with only 50% chance to refund 1 spell charge. Duration can be extended by Permanence.
 
 Faestone:
 - Using a mana potion now resurrects the faestone if it's dead.
@@ -501,7 +506,7 @@ Houndlord:
 - Using a mana potion now tries to replenish the number of hounds to the maximum.
 
 Hypocrisy:
-- Now also works on spells of equal level, but you cannot gain the Hypocrisy buff with a spell that benefitted from Hypocrisy.
+- Instead of recovering charges, now gives a damage bonus equal to 4 times the triggering spell's level for 3 turns.
 
 Purestrike:
 - As per my No More Scams mod, no longer harms allies, and is based on damage pre-resistances.

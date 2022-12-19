@@ -3413,15 +3413,15 @@ def modify_class(cls):
             self.damage = 15
             self.element = Tags.Lightning
 
-            self.radius = 3
-            self.upgrades['radius'] = (1, 1)
-            self.upgrades['duration'] = (3, 2)
-            self.upgrades['damage'] = (10, 2)
+            self.radius = 4
+            self.upgrades['radius'] = (2, 2)
+            self.upgrades['duration'] = (6, 3)
+            self.upgrades['damage'] = (10, 3)
             self.upgrades["holy"] = (1, 5, "Divine Halo", "Lightning Halo also deals [holy] damage.")
-            self.upgrades["repel"] = (1, 3, "Repelling Halo", "Units inside the halo are pushed away by [1_tile:radius] each turn.")
+            self.upgrades["repel"] = (1, 4, "Repelling Halo", "Enemies inside the halo are pushed away by [1_tile:radius] each turn until they are at the edge, before calculating whether they take damage.")
 
         def get_description(self):
-            return ("Deal [{damage}_lightning:lightning] damage to all units in a [{radius}_tile:radius] ring each turn, and whenever a unit enters an affected tile.\n"
+            return ("Each turn, each enemy in a [{radius}_tile:radius] radius has a 1/[{radius}:radius] chance per tile away from you to take [{damage}_lightning:lightning] damage.\n"
                     "Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
 
     if cls is LightningHaloBuff:
@@ -3430,37 +3430,30 @@ def modify_class(cls):
             Buff.__init__(self)
             self.spell = spell
             self.name = "Lightning Halo"
-            self.description = "Deals lightning damage in a ring each turn"
             self.buff_type = BUFF_TYPE_BLESS
             self.asset = ['status', 'lightning_halo']
             self.stack_type = STACK_REPLACE
             self.damage = self.spell.get_stat("damage")
             self.holy = self.spell.get_stat("holy")
             self.repel = self.spell.get_stat("repel")
-            self.global_triggers[EventOnMoved] = lambda evt: on_moved(self, evt)
-
-        def on_moved(self, evt):
-            for point in self.spell.get_impacted_tiles(self.owner.x, self.owner.y):
-                if point.x == evt.x and point.y == evt.y:
-                    evt.unit.deal_damage(self.damage, Tags.Lightning, self.spell)
-                    if self.holy:
-                        evt.unit.deal_damage(self.damage, Tags.Holy, self.spell)
 
         def on_advance(self):
             if self.repel:
                 for unit in self.owner.level.get_units_in_ball(self.owner, self.radius):
-                    if unit is self.owner:
+                    if not are_hostile(unit, self.owner) or distance(unit, self.owner) >= self.radius - 1:
                         continue
                     mods.Bugfixes.Bugfixes.push(unit, self.owner, 1)
-            self.owner.level.queue_spell(self.nova())
-
-        def nova(self):
             self.owner.level.show_effect(0, 0, Tags.Sound_Effect, 'sorcery_ally')
             for p in self.spell.get_impacted_tiles(self.owner.x, self.owner.y):
-                self.owner.level.deal_damage(p.x, p.y, self.damage, Tags.Lightning, self.spell)
+                self.owner.level.show_effect(p.x, p.y, Tags.Lightning)
                 if self.holy:
-                    self.owner.level.deal_damage(p.x, p.y, self.damage, Tags.Holy, self.spell)
-            yield
+                    self.owner.level.show_effect(p.x, p.y, Tags.Holy)
+            for u in self.owner.level.get_units_in_ball(self.owner, self.radius):
+                if not are_hostile(u, self.owner) or random.random() >= math.ceil(distance(u, self.owner))/self.radius:
+                    continue
+                u.deal_damage(self.damage, Tags.Lightning, self.spell)
+                if self.holy:
+                    u.deal_damage(self.damage, Tags.Holy, self.spell)
 
     if cls is MercurialVengeance:
 
@@ -6238,17 +6231,19 @@ def modify_class(cls):
 
         def on_init(self):
             self.tags = [Tags.Arcane]
-            self.level = 4
+            self.level = 5
             self.name = "Arcane Accounting"
             self.duration = 2
             self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
 
         def get_description(self):
-            return "Whenever you cast the last charge of an [arcane] spell, your non [arcane] spell have a 50%% chance to refund 1 charge on cast for [%i_turns:duration], starting from the next turn." % self.get_stat("duration")
+            return "Whenever you cast an [arcane] spell, you have a chance to gain Arcane Credit for [%i_turns:duration], equal to the spell's percentage of missing charges.\nWhile you have Arcane Credit, all non-arcane spells have a 50%% chance to refund a charge on cast." % self.get_stat("duration")
 
         def on_spell_cast(self, evt):
-            if Tags.Arcane in evt.spell.tags and evt.spell.cur_charges == 0:
-                self.owner.apply_buff(ArcaneCredit(), self.get_stat("duration") + 1)
+            if Tags.Arcane in evt.spell.tags:
+                max_charges = evt.spell.get_stat("max_charges")
+                if random.random() < (max_charges - evt.spell.cur_charges)/max_charges:
+                    self.owner.apply_buff(ArcaneCredit(), self.get_stat("duration") + 1)
 
     if cls is Faestone:
 
@@ -6622,43 +6617,43 @@ def modify_class(cls):
 
         def on_init(self):
             self.name = "Hypocrisy"
-            self.description = ("Whenever you cast a [dark] spell, if your next spell is a [holy] spell of equal or lower level, that spell refunds 1 charge on cast.\n"
-                                "Whenever you cast a [holy] spell, if your next spell is a [dark] spell of equal or lower level, that spell refunds 1 charge on cast.\n"
-                                "A spell that benefitted from Hypocrisy will not let your next spell benefit from Hypocrisy.")
             self.tags = [Tags.Dark, Tags.Holy]
             self.level = 5
+            self.duration = 3
             self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
 
         def on_spell_cast(self, evt):
             if evt.spell.level < 1:
                 return
-            if Tags.Dark in evt.spell.tags:
-                for buff in self.owner.buffs:
-                    if isinstance(buff, HypocrisyStack) and buff.tag == Tags.Dark and buff.level >= evt.spell.level:
-                        return
-            if Tags.Holy in evt.spell.tags:
-                for buff in self.owner.buffs:
-                    if isinstance(buff, HypocrisyStack) and buff.tag == Tags.Holy and buff.level >= evt.spell.level:
-                        return
             for tag in [Tags.Dark, Tags.Holy]:
                 if tag not in evt.spell.tags:
                     continue
                 btag = Tags.Holy if tag == Tags.Dark else Tags.Dark
-                b = HypocrisyStack(btag, evt.spell.level)
-                self.owner.apply_buff(b)
+                self.owner.apply_buff(HypocrisyStack(btag, evt.spell.level), self.get_stat("duration") + 1)
+
+        def get_description(self):
+            return ("Whenever you cast a [holy] spell, your [dark] spells and skills gain a bonus to [damage] equal to 4 times the [holy] spell's level for [{duration}_turns:duration].\n"
+                    "Whenever you cast a [dark] spell, your [holy] spells and skills gain a bonus to [damage] equal to 4 times the [dark] spell's level for [{duration}_turns:duration].\n"
+                    "A lower-level instance of this buff will not overwrite a higher-level one.").format(**self.fmt_dict())
 
     if cls is HypocrisyStack:
 
-        def on_spell_cast(self, evt):
-            if self.tag in evt.spell.tags and evt.spell.level <= self.level:
-                evt.spell.cur_charges += 1
-                evt.spell.cur_charges = min(evt.spell.cur_charges, evt.spell.get_stat('max_charges'))
-            # Queue this so that the removal happens after the Hypocrisy upgrade determines whether the player has any Hypocrisy stacks
-            self.owner.level.queue_spell(remove_hypocrisy(self))
-        
-        def remove_hypocrisy(self):
-            self.owner.remove_buff(self)
-            yield
+        def on_attempt_apply(self, owner):
+            for buff in list(owner.buffs):
+                if not isinstance(buff, HypocrisyStack) or buff.tag != self.tag:
+                    continue
+                if buff.level > self.level:
+                    return False
+                else:
+                    owner.remove_buff(buff)
+                    return True
+            return True
+
+        def on_init(self):
+            self.name = "%s Hypocrisy %d" % (self.tag.name, self.level)
+            self.color = self.tag.color
+            self.tag_bonuses[self.tag]["damage"] = self.level*4
+            self.stack_type = STACK_INTENSITY
 
     if cls is Purestrike:
 
