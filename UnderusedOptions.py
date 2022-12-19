@@ -3704,46 +3704,62 @@ def modify_class(cls):
             self.max_charges = 13
             self.tags = [Tags.Enchantment, Tags.Dark]
             self.level = 3
-            self.delay = 4
-
-            self.stats.append('delay')
+            self.can_target_empty = False
 
             self.damage = 160
             self.upgrades['range'] = 7
             self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "Seal Fate can be cast without line of sight.")
             self.upgrades['damage'] = (80, 2)
-            self.upgrades['spreads'] = (1, 4, "Spreading Curse", "When Sealed Fate's duration expires, it jumps to a random enemy in line of sight with renewed duration.\nIf an enemy with Sealed Fate dies, the curse jumps to a random enemy in line of sight with its current duration.")
+            self.upgrades['spreads'] = (1, 4, "Spreading Curse", "When the curse is removed, it jumps to a random enemy in line of sight.\nIf its timer has reached 0, the timer of the new curse starts at 4 again; otherwise it retains its current timer.")
+
+        def get_description(self):
+            return ("Permanently curse the target with Sealed Fate.\n"
+                    "The curse has a timer that starts at 4 and ticks down by 1 per turn. When it reaches 0, the buff removes itself to deal [{damage}_dark:dark] damage to the target.\n"
+                    "The timer is treated as a per-turn effect rather than the curse's remaining duration, and cannot be refreshed.\n").format(**self.fmt_dict())
+
+        def can_cast(self, x, y):
+            if not Spell.can_cast(self, x, y):
+                return False
+            unit = self.caster.level.get_unit_at(x, y)
+            if not unit or unit.has_buff(SealedFateBuff):
+                return False
+            return True
+
+        def cast_instant(self, x, y):
+            unit = self.caster.level.get_unit_at(x, y)
+            if unit:
+                unit.apply_buff(SealedFateBuff(self, 4))
 
     if cls is SealedFateBuff:
 
-        def __init__(self, spell):
+        def __init__(self, spell, timer):
             Buff.__init__(self)
             self.spell = spell
-            self.name = "Sealed Fate"
+            self.timer = timer
+            self.name = "Sealed Fate (%i)" % self.timer
             self.buff_type = BUFF_TYPE_CURSE
             self.asset = ['status', 'sealed_fate']
             self.spreads = self.spell.get_stat("spreads")
             self.damage = self.spell.get_stat("damage")
-            self.delay = self.spell.get_stat("delay")
-            if self.spreads:
-                self.owner_triggers[EventOnDeath] = lambda evt: on_death(self, evt)
 
-        def on_death(self, evt):
-            possible_targets = [u for u in self.owner.level.get_units_in_los(self.owner) if u != self.owner and are_hostile(u, self.spell.owner)]
-            if possible_targets:
-                target = random.choice(possible_targets)
-                target.apply_buff(SealedFateBuff(self.spell), self.turns_left)
+        def on_attempt_apply(self, owner):
+            return not owner.has_buff(SealedFateBuff)
 
         def on_advance(self):
-            if self.turns_left == 1:
+            self.timer -= 1
+            if self.timer <= 0:
+                self.timer = 4
                 self.owner.remove_buff(self)
-                self.owner.deal_damage(self.damage, Tags.Dark, self.spell)
+            self.name = "Sealed Fate (%i)" % self.timer
 
-                if self.spreads:
-                    possible_targets = [u for u in self.owner.level.get_units_in_los(self.owner) if u != self.owner and are_hostile(u, self.spell.owner)]
-                    if possible_targets:
-                        target = random.choice(possible_targets)
-                        target.apply_buff(SealedFateBuff(self.spell), self.delay)
+        def on_unapplied(self):
+            self.owner.deal_damage(self.damage, Tags.Dark, self.spell)
+            if not self.spreads:
+                return
+            possible_targets = [u for u in self.owner.level.get_units_in_los(self.owner) if u is not self.owner and are_hostile(u, self.spell.owner) and not u.has_buff(SealedFateBuff)]
+            if possible_targets:
+                target = random.choice(possible_targets)
+                target.apply_buff(SealedFateBuff(self.spell, self.timer))
 
     if cls is ShrapnelBlast:
 

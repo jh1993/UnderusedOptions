@@ -213,6 +213,7 @@ Pain Mirror:
 - Holy Martyr (6 SP): Dark damage dealt by Pain Mirror that is resisted or blocked by SH will be redealt as holy damage.
 
 Seal Fate:
+- The curse now uses a timer that ticks down as a per-turn effect instead of remaining duration, to interact better with reworked Permanence and Time Dilation from my Missing Synergies mod.
 - Spreading Curse upgrade cost increased to 4 SP, but now if a cursed enemy dies to anything else, the curse jumps to a new enemy with its remaining duration.
 
 Shrapnel Blast:
