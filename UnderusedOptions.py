@@ -3742,11 +3742,11 @@ def modify_class(cls):
             self.timer -= 1
             if self.timer <= 0:
                 self.timer = 4
+                self.owner.deal_damage(self.damage, Tags.Dark, self.spell)
                 self.owner.remove_buff(self)
             self.name = "Sealed Fate (%i)" % self.timer
 
         def on_unapplied(self):
-            self.owner.deal_damage(self.damage, Tags.Dark, self.spell)
             if not self.spreads:
                 return
             possible_targets = [u for u in self.owner.level.get_units_in_los(self.owner) if u is not self.owner and are_hostile(u, self.spell.owner) and not u.has_buff(SealedFateBuff)]
