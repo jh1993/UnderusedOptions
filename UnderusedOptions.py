@@ -3591,13 +3591,19 @@ def modify_class(cls):
             self.upgrades['duration'] = 15
             self.upgrades['max_charges'] = (4, 2)
 
-            self.upgrades['dark_dream'] = (1, 5, "Dark Dream", "Upon ending, summon an old witch for every 25 damage dealt by the aura. Each minion randomly lasts [4_to_13_turns:minion_duration], which benefits from bonuses to [minion_duration:minion_duration].\nOld witches fly, have life-draining ranged attacks dealing [dark] damage, and can summon temporary ghosts.", "dream")
-            self.upgrades['electric_dream'] = (1, 5, "Electric Dream", "Upon ending, summon an aelf for every 25 damage dealt by the aura. Each minion randomly lasts [4_to_13_turns:minion_duration], which benefits from bonuses to [minion_duration:minion_duration].\nAelves have melee attacks dealing [dark] damage, and weak but very long-ranged attacks dealing [lightning] damage.", "dream")
-            self.upgrades['fever_dream'] = (1, 5, "Fever Dream", "Upon ending, summon a flame rift for every 25 damage dealt by the aura. Each minion randomly lasts [4_to_13_turns:minion_duration], which benefits from bonuses to [minion_duration:minion_duration].\nFlame rifts are stationary, randomly teleport, have ranged attacks dealing [fire] damage, and have a chance to summon fire bombers each turn.", "dream")
+            self.upgrades['dark_dream'] = (1, 5, "Dark Dream", "Upon ending, summon an old witch for every 25 damage dealt by the aura. Each minion randomly lasts [{min_duration}_to_{max_duration}_turns:minion_duration].\nOld witches fly, have life-draining ranged attacks dealing [dark] damage, and can summon temporary ghosts.", "dream")
+            self.upgrades['electric_dream'] = (1, 5, "Electric Dream", "Upon ending, summon an aelf for every 25 damage dealt by the aura. Each minion randomly lasts [{min_duration}_to_{max_duration}_turns:minion_duration].\nAelves have melee attacks dealing [dark] damage, and weak but very long-ranged attacks dealing [lightning] damage.", "dream")
+            self.upgrades['fever_dream'] = (1, 5, "Fever Dream", "Upon ending, summon a flame rift for every 25 damage dealt by the aura. Each minion randomly lasts [{min_duration}_to_{max_duration}_turns:minion_duration].\nFlame rifts are stationary, randomly teleport, have ranged attacks dealing [fire] damage, and have a chance to summon fire bombers each turn.", "dream")
             self.upgrades["dormancy"] = (1, 3, "Dormancy", "If there are no enemies left in a realm, Nightmare Aura will not decrease in remaining duration.\nThis allows an instance of the buff to persist from one realm to the next.")
 
             self.tags = [Tags.Enchantment, Tags.Dark, Tags.Arcane]
             self.level = 3
+
+        def fmt_dict(self):
+            stats = Spell.fmt_dict(self)
+            stats["min_duration"] = self.get_stat("minion_duration", base=4)
+            stats["max_duration"] = self.get_stat("minion_duration", base=13)
+            return stats
 
     if cls is NightmareBuff:
 
