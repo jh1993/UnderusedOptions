@@ -558,7 +558,7 @@ class FieryTormentorRemorse(Upgrade):
     def on_init(self):
         self.name = "Tormentor's Remorse"
         self.level = 4
-        self.description = "The range of the tormentor's soul suck becomes the same as the radius of its torment, if the latter is higher.\nIts soul suck now also heals the wizard, but the total amount healed cannot exceed the total damage that the wizard has taken from tormentors summoned by this spell, before counting [heal] resistance."
+        self.description = "The range of the tormentor's soul suck becomes the same as the radius of its torment, if the latter is higher.\nIts soul suck now also heals the wizard, but the total amount healed cannot exceed the total damage that the wizard has taken from tormentors summoned by this spell, before counting healing penalty."
         self.global_triggers[EventOnUnitAdded] = self.on_unit_added
         self.global_triggers[EventOnDamaged] = self.on_damaged
         self.healing_pool = 0
