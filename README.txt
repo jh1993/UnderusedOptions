@@ -372,8 +372,7 @@ Cantrip Cascade:
 - Focused Cascade (4 SP): Each cantrip has a chance to be cast an additional time. This chance is equal to 1 divided by the number of units in the affected area at the time of casting this spell.
 
 Chill Wind:
-- Now benefits from radius bonuses, which increases line width.
-- Width (5 SP): Chill Wind now affects a line 5 tiles wide.
+- Chill Vortex (4 SP): Each tile containing a thunderstorm or blizzard cloud that is affected by the wind current has a 50% chance to create a 2 tile burst that deals the same damage and applies the same duration of freeze.
 
 Death Cleave:
 - Level reduced to 4.

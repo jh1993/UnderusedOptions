@@ -5279,31 +5279,42 @@ def modify_class(cls):
 
             self.damage = 21
             self.duration = 6
-            self.radius = 1
 
             self.range = RANGE_GLOBAL
             self.requires_los = False
 
             self.upgrades['max_charges'] = (2, 3)
             self.upgrades['damage'] = (14, 2)
-            self.upgrades["radius"] = (1, 5, "Width", "Chill Wind now affects a line [5_tiles:radius] wide.")
-        
+            self.upgrades["vortex"] = (1, 4, "Chill Vortex", "Each tile containing a thunderstorm or blizzard cloud that is affected by the wind current has a 50% chance to create a [{radius}_tile:radius] burst that deals the same damage and applies the same duration of [freeze].")
+
         def fmt_dict(self):
             stats = Spell.fmt_dict(self)
-            stats["width"] = self.get_stat("radius")*2 + 1
+            stats["radius"] = self.get_stat("radius", base=2)
             return stats
 
-        def get_description(self):
-            return ("Deals [{damage}_ice:ice] damage and inflicts [{duration}_turns:duration] of [frozen] on units in a [{width}_tile:radius] wide line perpendicular to the caster.").format(**self.fmt_dict())
+        def cast(self, x, y):
+            damage = self.get_stat('damage')
+            duration = self.get_stat('duration')
+            vortex = self.get_stat("vortex")
+            radius = self.get_stat("radius", base=2)
+            for p in self.get_impacted_tiles(x, y):
+                hit(self, p, damage, duration)
+                if vortex:
+                    cloud = self.caster.level.tiles[p.x][p.y].cloud
+                    if isinstance(cloud, StormCloud) or isinstance(cloud, BlizzardCloud):
+                        if random.random() < 0.5:
+                            for stage in Burst(self.caster.level, p, radius):
+                                for q in stage:
+                                    hit(self, q, damage, duration)
+                                yield
+                if random.random() < .4:
+                    yield
 
-        def get_impacted_tiles(self, x, y):
-            radius = self.get_stat("radius")
-            line = self.caster.level.get_perpendicular_line(self.caster, Point(x, y))
-            result = set()
-            for p in line:
-                for q in self.caster.level.get_points_in_rect(p.x - radius, p.y - radius, p.x + radius, p.y + radius):
-                    result.add(q)
-            return result
+        def hit(self, p, damage, duration):
+            self.caster.level.deal_damage(p.x, p.y, damage, Tags.Ice, self)
+            unit = self.caster.level.get_unit_at(p.x, p.y)
+            if unit:
+                unit.apply_buff(FrozenBuff(), duration)
 
     if cls is DeathCleaveBuff:
 
