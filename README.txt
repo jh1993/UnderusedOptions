@@ -530,3 +530,6 @@ Lightning Warp:
 - Now inflicts a Warp Lightning debuff on affected enemies, then deals damage to all enemies with Warp Lightning. This means that if Lightning Warp is triggered more than once in a turn, the initially affected enemies will be damaged every time the skill triggers, no matter where they're teleported to.
 - Teleport range now scales with range bonuses.
 - Damage now occurs even if the target is not teleported.
+
+Orb Lord:
+- Now also gives +4 minion damage, +1 radius, and +1 num targets.
