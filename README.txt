@@ -65,9 +65,12 @@ Heavenly Blast:
 - Spirit Bind cost reduced to 4 SP, and now inflicts a Spirit Binding debuff that raises the target as a spirit on death, which is removed at the beginning of your next turn.
 
 Hollow Flesh:
-- As per my No More Scams mod, no longer limited to living units.
+- Instead of affecting a contiguous group of units, now affects all units in a 4-tile radius.
+- Max charges reduced to 6. Range increased to 9, and no longer requires line of sight.
+- Max charges upgrade replaced by a +3 radius upgrade for 3 SP.
+- Max HP loss upgrade increased to 3 SP due to affecting enemies more easily.
 - Mockery of Life (2 SP): Affected units no longer gain dark resistance.
-- Vigor Mortis (4 SP): When your minions are affected, their max HP are instead buffed by the same percentage. They do not gain heal immunity, and instead gain 100 poison resistance. If you have the Fire Vulnerability upgrade, they instead gain 50 ice resistance. If you have the Mockery of Life upgrade, they still gain dark resistance and do not lose holy resistance.
+- Vigor Mortis (4 SP): When your minions are affected, their max HP are instead buffed by the same percentage. They do not suffer healing reduction, and instead gain 100 poison resistance. If you have the Fire Vulnerability upgrade, they instead gain 50 ice resistance. If you have the Mockery of Life upgrade, they still gain dark resistance and do not lose holy resistance.
 
 Hungry Maw:
 - Range upgrade folded into base spell (from 7 to 11).
@@ -289,7 +292,9 @@ Dispersion Field:
 
 Essence Flux:
 - Level reduced to 3.
-- Blindcasting (2 SP): Essence Flux no longer requires line of sight to cast.
+- Instead of affecting a contiguous group of units, now affects all units in a 4-tile radius.
+- Max charges reduced to 6. Range increased to 9, and no longer requires line of sight.
+- Max charges upgrade replaced by a +3 radius upgrade for 3 SP.
 - Imbalanced Flux (5 SP): For each pair of resistances, both resistances will be set to the lower of the two if the affected unit is an enemy, and the higher of the two if the affected unit is an ally.
 
 Fiery Tormentor:

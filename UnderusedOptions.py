@@ -2006,32 +2006,43 @@ def modify_class(cls):
             self.name = "Hollow Flesh"
             self.tags = [Tags.Dark, Tags.Enchantment]
             self.level = 2
-            self.max_charges = 9
-            self.range = 6
+            self.max_charges = 6
+            self.range = 9
+            self.requires_los = False
 
             self.holy_vulnerability = 100
             self.fire_vulnerability = 0
             self.max_health_loss = 25
-            self.can_target_empty = False
+            self.radius = 4
 
-            self.upgrades['max_health_loss'] = (25, 2) 
-            self.upgrades['max_charges'] = (7, 2)
+            self.upgrades["radius"] = (3, 3)
+            self.upgrades['max_health_loss'] = (25, 3)
             self.upgrades['fire_vulnerability'] = (50, 2, "Fire Vulnerability")
             self.upgrades["mockery"] = (1, 2, "Mockery of Life", "Affected units no longer gain [dark] resistance.")
-            self.upgrades["friendly"] = (1, 4, "Vigor Mortis", "When your minions are affected, their max HP are instead buffed by the same percentage.\nThey do not gain heal immunity, and instead gain [100_poison:poison] resistance.\nIf you have the Fire Vulnerability upgrade, they instead gain [50_ice:ice] resistance.\nIf you have the Mockery of Life upgrade, they still gain [dark] resistance and do not lose [holy] resistance.")
+            self.upgrades["friendly"] = (1, 4, "Vigor Mortis", "When your minions are affected, their max HP are instead buffed by the same percentage.\nThey do not suffer healing reduction, and instead gain [100_poison:poison] resistance.\nIf you have the Fire Vulnerability upgrade, they instead gain [50_ice:ice] resistance.\nIf you have the Mockery of Life upgrade, they still gain [dark] resistance and do not lose [holy] resistance.")
+
+        def get_impacted_tiles(self, x, y):
+            return Spell.get_impacted_tiles(self, x, y)
+
+        def get_description(self):
+            return ("Curse units in a [{radius}_tile:radius] radius except the caster with the essence of undeath.\n"
+                    "Affected units become [undead] and lose [living].\n"
+                    "Affected units lose [{max_health_loss}%:damage] of their max HP.\n"
+                    "Affected units lose [100_holy:holy] resist.\n"
+                    "Affected units gain [100_dark:dark] resist.\n"
+                    "Affected units cannot be healed.").format(**self.fmt_dict())
 
         def cast(self, x, y):
-            points = self.get_impacted_tiles(x, y)
-            for p in points:
-                unit = self.caster.level.get_unit_at(p.x, p.y)
-                if unit:
-                    buff = mods.Bugfixes.Bugfixes.RotBuff(self)
-                    if self.get_stat("friendly") and not are_hostile(unit, self.caster):
-                        buff.buff_type = BUFF_TYPE_BLESS
-                    else:
-                        buff.buff_type = BUFF_TYPE_CURSE
-                    unit.apply_buff(buff)
-                    yield
+            for unit in self.caster.level.get_units_in_ball(Point(x, y), self.get_stat("radius")):
+                if unit is self.caster:
+                    continue
+                buff = mods.Bugfixes.Bugfixes.RotBuff(self)
+                if self.get_stat("friendly") and not are_hostile(unit, self.caster):
+                    buff.buff_type = BUFF_TYPE_BLESS
+                else:
+                    buff.buff_type = BUFF_TYPE_CURSE
+                unit.apply_buff(buff)
+            yield
 
     if cls is mods.Bugfixes.Bugfixes.RotBuff:
 
@@ -4382,49 +4393,58 @@ def modify_class(cls):
             self.name = "Essence Flux"
             self.tags = [Tags.Arcane, Tags.Chaos, Tags.Enchantment]
 
-            self.max_charges = 12
+            self.max_charges = 6
             self.level = 3
-            self.range = 7
-            self.can_target_empty = False
+            self.range = 9
+            self.radius = 4
+            self.requires_los = False
 
-            self.upgrades['max_charges'] = (6, 2)
-            self.upgrades["requires_los"] = (-1, 2, "Blindcasting", "Essence Flux no longer requires line of sight to cast.")
+            self.upgrades['radius'] = (3, 3)
             self.upgrades["imbalance"] = (1, 5, "Imbalanced Flux", "For each pair of resistances, both resistances will be set to the lower of the two if the affected unit is an enemy, and the higher of the two if the affected unit is an ally.")
 
+        def get_impacted_tiles(self, x, y):
+            return Spell.get_impacted_tiles(self, x, y)
+
+        def get_description(self):
+            return ("Swap the polarity of the resistances of all units in a [{radius}_tile:radius] radius except the caster.\n"
+                    "[Fire] resistance is swapped with [ice].\n"
+                    "[Lightning] resistance is swapped with [physical].\n"
+                    "[Dark] resistance is swapped with [holy].\n"
+                    "[Poison] resistance is swapped with [arcane].").format(**self.fmt_dict())
+
         def cast(self, x, y):
-
-            points = self.get_impacted_tiles(x, y)
             imbalance = self.get_stat("imbalance")
+            for unit in self.caster.level.get_units_in_ball(Point(x, y), self.get_stat("radius")):
 
-            for p in points:
-                unit = self.caster.level.get_unit_at(p.x, p.y)
-                if unit:
-                    old_resists = unit.resists.copy()
-                    for e1, e2 in [
-                        (Tags.Fire, Tags.Ice),
-                        (Tags.Lightning, Tags.Physical),
-                        (Tags.Dark, Tags.Holy),
-                        (Tags.Poison, Tags.Arcane)]:
+                if unit is self.caster:
+                    continue
+                
+                old_resists = unit.resists.copy()
+                for e1, e2 in [
+                    (Tags.Fire, Tags.Ice),
+                    (Tags.Lightning, Tags.Physical),
+                    (Tags.Dark, Tags.Holy),
+                    (Tags.Poison, Tags.Arcane)]:
 
-                        if old_resists[e1] == old_resists[e2]:
-                            continue
+                    if old_resists[e1] == old_resists[e2]:
+                        continue
 
-                        if not imbalance:
-                            unit.resists[e1] = old_resists[e2]
-                            unit.resists[e2] = old_resists[e1]
+                    if not imbalance:
+                        unit.resists[e1] = old_resists[e2]
+                        unit.resists[e2] = old_resists[e1]
+                        color = e1.color if old_resists[e1] > old_resists[e2] else e2.color
+                        self.caster.level.show_effect(unit.x, unit.y, Tags.Debuff_Apply, fill_color=color)
+                    else:
+                        if are_hostile(unit, self.caster):
+                            unit.resists[e1] = min(old_resists[e1], old_resists[e2])
+                            unit.resists[e2] = unit.resists[e1]
                             color = e1.color if old_resists[e1] > old_resists[e2] else e2.color
                             self.caster.level.show_effect(unit.x, unit.y, Tags.Debuff_Apply, fill_color=color)
                         else:
-                            if are_hostile(unit, self.caster):
-                                unit.resists[e1] = min(old_resists[e1], old_resists[e2])
-                                unit.resists[e2] = unit.resists[e1]
-                                color = e1.color if old_resists[e1] > old_resists[e2] else e2.color
-                                self.caster.level.show_effect(unit.x, unit.y, Tags.Debuff_Apply, fill_color=color)
-                            else:
-                                unit.resists[e1] = max(old_resists[e1], old_resists[e2])
-                                unit.resists[e2] = unit.resists[e1]
-                                color = e1.color if old_resists[e1] < old_resists[e2] else e2.color
-                                self.caster.level.show_effect(unit.x, unit.y, Tags.Buff_Apply, fill_color=color)
+                            unit.resists[e1] = max(old_resists[e1], old_resists[e2])
+                            unit.resists[e2] = unit.resists[e1]
+                            color = e1.color if old_resists[e1] < old_resists[e2] else e2.color
+                            self.caster.level.show_effect(unit.x, unit.y, Tags.Buff_Apply, fill_color=color)
             yield
 
     if cls is SummonFieryTormentor:
