@@ -317,7 +317,7 @@ Orb Control:
 - Anti-Particle Beam (5 SP): When casting this spell, every allied orb will shoot a beam at the target tile. Each beam deals damage of each damage type the orb is not immune to, multiplied by 100% minus the orb's resistance to that damage type. The base damage is equal to 4 times the orb's level, and does not harm allies. A beam melts through walls if its corresponding orb can melt through walls; otherwise it is stopped by the first wall it encounters.
 
 Permanence:
-- Retroactive (3 SP): When you cast this spell, all friendly units' buffs and enemies' debuffs are extended by 5 turns. Cannot extend the duration of stun, freeze, petrify, glassify, and similar incapacitating effects on units that can gain clarity.
+- Minion Permanence (5 SP): Each turn, each of your temporary minions that has only 1 turn remaining has a 25% chance to become permanent. Does not work on orb minions.
 - Max Charges (3 SP): +4 max charges.
 
 Purity:

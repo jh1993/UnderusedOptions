@@ -4646,21 +4646,21 @@ def modify_class(cls):
             self.level = 4
             self.range = 0
             self.upgrades['duration'] = (20, 3)
-            self.upgrades["retroactive"] = (1, 3, "Retroactive", "When you cast this spell, all friendly units' remaining lifetimes and buffs and enemies' debuffs are extended by [5_turns:duration].\nCannot extend the duration of [stun], [freeze], [petrify], [glassify], and similar incapacitating effects on units that can gain clarity.")
+            self.upgrades["minion"] = (1, 5, "Minion Permanence", "Each turn, each of your temporary minions that has only 1 turn remaining has a 25% chance to become permanent.\nDoes not work on [orb] minions.")
             self.upgrades["max_charges"] = (4, 3)
 
         def cast_instant(self, x, y):
-            self.caster.apply_buff(PermenanceBuff(), self.get_stat('duration'))
-            if self.get_stat("retroactive"):
-                for unit in list(self.caster.level.units):
-                    buff_type = BUFF_TYPE_CURSE if are_hostile(self.caster, unit) else BUFF_TYPE_BLESS
-                    if buff_type == BUFF_TYPE_BLESS and unit.turns_to_death is not None:
-                        unit.turns_to_death += 5
-                    for buff in unit.buffs:
-                        if isinstance(buff, Stun) and unit.gets_clarity:
-                            continue
-                        if buff.buff_type == buff_type and buff.turns_left:
-                            buff.turns_left += 5
+            buff = PermenanceBuff()
+            buff.stack_type = STACK_REPLACE
+            def make_permanent():
+                for unit in self.caster.level.units:
+                    if are_hostile(unit, self.caster) or unit.turns_to_death != 1 or unit.has_buff(OrbBuff) or random.random() >= 0.25:
+                        continue
+                    self.caster.level.show_effect(unit.x, unit.y, Tags.Translocation)
+                    unit.turns_to_death = None
+            if self.get_stat("minion"):
+                buff.on_advance = make_permanent
+            self.caster.apply_buff(buff, self.get_stat('duration'))
 
     if cls is PurityBuff:
 
