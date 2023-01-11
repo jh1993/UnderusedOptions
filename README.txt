@@ -17,6 +17,11 @@ Death Bolt:
 Fireball:
 - Damage type upgrades changed to redeal all fire damage resisted or blocked by SH as a split between the other damage types.
 
+Magic Missile:
+- The bolt upgrades are no longer mutually exclusive. All of them will apply simultaneously if the target has the appropriate tags.
+- Slaughter Bolt cost increased to 6 SP, but now also works on nature units, and still deals arcane damage in addition to the new damage types.
+- Disruption Bolt now still deals arcane damage in addition to the new damage types.
+
 Poison Sting:
 - Torment (5 SP): Deal 1 extra damage per 10 turns of poison on the target, and 1 extra damage per turn of every other debuff on the target. Deal 1 extra damage per debuff on the target. Multiple stacks of the same type of debuff are counted as different debuffs.
 
