@@ -176,6 +176,9 @@ Frostfire Hydra:
 - Dragon Mage (6 SP): The hydra will cast Melt on the target of its fire beam, and Freeze on the target of its ice beam. These spells gains all of your upgrades and bonuses.
 - Splitting (4 SP): Upon reaching 0 HP, the hydra splits into a frost hydra and a fire hydra. Each hydra inherits one of the frostfire hydra's beams and resistances.
 
+Ghostball:
+- Possession (6 SP): Units in the area of Ghostball are now possessed for a duration equal to this spell's minion duration, which can stack. If a possessed unit dies, summon a ghost near it with duration equal to the remaining duration of possession. A possessed enemy takes dark damage each turn equal to this spell's minion damage. A possessed ally instead has melee retaliation dealing the same amount of dark damage to enemies.
+
 Giant Bear:
 - Max Charges upgrade removed and its benefits folded into the base spell.
 - Armored Bear upgrade removed.

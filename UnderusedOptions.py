@@ -15,6 +15,55 @@ import sys, math, random
 
 curr_module = sys.modules[__name__]
 
+class PossessedAlly(Thorns):
+
+    def __init__(self, spell):
+        self.spell = spell
+        Thorns.__init__(self, damage=spell.get_stat("minion_damage"), dtype=Tags.Dark)
+        self.name = "Possessed"
+        self.asset = ["UnderusedOptions", "Statuses", "possessed_ally"]
+        self.color = Tags.Dark.color
+        self.stack_type = STACK_INTENSITY
+        self.owner_triggers[EventOnDeath] = lambda evt: self.owner.level.queue_spell(self.summon_ghost())
+        self.show_effect = False
+    
+    def summon_ghost(self):
+        if not self.turns_left:
+            return
+        unit = Ghost()
+        apply_minion_bonuses(self.spell, unit)
+        unit.turns_to_death = self.turns_left
+        self.spell.summon(unit, target=self.owner)
+        yield
+
+class PossessedEnemy(Buff):
+
+    def __init__(self, spell):
+        self.spell = spell
+        Buff.__init__(self)
+    
+    def on_init(self):
+        self.name = "Possessed"
+        self.asset = ["UnderusedOptions", "Statuses", "possessed_enemy"]
+        self.color = Tags.Dark.color
+        self.buff_type = BUFF_TYPE_CURSE
+        self.stack_type = STACK_INTENSITY
+        self.damage = self.spell.get_stat("minion_damage")
+        self.owner_triggers[EventOnDeath] = lambda evt: self.owner.level.queue_spell(self.summon_ghost())
+        self.show_effect = False
+    
+    def on_advance(self):
+        self.owner.deal_damage(self.damage, Tags.Dark, self.spell)
+
+    def summon_ghost(self):
+        if not self.turns_left:
+            return
+        unit = Ghost()
+        apply_minion_bonuses(self.spell, unit)
+        unit.turns_to_death = self.turns_left
+        self.spell.summon(unit, target=self.owner)
+        yield
+
 class LivingScrollIcicle(Icicle):
 
     def __init__(self, statholder=None):
@@ -3236,6 +3285,62 @@ def modify_class(cls):
             if self.get_stat("splitting"):
                 unit.buffs = [RespawnAs(lambda: get_frost_hydra(self)), RespawnAs(lambda: get_fire_hydra(self))]
             self.summon(unit, Point(x, y))
+
+    if cls is CallSpirits:
+
+        def on_init(self):
+            self.tags = [Tags.Dark, Tags.Conjuration, Tags.Sorcery]
+            self.name = "Ghostball"
+            self.radius = 1
+            self.minion_damage = 1
+            self.minion_health = 4
+            self.minion_duration = 14
+            self.max_charges = 6
+            self.level = 3
+            self.damage = 11
+
+            self.upgrades['radius'] = (1, 3)
+            self.upgrades['minion_duration'] = (15, 2)
+            self.upgrades['minion_damage'] = (3, 3)
+            self.upgrades["possession"] = (1, 6, "Possession", "Units in the area of Ghostball are now possessed for a duration equal to this spell's [minion_duration:minion_duration], which can stack. If a possessed unit dies, summon a ghost near it with duration equal to the remaining duration of possession.\nA possessed enemy takes [dark] damage each turn equal to this spell's [minion_damage:minion_damage].\nA possessed ally instead has melee retaliation dealing the same amount of [dark] damage to enemies.")
+            self.upgrades['king'] = (1, 5, "Ghost King", "A Ghost King is summoned at the center of the ghost ball.", "center summon")
+            self.upgrades['mass'] = (1, 4, "Ghost Mass", "A Ghostly Mass is summoned at the center of the ghost ball.", "center summon")
+
+        def cast_instant(self, x, y):
+
+            king = self.get_stat('king')
+            mass = self.get_stat('mass')
+            possession = self.get_stat("possession")
+            duration = self.get_stat('minion_duration')
+            damage = self.get_stat('damage')
+            points = self.caster.level.get_points_in_ball(x, y, self.get_stat('radius'))
+            
+            for point in points:
+                
+                if not self.caster.level.tiles[point.x][point.y].can_see:
+                    continue
+                unit = self.caster.level.get_unit_at(point.x, point.y)
+                
+                if not unit:
+                    ghost = Ghost()
+                    if point.x == x and point.y == y:
+                        if king:
+                            ghost = GhostKing()
+                        elif mass:
+                            ghost = GhostMass()
+                    ghost.turns_to_death = duration
+                    apply_minion_bonuses(self, ghost)
+                    self.summon(ghost, point)
+
+                else:
+                    if are_hostile(self.caster, unit):
+                        if possession:
+                            unit.apply_buff(PossessedEnemy(self), duration)
+                        unit.deal_damage(damage, Tags.Dark, self)
+                    else:
+                        if possession:
+                            unit.apply_buff(PossessedAlly(self), duration)
+                        self.caster.level.show_effect(point.x, point.y, Tags.Dark)
 
     if cls is SummonGiantBear:
 
@@ -6972,5 +7077,5 @@ def modify_class(cls):
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord]:
+for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord]:
     modify_class(cls)
