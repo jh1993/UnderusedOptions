@@ -1338,23 +1338,28 @@ def modify_class(cls):
             self.upgrades['max_charges'] = (10, 2)
             self.upgrades['minion_damage'] = (9, 3)
 
-            self.upgrades['wither'] = (1, 5, "Withering", "Death Bolt also deals [physical] damage to non-living units, and reduces their max HP by an amount equal to damage dealt.")
-            self.upgrades['soulbattery'] = (1, 7, "Soul Battery", "Deathbolt permenantly gains 1 damage whenever it slays a living target.")
+            self.upgrades['wither'] = (1, 5, "Withering", "Death Bolt deals double damage to non-living units, and reduces their max HP by an amount equal to damage dealt.")
+            self.upgrades['soulbattery'] = (1, 7, "Soul Battery", "Death Bolt permenantly gains [1_damage:damage] whenever it slays a [living] target.")
 
             self.can_target_empty = False
             self.minion_damage = 5
 
         def cast_instant(self, x, y):		
             unit = self.caster.level.get_unit_at(x, y)
-            if unit and Tags.Living in unit.tags:
+            if not unit:
+                return
+            if Tags.Living in unit.tags:
                 # Queue the skeleton raise as the first spell to happen after the damage so that it will pre-empt stuff like ghostfire
                 self.caster.level.queue_spell(self.try_raise(self.caster, unit))
-            damage = self.caster.level.deal_damage(x, y, self.get_stat('damage'), Tags.Dark, self)
-            if unit and self.get_stat('wither') and Tags.Living not in unit.tags:
-                damage += unit.deal_damage(self.get_stat("damage"), Tags.Physical, self)
-                unit.max_hp -= damage
+            wither = self.get_stat("wither")
+            damage = self.get_stat("damage")
+            if wither and Tags.Living not in unit.tags:
+                damage *= 2
+            dealt = unit.deal_damage(damage, Tags.Dark, self)
+            if wither and Tags.Living not in unit.tags:
+                unit.max_hp -= dealt
                 unit.max_hp = max(unit.max_hp, 1)
-            if unit and not unit.is_alive() and Tags.Living in unit.tags and self.get_stat('soulbattery'):
+            if not unit.is_alive() and Tags.Living in unit.tags and self.get_stat('soulbattery'):
                 self.damage += 1
 
     if cls is FireballSpell:
@@ -7073,9 +7078,25 @@ def modify_class(cls):
             self.tag_bonuses[Tags.Orb]["num_targets"] = 1
             self.level = 7
 
+    if cls is DragonScalesSkill:
+
+        def get_description(self):
+            return "Whenever an allied [dragon] uses a breath weapon, all your minions gain 100 resistance to that breath weapon's element.\nIf a minion's resistance to that element is still less than 100, it gains enough additional resistance to that element to make it 100.\nLasts [{duration}_turns:duration].".format(**self.fmt_dict())
+
+    if cls is DragonScalesBuff:
+
+        def __init__(self, damage_type):
+            Buff.__init__(self)
+            self.element = damage_type
+            self.name = "%s Scales" % damage_type.name
+            self.color = damage_type.color
+        
+        def on_applied(self, owner):
+            self.resists[self.element] = 100 + (-self.owner.resists[self.element] if self.owner.resists[self.element] < 0 else 0)
+
     for func_name, func in [(key, value) for key, value in locals().items() if callable(value)]:
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord]:
+for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff]:
     modify_class(cls)

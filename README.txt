@@ -12,7 +12,7 @@ Changelog:
 
 Death Bolt:
 - Damage upgrade cost reduced to 1 SP. This should make it more attractive as a quick power boost in early game, and useful for Cantrip Cascade builds.
-- Withering upgrade now makes it also deal physical damage to non-living targets, but SP cost increased to 5.
+- Withering upgrade now makes it deal double damage to non-living targets, but SP cost increased to 5.
 
 Fireball:
 - Damage type upgrades changed to redeal all fire damage resisted or blocked by SH as a split between the other damage types.
@@ -543,6 +543,9 @@ Lightning Warp:
 - Now inflicts a Warp Lightning debuff on affected enemies, then deals damage to all enemies with Warp Lightning. This means that if Lightning Warp is triggered more than once in a turn, the initially affected enemies will be damaged every time the skill triggers, no matter where they're teleported to.
 - Teleport range now scales with range bonuses.
 - Damage now occurs even if the target is not teleported.
+
+Scalespinner:
+- Now gives a minion additional resistance to bring it up to 100 if a minion has weakness to the triggering element.
 
 Orb Lord:
 - Now also gives +4 minion damage, +1 radius, and +1 num targets.
