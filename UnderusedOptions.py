@@ -1359,8 +1359,6 @@ def modify_class(cls):
             if wither and Tags.Living not in unit.tags:
                 unit.max_hp -= dealt
                 unit.max_hp = max(unit.max_hp, 1)
-            if not unit.is_alive() and Tags.Living in unit.tags and self.get_stat('soulbattery'):
-                self.damage += 1
 
     if cls is FireballSpell:
 
