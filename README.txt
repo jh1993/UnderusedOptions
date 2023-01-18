@@ -12,7 +12,7 @@ Changelog:
 
 Death Bolt:
 - Damage upgrade cost reduced to 1 SP. This should make it more attractive as a quick power boost in early game, and useful for Cantrip Cascade builds.
-- Withering upgrade now makes it deal double damage to non-living targets, but SP cost increased to 5.
+- Withering upgrade replaced by Soul Feedback (5 SP): Death Bolt deals additional damage equal to twice the number of undead, demon, holy, and arcane minions you have that are not summoned by itself. Mutually exclusive with Soul Battery.
 
 Fireball:
 - Damage type upgrades changed to redeal all fire damage resisted or blocked by SH as a split between the other damage types.

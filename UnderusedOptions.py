@@ -1337,9 +1337,8 @@ def modify_class(cls):
             self.upgrades['damage'] = (12, 1)
             self.upgrades['max_charges'] = (10, 2)
             self.upgrades['minion_damage'] = (9, 3)
-
-            self.upgrades['wither'] = (1, 5, "Withering", "Death Bolt deals double damage to non-living units, and reduces their max HP by an amount equal to damage dealt.")
-            self.upgrades['soulbattery'] = (1, 7, "Soul Battery", "Death Bolt permenantly gains [1_damage:damage] whenever it slays a [living] target.")
+            self.upgrades["soulfeedback"] = (1, 5, "Soul Feedback", "Death Bolt deals additional damage equal to twice the number of [undead], [demon], [holy], and [arcane] minions you have that are not summoned by itself.", "soul")
+            self.upgrades['soulbattery'] = (1, 7, "Soul Battery", "Death Bolt permenantly gains [1_damage:damage] whenever it slays a [living] target.", "soul")
 
             self.can_target_empty = False
             self.minion_damage = 5
@@ -1351,14 +1350,17 @@ def modify_class(cls):
             if Tags.Living in unit.tags:
                 # Queue the skeleton raise as the first spell to happen after the damage so that it will pre-empt stuff like ghostfire
                 self.caster.level.queue_spell(self.try_raise(self.caster, unit))
-            wither = self.get_stat("wither")
             damage = self.get_stat("damage")
-            if wither and Tags.Living not in unit.tags:
-                damage *= 2
-            dealt = unit.deal_damage(damage, Tags.Dark, self)
-            if wither and Tags.Living not in unit.tags:
-                unit.max_hp -= dealt
-                unit.max_hp = max(unit.max_hp, 1)
+            if self.get_stat("soulfeedback"):
+                for u in self.caster.level.units:
+                    if are_hostile(u, self.owner):
+                        continue
+                    if u.source is self:
+                        continue
+                    if not [tag for tag in [Tags.Undead, Tags.Demon, Tags.Holy, Tags.Arcane] if tag in u.tags]:
+                        continue
+                    damage += 2
+            unit.deal_damage(damage, Tags.Dark, self)
 
     if cls is FireballSpell:
 
