@@ -6415,8 +6415,7 @@ def modify_class(cls):
 
         def on_cast(self, evt):
             if Tags.Arcane not in evt.spell.tags and random.random() < 0.5:
-                evt.spell.cur_charges += 1
-                evt.spell.cur_charges = min(evt.spell.cur_charges, evt.spell.get_stat('max_charges'))
+                evt.spell.cur_charges = min(evt.spell.cur_charges + 1, evt.spell.get_stat('max_charges'))
 
     if cls is ArcaneAccountant:
 
@@ -6428,11 +6427,13 @@ def modify_class(cls):
             self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
 
         def get_description(self):
-            return "Whenever you cast an [arcane] spell, you have a chance to gain Arcane Credit for [%i_turns:duration], equal to the spell's percentage of missing charges.\nWhile you have Arcane Credit, all non-arcane spells have a 50%% chance to refund a charge on cast." % self.get_stat("duration")
+            return "Whenever you cast an [arcane] spell, you have a chance to gain Arcane Credit for [%i_turns:duration], equal to the spell's percentage of missing charges.\nWhile you have Arcane Credit, all non-arcane spells have a 50%% chance to refund a charge on cast.\nCannot be triggered by spells that have no max charges." % self.get_stat("duration")
 
         def on_spell_cast(self, evt):
             if Tags.Arcane in evt.spell.tags:
                 max_charges = evt.spell.get_stat("max_charges")
+                if not max_charges:
+                    return
                 if random.random() < (max_charges - evt.spell.cur_charges)/max_charges:
                     self.owner.apply_buff(ArcaneCredit(), self.get_stat("duration") + 1)
 
