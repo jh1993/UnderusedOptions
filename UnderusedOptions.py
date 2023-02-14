@@ -2150,36 +2150,30 @@ def modify_class(cls):
             self.color = Tags.Undead.color
             self.name = "Hollow Flesh"
             self.asset = ['status', 'rot']
-            self.frac = 1
             self.originally_living = False
             self.originally_undead = False
             self.stack_type = STACK_REPLACE
 
         def on_applied(self, owner):
 
+            self.hp = math.floor(self.owner.max_hp*self.spell.get_stat('max_health_loss')/100)
             self.resists[Tags.Dark] = 100
             self.resists[Tags.Holy] = -100
 
             if self.spell.get_stat("friendly") and not are_hostile(self.owner, self.spell.caster):
                 if self.spell.get_stat("mockery"):
                     self.resists[Tags.Holy] = 0
-                self.frac = 1 + self.spell.get_stat('max_health_loss')/100
+                self.owner.max_hp += self.hp
+                self.owner.deal_damage(-self.hp, Tags.Heal, self.spell)
                 self.resists[Tags.Poison] = 100
                 self.resists[Tags.Ice] = self.spell.get_stat('fire_vulnerability')
             else:
                 if self.spell.get_stat("mockery"):
                     self.resists[Tags.Dark] = 0
-                self.frac = 1 - self.spell.get_stat('max_health_loss')/100
+                drain_max_hp(self.owner, self.hp)
                 self.resists[Tags.Fire] = -self.spell.get_stat('fire_vulnerability')
                 self.resists[Tags.Heal] = 100
-
-            old_max_hp = self.owner.max_hp
-            self.owner.max_hp = math.floor(self.owner.max_hp*self.frac)
-            self.owner.max_hp = max(self.owner.max_hp, 1)
-            max_hp_diff = self.owner.max_hp - old_max_hp
-            if max_hp_diff > 0:
-                self.owner.cur_hp += max_hp_diff
-            self.owner.cur_hp = min(self.owner.cur_hp, self.owner.max_hp)
+            
             if Tags.Living in self.owner.tags:
                 self.owner.tags.remove(Tags.Living)
                 self.originally_living = True
@@ -2187,6 +2181,16 @@ def modify_class(cls):
                 self.originally_undead = True
             else:
                 self.owner.tags.append(Tags.Undead)
+
+        def on_unapplied(self):
+            if self.buff_type == BUFF_TYPE_CURSE:
+                self.owner.max_hp += self.hp
+            else:
+                drain_max_hp(self.owner, self.hp)
+            if not self.originally_undead and Tags.Undead in self.owner.tags:
+                self.owner.tags.remove(Tags.Undead)
+            if self.originally_living and Tags.Living not in self.owner.tags:
+                self.owner.tags.append(Tags.Living)
 
     if cls is VoidMaw:
 
