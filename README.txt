@@ -76,6 +76,7 @@ Hollow Flesh:
 - Max HP loss upgrade increased to 3 SP due to affecting enemies more easily.
 - Mockery of Life (2 SP): Affected units no longer gain dark resistance.
 - Vigor Mortis (4 SP): When your minions are affected, their max HP are instead buffed by the same percentage. They do not suffer healing reduction, and instead gain 100 poison resistance. If you have the Fire Vulnerability upgrade, they instead gain 50 ice resistance. If you have the Mockery of Life upgrade, they still gain dark resistance and do not lose holy resistance.
+- Flesh Rot (4 SP): When affecting a unit already affected by Hollow Flesh, this spell also deals poison damage equal to 25% of the max HP that unit lost from Hollow Flesh. If you have the Vigor Mortis upgrade, this will instead heal affected allies.
 
 Hungry Maw:
 - Range upgrade folded into base spell (from 7 to 11).
@@ -104,8 +105,8 @@ Petrify:
 - Stone Curse (6 SP): Whenever an enemy is inflicted with petrify or glassify, permanently inflict Stone Curse to it, which reduces holy, dark, arcane, and poison resistances by 50 as long as the target is petrified or glassified. This consumes a charge of Petrify and counts as casting Petrify on that enemy; it will not be triggered if Petrify has no more charges remaining.
 
 Soul Swap:
-- Shadow Swap (2 SP): Soul Swap can target dark units as well.
 - Infernal Swap (3 SP): Soul Swap can target demon units as well.
+- Soul Relay (3 SP): The minion that you swapped with will immediately take an action without costing a turn. If you have the Forced Transfer upgrade and swap with an enemy, that enemy is stunned for 1 turn.
 
 Touch of Death:
 - All the damage type upgrades now do the same amount of damage as dark damage done, but are increased to 2 SP. Now also has a lightning damage upgrade.
@@ -180,13 +181,13 @@ Ghostball:
 - Possession (6 SP): Units in the area of Ghostball are now possessed for a duration equal to this spell's minion duration, which can stack. If a possessed unit dies, summon a ghost near it with duration equal to the remaining duration of possession. A possessed enemy takes dark damage each turn equal to this spell's minion damage. A possessed ally instead has melee retaliation dealing the same amount of dark damage to enemies.
 
 Giant Bear:
-- Max Charges upgrade removed and its benefits folded into the base spell.
+- Max charges upgrade removed and its benefits folded into the base spell.
 - Armored Bear upgrade removed.
-- Polar Bear (5 SP): Summons a polar bear instead of a giant bear. Polar bears are resistant to ice damage, can freeze units around itself, and gains regeneration and an ice aura while frozen. For every 100 ice resistance the polar bear has above 100, the self-healing and ice aura activate once per turn. An excess of less than 100 instead has a chance to activate these effects. Not compatible with other bear species upgrades.
-- Roar (4 SP): The bear gains a roar with a cooldown of 3 turns that stuns enemies in a 7 range cone for 3 turns. The venom bear's roar will also poison enemies for 5 turns and give regeneration to allies for the same duration. The blood bear's roar will instead berserk enemies for 3 turns and give allies a stack of bloodrage for 10 turns. The polar bear's roar will instead freeze enemies for 3 turns and heal allies for an amount equal to its regeneration when frozen.
+- Minion health and minion damage upgrades replaced by True Giant (7 SP): The bear grows to gargantuan size. Its HP is multiplied by 6, and its melee damage multiplied by 2.
+- Venom bear healing nerfed to 1 HP whenever a unit takes poison damage, but its melee attack now inflicts 10 turns of poison that benefits from duration bonuses and stacks poison duration on the target.
 
 Holy Fire:
-- No longer requires damages the caster.
+- No longer damages the caster.
 - Damage is halved but now deals both fire and holy damage.
 - Duration upgrade SP cost reduced to 2.
 - Blindcasting (2 SP): Holy Fire no longer requires line of sight to cast.
@@ -237,6 +238,11 @@ Shrapnel Blast:
 - The Magnetized Shards upgrade now makes it so that if there are no enemies in the area, no more shards will be fired; shards not fired do not count as shards missed. If it's smart enough to seek enemies, it should be smart enough to not hit allies. Not compatible with the new Particle Surge upgrade below.
 - Particle Surge (7 SP): Shrapnel Blast becomes a channeled spell, and no longer destroys the target wall. Each shard now deals damage in a beam between the target tile and its destination. Not compatible with Magnetized Shards.
 - Unearth (4 SP): This spell can now be cast on chasms.
+
+Silver Spear:
+- The holy AoE no longer damages allies.
+- Radius upgrade reduced to 3 SP.
+- Blessed Silver (4 SP): The holy area damage of Silver Spear now also applies to undead and demon enemies.
 
 Suspend Mortality:
 - Can no longer be cast on units that already have reincarnations, unless you have the Additive upgrade (see below).
@@ -303,7 +309,7 @@ Essence Flux:
 - Instead of affecting a contiguous group of units, now affects all units in a 4-tile radius.
 - Max charges reduced to 6. Range increased to 9, and no longer requires line of sight.
 - Max charges upgrade replaced by a +3 radius upgrade for 3 SP.
-- Imbalanced Flux (5 SP): For each pair of resistances, both resistances will be set to the lower of the two if the affected unit is an enemy, and the higher of the two if the affected unit is an ally.
+- Imbalanced Flux (5 SP): After affecting an enemy, the higher resistance of each pair will instead be set to the average of the pair. After affecting an ally, the lower resistance of each pair will instead be set to the average of the pair.
 
 Fiery Tormentor:
 - Tormentor's Remorse (4 SP): The range of the tormentor's soul suck is increased by its the radius of its torment. Its soul suck now also heals the wizard, but the total amount healed cannot exceed the total damage that the wizard has taken from tormentors summoned by this spell, before counting heal resistance.
@@ -518,7 +524,8 @@ Houndlord:
 - Using a mana potion now tries to replenish the number of hounds to the maximum.
 
 Hypocrisy:
-- Instead of recovering charges, now gives a damage bonus equal to 4 times the triggering spell's level for 3 turns.
+- Now only lasts a fixed 1 turn, but is no longer removed when you cast an unqualifying spell. Now applies Hypocrisy of a level equal to the triggering spell, instead of the triggering spell's level minus 1.
+- Holy Hypocrisy now gives a damage bonus to holy spells and skills equal to twice its level, while you have it. But it is still consumed when you cast a holy spell of lower level, which cannot benefit from this damage bonus, meaning that only spells of equal or higher level benefit from the damage bonus. Dark Hypocrisy behaves similarly.
 
 Purestrike:
 - As per my No More Scams mod, no longer harms allies, and is based on damage pre-resistances.

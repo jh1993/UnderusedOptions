@@ -385,123 +385,6 @@ class FrostfireHydraDragonMage(Upgrade):
                 return True
         return False
 
-class PolarBearFreeze(Spell):
-
-    def __init__(self, spell):
-        Spell.__init__(self)
-        self.radius = spell.get_stat("radius", base=4)
-        self.duration = spell.get_stat("duration", base=4)
-
-    def on_init(self):
-        self.name = "Mass Freeze"
-        self.range = 0
-        self.cool_down = 9
-
-    def get_description(self):
-        return "Freezes all units in a %i tile radius except the wizard for %i turns." % (self.get_stat("radius"), self.get_stat("duration"))
-    
-    def can_cast(self, x, y):
-        if not Spell.can_cast(self, x, y):
-            return False
-        if self.caster.resists[Tags.Ice] < 100 and self.caster.cur_hp < self.caster.max_hp:
-            return True
-        if [unit for unit in self.caster.level.get_units_in_ball(self.caster, self.get_stat("radius")) if are_hostile(unit, self.caster) and unit.resists[Tags.Ice] < 100]:
-            return True
-        return False
-
-    def cast_instant(self, x, y):
-        duration = self.get_stat("duration")
-        for unit in self.caster.level.get_units_in_ball(self.caster, self.get_stat("radius")):
-            if unit.is_player_controlled:
-                continue
-            unit.apply_buff(FrozenBuff(), duration)
-
-class PolarBearAura(DamageAuraBuff):
-
-    def __init__(self, spell):
-        DamageAuraBuff.__init__(self, 1, Tags.Ice, spell.get_stat("radius", base=4))
-        self.heal = spell.get_stat("damage", base=10)
-        self.description = "While frozen, heals for %i HP per turn and deals %i ice damage to all enemies in a %i radius." % (self.heal, self.damage, self.radius)
-        self.name = "Icy Body"
-        self.color = Tags.Ice.color
-    
-    def on_advance(self):
-        if self.owner.has_buff(FrozenBuff):
-            self.owner.deal_damage(-self.heal, Tags.Heal, self)
-            DamageAuraBuff.on_advance(self)
-        elif self.owner.resists[Tags.Ice] > 100:
-            amount = self.owner.resists[Tags.Ice] - 100
-            while amount > 100:
-                self.owner.deal_damage(-self.heal, Tags.Heal, self)
-                DamageAuraBuff.on_advance(self)
-                amount -= 100
-            if random.random() < amount/100:
-                self.owner.deal_damage(-self.heal, Tags.Heal, self)
-                DamageAuraBuff.on_advance(self)
-    
-    def get_tooltip(self):
-        return self.description
-
-class GiantBearRoar(BreathWeapon):
-
-    BEAR_TYPE_DEFAULT = 0
-    BEAR_TYPE_VENOM = 1
-    BEAR_TYPE_BLOOD = 2
-    BEAR_TYPE_POLAR = 3
-
-    def __init__(self, spell, bear_type=BEAR_TYPE_DEFAULT):
-        self.bear_type = bear_type
-        BreathWeapon.__init__(self)
-        self.range = spell.get_stat("minion_range", base=7)
-        self.heal = spell.get_stat("damage", base=10)
-        self.duration = spell.get_stat("duration", base=3)
-        self.name = "Roar"
-        if self.bear_type == GiantBearRoar.BEAR_TYPE_VENOM:
-            self.effect = Tags.Poison
-        elif self.bear_type == GiantBearRoar.BEAR_TYPE_BLOOD:
-            self.effect = Tags.Dark
-        elif self.bear_type == GiantBearRoar.BEAR_TYPE_POLAR:
-            self.effect = Tags.Ice
-        else:
-            self.effect = Tags.Physical
-    
-    def get_description(self):
-        description = "Enemies are "
-        if self.bear_type == GiantBearRoar.BEAR_TYPE_VENOM:
-            description += "stunned for %i turns and poisoned for %i turns.\nAllies regenerate 1 HP per turn for %i turns." % (self.get_stat("duration"), self.get_stat("duration", base=self.duration + 2), self.get_stat("duration", base=self.duration + 2))
-        elif self.bear_type == GiantBearRoar.BEAR_TYPE_BLOOD:
-            description += "berserked for %i turns.\nAllies gain bloodrage for %i turns." % (self.get_stat("duration"), self.get_stat("duration", base=self.duration + 7))
-        elif self.bear_type == GiantBearRoar.BEAR_TYPE_POLAR:
-            description += "frozen for %i turns.\nAllies are healed for %i HP." % (self.get_stat("duration"), self.get_stat("damage", base=self.heal))
-        else:
-            description += "stunned for %i turns." % self.get_stat("duration")
-        return description
-
-    def per_square_effect(self, x, y):
-        self.caster.level.show_effect(x, y, self.effect, minor=True)
-        unit = self.caster.level.get_unit_at(x, y)
-        if not unit or unit.is_player_controlled:
-            return
-        if self.bear_type == GiantBearRoar.BEAR_TYPE_VENOM:
-            if are_hostile(unit, self.caster):
-                unit.apply_buff(Stun(), self.get_stat("duration"))
-                unit.apply_buff(Poison(), self.get_stat("duration", base=self.duration + 2))
-            else:
-                unit.apply_buff(RegenBuff(1), self.get_stat("duration", base=self.duration + 2))
-        elif self.bear_type == GiantBearRoar.BEAR_TYPE_BLOOD:
-            if are_hostile(unit, self.caster):
-                unit.apply_buff(BerserkBuff(), self.get_stat("duration"))
-            else:
-                unit.apply_buff(BloodrageBuff(3), self.get_stat("duration", base=self.duration + 7))
-        elif self.bear_type == GiantBearRoar.BEAR_TYPE_POLAR:
-            if are_hostile(unit, self.caster):
-                unit.apply_buff(FrozenBuff(), self.get_stat("duration"))
-            else:
-                unit.deal_damage(-self.get_stat("damage", base=self.heal), Tags.Heal, self)
-        else:
-            if are_hostile(unit, self.caster):
-                unit.apply_buff(Stun(), self.get_stat("duration"))
-
 class SpellConduitBuff(Buff):
 
     def __init__(self, fire=True, lightning=True, casts=1):
@@ -2120,6 +2003,7 @@ def modify_class(cls):
             self.upgrades['fire_vulnerability'] = (50, 2, "Fire Vulnerability")
             self.upgrades["mockery"] = (1, 2, "Mockery of Life", "Affected units no longer gain [dark] resistance.")
             self.upgrades["friendly"] = (1, 4, "Vigor Mortis", "When your minions are affected, their max HP are instead buffed by the same percentage.\nThey do not suffer healing reduction, and instead gain [100_poison:poison] resistance.\nIf you have the Fire Vulnerability upgrade, they instead gain [50_ice:ice] resistance.\nIf you have the Mockery of Life upgrade, they still gain [dark] resistance and do not lose [holy] resistance.")
+            self.upgrades["rot"] = (1, 4, "Flesh Rot", "When affecting a unit already affected by Hollow Flesh, this spell also deals [poison] damage equal to 25% of the max HP that unit lost from Hollow Flesh.\nIf you have the Vigor Mortis upgrade, this will instead [heal] affected allies.")
 
         def get_impacted_tiles(self, x, y):
             return Spell.get_impacted_tiles(self, x, y)
@@ -2130,14 +2014,23 @@ def modify_class(cls):
                     "Affected units lose [{max_health_loss}%:damage] of their max HP.\n"
                     "Affected units lose [100_holy:holy] resist.\n"
                     "Affected units gain [100_dark:dark] resist.\n"
-                    "Affected units cannot be healed.").format(**self.fmt_dict())
+                    "Affected units suffer 100% healing penalty.").format(**self.fmt_dict())
 
         def cast(self, x, y):
+            friendly = self.get_stat("friendly")
+            rot = self.get_stat("rot")
             for unit in self.caster.level.get_units_in_ball(Point(x, y), self.get_stat("radius")):
                 if unit is self.caster:
                     continue
+                if rot:
+                    existing = unit.get_buff(mods.Bugfixes.Bugfixes.RotBuff)
+                    if existing:
+                        if existing.buff_type == BUFF_TYPE_CURSE:
+                            unit.deal_damage(existing.hp//4, Tags.Poison, self)
+                        else:
+                            unit.deal_damage(-existing.hp//4, Tags.Heal, self)
                 buff = mods.Bugfixes.Bugfixes.RotBuff(self)
-                if self.get_stat("friendly") and not are_hostile(unit, self.caster):
+                if friendly and not are_hostile(unit, self.caster):
                     buff.buff_type = BUFF_TYPE_BLESS
                 else:
                     buff.buff_type = BUFF_TYPE_CURSE
@@ -2400,8 +2293,8 @@ def modify_class(cls):
             self.tags = [Tags.Dark, Tags.Sorcery, Tags.Translocation]
 
             self.upgrades['forced_transfer'] = (1, 2, 'Forced Transfer', 'Soul Swap can target enemy units as well.')
-            self.upgrades["dark"] = (1, 2, "Shadow Swap", "Soul Swap can target [dark] units as well.")
             self.upgrades["demon"] = (1, 3, "Infernal Swap", "Soul Swap can target [demon] units as well.")
+            self.upgrades["relay"] = (1, 3, "Soul Relay", "The minion that you swapped with will immediately take an action without costing a turn.\nIf you have the Forced Transfer upgrade and swap with an enemy, that enemy is [stunned] for [1_turn:duration].")
             self.upgrades['max_charges'] = (9, 2)
 
         def can_cast(self, x, y):
@@ -2416,11 +2309,23 @@ def modify_class(cls):
                 return False
             if Tags.Undead in unit.tags:
                 return True
-            if Tags.Dark in unit.tags and self.get_stat("dark"):
-                return True
             if Tags.Demon in unit.tags and self.get_stat("demon"):
                 return True
             return False
+
+        def cast_instant(self, x, y):
+            unit = self.caster.level.get_unit_at(x, y)
+            if self.caster.level.can_move(self.caster, x, y, teleport=True, force_swap=True):
+                self.caster.level.act_move(self.caster, x, y, teleport=True, force_swap=True)
+            if self.get_stat("relay"):
+                if are_hostile(unit, self.caster):
+                    unit.apply_buff(Stun(), 1)
+                elif not unit.is_player_controlled:
+                    self.caster.level.queue_spell(free_action(unit))
+
+        def free_action(unit):
+            unit.advance()
+            yield
 
     if cls is TouchOfDeath:
 
@@ -3363,24 +3268,17 @@ def modify_class(cls):
             self.level = 3
 
             self.minion_attacks = 1
-            self.upgrades['minion_health'] = (30, 2)
-            self.upgrades['minion_damage'] = (15, 4)
             self.upgrades['minion_attacks'] = (1, 3)
-            self.upgrades['venom'] = (1, 4, "Venom Bear", "Summons a venom bear instead of a giant bear.\nVenom Bears have a poison bite, and heal whenever an enemy takes poison damage.", "species")
-            self.upgrades['blood'] = (1, 5, "Blood Bear", "Summons a blood bear instead of a giant bear.\nBlood bears are resistant to dark damage, and deal increasing damage with each attack.", "species")
-            self.upgrades["polar"] = (1, 5, "Polar Bear", "Summons a polar bear instead of a giant bear.\nPolar bears are resistant to ice damage, can freeze units around itself, and gains regeneration and an ice aura while frozen.\nFor every [100_ice:ice] resistance the polar bear has above 100, the self-healing and ice aura activate once per turn. An excess of less than 100 instead has a chance to activate these effects.", "species")
-            self.upgrades["roar"] = (1, 4, "Roar", "The bear gains a roar with a cooldown of 3 turns that stuns enemies in a [{minion_range}_tile:minion_range] cone for [{duration}_turns:duration].\nThe venom bear's roar will also [poison] enemies for [{poison_duration}_turns:duration] and give regeneration to allies for the same duration.\nThe blood bear's roar will instead [berserk] enemies for [{duration}_turns:duration] and give allies a stack of bloodrage for [{bloodrage_duration}_turns:duration].\nThe polar bear's roar will instead [freeze] enemies for [{duration}_turns:duration] and heal allies for an amount equal to its regeneration when frozen.")
+            self.upgrades['venom'] = (1, 4, "Venom Bear", "Summons a venom bear instead of a giant bear.\nThe venom bear's melee attack inflicts [poison] for [{duration}_turns:duration], which stacks in duration with the target's existing [poison], and heals for [1_HP:heal] whenever any unit takes [poison] damage.", "species")
+            self.upgrades['blood'] = (1, 5, "Blood Bear", "Summons a blood bear instead of a giant bear.\nThe blood bear is a [demon], and gains bloodrage for [{duration}_turns:duration] with each melee attack.", "species")
+            self.upgrades["giant"] = (1, 7, "True Giant", "The bear grows to gargantuan size. Its HP is multiplied by 6, and its melee damage multiplied by 2.")
 
             self.must_target_walkable = True
             self.must_target_empty = True
 
         def fmt_dict(self):
             stats = Spell.fmt_dict(self)
-            duration = self.get_stat("duration", base=3)
-            stats["duration"] = duration
-            stats["poison_duration"] = duration + 2
-            stats["bloodrage_duration"] = duration + 7
-            stats["minion_range"] = self.get_stat("minion_range", base=7)
+            stats["duration"] = self.get_stat("duration", base=10)
             return stats
 
         def cast(self, x, y):
@@ -3388,31 +3286,35 @@ def modify_class(cls):
             bear = Unit()
             bear.max_hp = self.get_stat('minion_health')
             
-            bear.name = "Giant Bear"
+            bear.name = "Bear"
+            bear.asset = ["UnderusedOptions", "Units", "bear"]
             bear.spells.append(SimpleMeleeAttack(self.get_stat('minion_damage')))
 
             bear.tags = [Tags.Living, Tags.Nature]
 
             if self.get_stat('venom'):
-                bear.name = "Venom Beast"
-                bear.asset_name = "giant_bear_venom"
+                bear.name = "Venom Bear"
+                bear.asset = ["UnderusedOptions", "Units", "venom_bear"]
                 bear.resists[Tags.Poison] = 100
                 bear.tags = [Tags.Living, Tags.Poison, Tags.Nature]
-                bite = SimpleMeleeAttack(damage=self.get_stat('minion_damage'), buff=Poison, buff_duration=self.get_stat("duration", base=5))
-                bite.name = "Poison Bite"
-                bear.spells = [bite]
+                melee = SimpleMeleeAttack(damage=self.get_stat('minion_damage'))
+                def stack_poison(caster, target):
+                    duration = caster.get_stat(self.get_stat("duration", base=10), melee, "duration")
+                    existing = target.get_buff(Poison)
+                    if existing:
+                        existing.turns_left += duration
+                    else:
+                        target.apply_buff(Poison(), duration)
+                melee.onhit = stack_poison
+                melee.name = "Poison Bite"
+                melee.description = ""
+                melee.get_description = lambda: "Inflicts duration-stacking poison for %i turns with each attack.%s" % (bear.get_stat(self.get_stat("duration", base=10), melee, "duration"), (" Attacks %i times." % melee.attacks) if melee.attacks > 1 else "")
+                bear.spells = [melee]
                 bear.buffs = [VenomBeastHealing()]
-
-            elif self.get_stat('polar'):
-                bear.name = "Polar Bear"
-                bear.asset_name = "polar_bear"
-                bear.resists[Tags.Ice] = 50
-                bear.resists[Tags.Fire] = -50
-                bear.tags = [Tags.Ice, Tags.Living, Tags.Nature]
-                bear.buffs = [PolarBearAura(self)]
 
             elif self.get_stat('blood'):
                 bear = BloodBear()
+                bear.asset = ["UnderusedOptions", "Units", "blood_bear"]
                 melee = bear.spells[0]
                 melee.onhit = lambda caster, target: caster.apply_buff(BloodrageBuff(3), caster.get_stat(self.get_stat("duration", base=10), melee, "duration"))
                 melee.name = "Frenzy Bite"
@@ -3421,23 +3323,25 @@ def modify_class(cls):
                 apply_minion_bonuses(self, bear)
             
             bear.spells[0].attacks = self.get_stat('minion_attacks')
-            
-            if self.get_stat("polar"):
-                bear.spells.insert(0, PolarBearFreeze(self))
-            
-            if self.get_stat("roar"):
-                if self.get_stat("venom"):
-                    bear_type = GiantBearRoar.BEAR_TYPE_VENOM
-                elif self.get_stat("blood"):
-                    bear_type = GiantBearRoar.BEAR_TYPE_BLOOD
-                elif self.get_stat("polar"):
-                    bear_type = GiantBearRoar.BEAR_TYPE_POLAR
-                else:
-                    bear_type = GiantBearRoar.BEAR_TYPE_DEFAULT
-                bear.spells.insert(0, GiantBearRoar(self, bear_type=bear_type))
+
+            if self.get_stat("giant"):
+                bear.max_hp *= 6
+                bear.spells[0].damage *= 2
+                bear.name = "Giant " + bear.name
+                bear.asset[2] += "_giant"
 
             self.summon(bear, Point(x, y))
             yield
+
+    if cls is VenomBeastHealing:
+
+        def on_damage(self, evt):
+            if evt.damage_type != Tags.Poison:
+                return
+            self.owner.deal_damage(-1, Tags.Heal, self)
+        
+        def get_tooltip(self):
+            return "Heals for 1 HP whenever a unit takes poison damage."
 
     if cls is HolyFlame:
 
@@ -4560,7 +4464,7 @@ def modify_class(cls):
             self.requires_los = False
 
             self.upgrades['radius'] = (3, 3)
-            self.upgrades["imbalance"] = (1, 5, "Imbalanced Flux", "For each pair of resistances, both resistances will be set to the lower of the two if the affected unit is an enemy, and the higher of the two if the affected unit is an ally.")
+            self.upgrades["imbalance"] = (1, 5, "Imbalanced Flux", "After affecting an enemy, the higher resistance of each pair will instead be set to the average of the pair.\nAfter affecting an ally, the lower resistance of each pair will instead be set to the average of the pair.")
 
         def get_impacted_tiles(self, x, y):
             return Spell.get_impacted_tiles(self, x, y)
@@ -4595,14 +4499,15 @@ def modify_class(cls):
                         color = e1.color if old_resists[e1] > old_resists[e2] else e2.color
                         self.caster.level.show_effect(unit.x, unit.y, Tags.Debuff_Apply, fill_color=color)
                     else:
+                        average = math.ceil((old_resists[e1] + old_resists[e2])/2)
                         if are_hostile(unit, self.caster):
-                            unit.resists[e1] = min(old_resists[e1], old_resists[e2])
-                            unit.resists[e2] = unit.resists[e1]
+                            unit.resists[e1] = min(old_resists[e2], average)
+                            unit.resists[e2] = min(old_resists[e1], average)
                             color = e1.color if old_resists[e1] > old_resists[e2] else e2.color
                             self.caster.level.show_effect(unit.x, unit.y, Tags.Debuff_Apply, fill_color=color)
                         else:
-                            unit.resists[e1] = max(old_resists[e1], old_resists[e2])
-                            unit.resists[e2] = unit.resists[e1]
+                            unit.resists[e1] = max(old_resists[e2], average)
+                            unit.resists[e2] = max(old_resists[e1], average)
                             color = e1.color if old_resists[e1] < old_resists[e2] else e2.color
                             self.caster.level.show_effect(unit.x, unit.y, Tags.Buff_Apply, fill_color=color)
             yield
@@ -6813,13 +6718,6 @@ def modify_class(cls):
 
     if cls is Hypocrisy:
 
-        def on_init(self):
-            self.name = "Hypocrisy"
-            self.tags = [Tags.Dark, Tags.Holy]
-            self.level = 5
-            self.duration = 3
-            self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
-
         def on_spell_cast(self, evt):
             if evt.spell.level < 1:
                 return
@@ -6827,31 +6725,26 @@ def modify_class(cls):
                 if tag not in evt.spell.tags:
                     continue
                 btag = Tags.Holy if tag == Tags.Dark else Tags.Dark
-                self.owner.apply_buff(HypocrisyStack(btag, evt.spell.level), self.get_stat("duration") + 1)
+                self.owner.apply_buff(HypocrisyStack(btag, evt.spell.level), 2)
 
         def get_description(self):
-            return ("Whenever you cast a [holy] spell, your [dark] spells and skills gain a bonus to [damage] equal to 4 times the [holy] spell's level for [{duration}_turns:duration].\n"
-                    "Whenever you cast a [dark] spell, your [holy] spells and skills gain a bonus to [damage] equal to 4 times the [dark] spell's level for [{duration}_turns:duration].\n"
-                    "A lower-level instance of this buff will not overwrite a higher-level one.").format(**self.fmt_dict())
+            return ("Whenever you cast a [holy] spell, you gain Dark Hypocrisy of that spell's level for [1_turn:duration], which gives all your [dark] spells and skills a [damage] bonus equal to twice its level while you have it. Whenever you cast a [dark] spell whose level is less than that, Dark Hypocrisy is immediately consumed to refund 1 charge of this spell.\n"
+                    "Whenever you cast a [dark] spell, you gain Holy Hypocrisy of that spell's level for [1_turn:duration], which has similar effects.\n"
+                    "The duration of Hypocrisy is fixed and unaffected by bonuses.").format(**self.fmt_dict())
 
     if cls is HypocrisyStack:
-
-        def on_attempt_apply(self, owner):
-            for buff in list(owner.buffs):
-                if not isinstance(buff, HypocrisyStack) or buff.tag != self.tag:
-                    continue
-                if buff.level > self.level:
-                    return False
-                else:
-                    owner.remove_buff(buff)
-                    return True
-            return True
 
         def on_init(self):
             self.name = "%s Hypocrisy %d" % (self.tag.name, self.level)
             self.color = self.tag.color
-            self.tag_bonuses[self.tag]["damage"] = self.level*4
-            self.stack_type = STACK_INTENSITY
+            self.tag_bonuses[self.tag]["damage"] = self.level*2
+            self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
+
+        def on_spell_cast(self, evt):
+            if self.tag in evt.spell.tags and evt.spell.level <= self.level:
+                evt.spell.cur_charges += 1
+                evt.spell.cur_charges = min(evt.spell.cur_charges, evt.spell.get_stat('max_charges'))
+                self.owner.remove_buff(self)
 
     if cls is Purestrike:
 
@@ -7099,9 +6992,56 @@ def modify_class(cls):
         def on_applied(self, owner):
             self.resists[self.element] = 100 + (-self.owner.resists[self.element] if self.owner.resists[self.element] < 0 else 0)
 
+    if cls is SilverSpearSpell:
+
+        def on_init(self):
+            self.name = "Silver Spear"
+            self.level = 3
+            self.max_charges = 25
+            self.tags = [Tags.Holy, Tags.Metallic, Tags.Sorcery]
+
+            self.damage = 27
+
+            self.range = 11
+            self.radius = 1
+
+            self.upgrades['radius'] = (1, 3)
+            self.upgrades['damage'] = (15, 3)
+            self.upgrades['max_charges'] = (12, 3)
+            self.upgrades["blessed"] = (1, 4, "Blessed Silver", "The [holy] area damage of Silver Spear now also applies to [undead] and [demon] enemies.")
+
+        def get_description(self):
+            return ("Deals [{damage}_physical:physical] damage to the target.\n"
+                    "Deals [{damage}_holy:holy] damage to [dark] and [arcane] enemies within a [{radius}_tile:radius] away from the projectile's path.".format(**self.fmt_dict()))
+
+        def cast(self, x, y):
+
+            damage = self.get_stat("damage")
+            radius = self.get_stat('radius')
+            hits = set()
+            tags = [Tags.Dark, Tags.Arcane]
+            if self.get_stat("blessed"):
+                tags.extend([Tags.Undead, Tags.Demon])
+            
+            # todo- holy sparkles randomly around projectile?
+            for p in self.caster.level.get_points_in_line(self.caster, Point(x, y))[1:]:
+                self.caster.level.projectile_effect(p.x, p.y, proj_name='silver_spear', proj_origin=self.caster, proj_dest=Point(x, y))
+                units = self.owner.level.get_units_in_ball(p, radius)
+                for unit in units:
+                    if unit in hits or not are_hostile(unit, self.caster):
+                        continue
+                    hits.add(unit)
+                    if [tag for tag in unit.tags if tag in tags]:
+                        unit.deal_damage(damage, Tags.Holy, self)
+                yield
+
+            unit = self.caster.level.get_unit_at(x, y)
+            if unit:
+                unit.deal_damage(damage, Tags.Physical, self)
+
     for func_name, func in [(key, value) for key, value in locals().items() if callable(value)]:
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Hypocrisy, HypocrisyStack, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff]:
+for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing]:
     modify_class(cls)
