@@ -212,7 +212,7 @@ Lightning Halo:
 Mercurize:
 - Mercurial Vengeance no longer affects allies.
 - Noxious Fumes now gains bonus radius equal to the square root of 10% of the geist's initial max HP, rounded up.
-- Corrosion upgrade replaced with Recursive Mercurize (2 SP): Mercurize now lasts indefinitely and is considered a buff if applied to a Quicksilver Geist, instead healing it each turn by an amount equal to this spell's damage stat. This still allows the geist to spawn another geist on death.
+- Corrosion upgrade replaced with Mercurial Fortitude (3 SP): Mercurize now lasts indefinitely and is considered a buff if applied to one of your minions, instead healing it each turn by an amount equal to this spell's damage stat. This still allows the minion to spawn a geist on death.
 
 Mystic Vision:
 - Vision Aura upgrade cost increased to 7 SP, but is now retroactive, automatically applying to all newly summoned minions.

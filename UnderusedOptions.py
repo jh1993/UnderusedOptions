@@ -3563,7 +3563,7 @@ def modify_class(cls):
             self.upgrades['dark'] = (1, 2, "Morbidity", "Mercurized targets also take [dark] damage.")
             self.upgrades['noxious_aura'] = (1, 5, "Toxic Fumes", "Quicksilver Geists have a noxious aura that deals [1_poison:poison] damage to enemy units within [{radius}_tiles:radius] each turn.\nThis aura gains bonus [radius] equal to the square root of 10% of the geist's initial max HP, rounded up.")
             self.upgrades['vengeance'] = (1, 5, "Mercurial Vengeance", "When a Quicksilver Geist is killed by an enemy, its killer is affliected with Mercurize.")
-            self.upgrades["recursive"] = (1, 2, "Recursive Mercurize", "Mercurize now lasts indefinitely and is considered a buff if applied to a Quicksilver Geist, instead healing it each turn by an amount equal to this spell's [damage] stat.\nThis still allows the geist to spawn another geist on death.")
+            self.upgrades["friendly"] = (1, 3, "Mercurial Fortitude", "Mercurize now lasts indefinitely and is considered a buff if applied to one of your minions, instead healing it each turn by an amount equal to this spell's [damage] stat.\nThis still allows the minion to spawn a geist on death.")
 
         def fmt_dict(self):
             stats = Spell.fmt_dict(self)
@@ -3577,7 +3577,7 @@ def modify_class(cls):
             if unit:
                 buff = MercurizeBuff(self)
                 duration = self.get_stat('duration')
-                if self.get_stat("recursive") and isinstance(unit.source, MercurizeSpell):
+                if self.get_stat("friendly") and not are_hostile(unit, self.caster):
                     buff.buff_type = BUFF_TYPE_BLESS
                     duration = 0
                 unit.apply_buff(buff, duration)
