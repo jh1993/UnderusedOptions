@@ -32,7 +32,7 @@ Wolf:
 Annihilate:
 - Max charges upgrade now costs 6 SP and gives +16 charges.
 - Arcane Annihilation and Dark Annihilation merged into one upgrade that costs 2 SP, so you can save SP at a circle.
-- Disintegrate (7 SP): Annihilate will now deal all of its damage in separate 1 damage hits, cycling through all of its damage types repeatedly. Each hit removes SH separately, and cannot be resisted unless the target is immune to that damage type.
+- Micro Annihilate (2 SP): Annihilate will deal 1 fire, 1 lightning, and 1 physical damage before its other hits. This damage is fixed, and cannot be increased using shrines, skills, or buffs. If you have the Nightmare Annihilation upgrade, this will deal dark and arcane damage as well.
 
 Blazerip:
 - Fractal Rip (6 SP): Each hit of Blazerip now has a 10% chance of triggering another Blazerip on that tile. This can still happen even if an empty tile is hit. Each rip can trigger at most one additional rip.
