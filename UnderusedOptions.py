@@ -2323,6 +2323,8 @@ def modify_class(cls):
                     self.caster.level.queue_spell(free_action(unit))
 
         def free_action(unit):
+            if not unit.is_alive():
+                return
             unit.advance()
             yield
 
