@@ -372,7 +372,7 @@ class FrostfireHydraDragonMage(Upgrade):
         self.owner.level.act_cast(evt.caster, spell, evt.x, evt.y, pay_costs=False)
     
     # For my No More Scams mod
-    def can_redeal(self, target, source, damage_type, already_checked=[]):
+    def can_redeal(self, target, source, damage_type, already_checked):
         if source.owner and source.owner.source is not self.prereq:
             return False
         if source.name != "Hydra Beam":
@@ -705,7 +705,7 @@ class IcePhoenixIcyJudgment(Upgrade):
             evt.unit.deal_damage(evt.damage//2, Tags.Holy, evt.source)
     
     # For my No More Scams mod
-    def can_redeal(self, target, source, damage_type, already_checked=[]):
+    def can_redeal(self, target, source, damage_type, already_checked):
         return self.qualifies(target, source, damage_type) and not is_immune(target, source, Tags.Holy, already_checked)
 
 class SlimeFormBuff(Buff):
@@ -776,7 +776,7 @@ class SlimeFormAdvancedSlimes(Upgrade):
     
     # For my No More Scams mod
     # Make sure it works for slimes summoned by Slime Form + Boon shrine
-    def can_redeal(self, target, source, damage_type, already_checked=[]):
+    def can_redeal(self, target, source, damage_type, already_checked):
         if source.owner and isinstance(source.owner.source, SlimeformSpell):
             return hasattr(source, "buff") and source.buff is Acidified and damage_type == Tags.Poison and target.resists[Tags.Poison] < 200 and not target.has_buff(Acidified)
         return False
@@ -1197,7 +1197,7 @@ def BoneBarrageBoneShambler(self, hp, extra_damage):
         if damage:
             unit.spells[0].onhit = lambda caster, target: target.deal_damage(damage, Tags.Dark, unit.spells[0])
             # For my No More Scams mod
-            unit.spells[0].can_redeal = lambda target, already_checked=[]: not is_immune(target, unit.spells[0], Tags.Dark, already_checked)
+            unit.spells[0].can_redeal = lambda target, already_checked: not is_immune(target, unit.spells[0], Tags.Dark, already_checked)
             unit.spells[0].description = "Deals %i additional dark damage." % damage
     buff = unit.get_buff(SplittingBuff)
     if buff:
@@ -2190,7 +2190,7 @@ def modify_class(cls):
                 melee.statholder = unit
                 melee.caster = unit
                 melee.owner = unit
-                melee_targets = [u for u in self.caster.level.get_units_in_ball(unit, radius=1, diag=True) if are_hostile(u, self.caster) and not is_immune(u, melee, melee.damage_type)]
+                melee_targets = [u for u in self.caster.level.get_units_in_ball(unit, radius=1, diag=True) if are_hostile(u, self.caster) and not is_immune(u, melee, melee.damage_type, [])]
                 if melee_targets:
                     target = random.choice(melee_targets)
                     self.caster.level.act_cast(unit, melee, target.x, target.y, pay_costs=False)
@@ -2199,7 +2199,7 @@ def modify_class(cls):
                     charge.statholder = unit
                     charge.caster = unit
                     charge.owner = unit
-                    charge_targets = [u for u in units if are_hostile(u, self.caster) and charge.can_cast(u.x, u.y) and not is_immune(u, charge, charge.damage_type)]
+                    charge_targets = [u for u in units if are_hostile(u, self.caster) and charge.can_cast(u.x, u.y) and not is_immune(u, charge, charge.damage_type, [])]
                     if not charge_targets:
                         continue
                     target = random.choice(charge_targets)
@@ -6608,7 +6608,7 @@ def modify_class(cls):
 
         def on_advance(self):
             if self.charges > 0:
-                options = [u for u in self.owner.level.units if are_hostile(u, self.owner) and not is_immune(u, self, Tags.Dark)]
+                options = [u for u in self.owner.level.units if are_hostile(u, self.owner) and not is_immune(u, self, Tags.Dark, [])]
                 if not options:
                     return
                 target = min(options, key=lambda unit: distance(unit, self.owner))
@@ -6754,7 +6754,7 @@ def modify_class(cls):
             self.tags = [Tags.Holy, Tags.Arcane]
             self.level = 6
             self.global_triggers[EventOnPreDamaged] = self.on_damage
-            self.can_redeal = lambda unit, source, damage_type, already_checked=[]: can_redeal(self, unit, source, damage_type, already_checked)
+            self.can_redeal = lambda unit, source, damage_type, already_checked: can_redeal(self, unit, source, damage_type, already_checked)
 
         def on_damage(self, evt):
             if evt.damage_type != Tags.Physical:
@@ -6779,7 +6779,7 @@ def modify_class(cls):
                     "Whenever [physical] damage is dealt to an enemy, if the source of that damage is [shielded:shields] or has Pure Grace, redeal half of that damage as [arcane] and half of that damage as [holy].\n"
                     "Enemies will instead gain Pure Penance, which has the same effect when they deal [physical] damage to other enemies.")
 
-        def can_redeal(self, u, source, damage_type, already_checked=[]):
+        def can_redeal(self, u, source, damage_type, already_checked):
             return damage_type == Tags.Physical and source.owner and (source.owner.shields > 0 or source.owner.has_buff(PureGraceBuff)) and (not is_immune(u, self, Tags.Holy, already_checked) or not is_immune(u, self, Tags.Arcane, already_checked))
 
     if cls is StormCaller:
