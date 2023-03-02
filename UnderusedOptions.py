@@ -1204,6 +1204,26 @@ def BoneBarrageBoneShambler(self, hp, extra_damage):
         buff.spawner = lambda: BoneBarrageBoneShambler(self, unit.max_hp//2, extra_damage)
     return unit
 
+class ChaosSiegeBuff(Buff):
+    
+    def on_init(self):
+        self.name = "Chaos Siege"
+        self.color = Tags.Chaos.color
+        self.stack_type = STACK_INTENSITY
+        self.spell_bonuses[ChaosBarrage]["num_targets"] = 2
+        self.passed = True
+        self.owner_triggers[EventOnPass] = self.on_pass
+
+    def on_pre_advance(self):
+        self.passed = False
+
+    def on_advance(self):
+        if not self.passed:
+            self.owner.remove_buff(self)
+
+    def on_pass(self, evt):
+        self.passed = True
+
 def modify_class(cls):
 
     if cls is DeathBolt:
@@ -7040,9 +7060,62 @@ def modify_class(cls):
             if unit:
                 unit.deal_damage(damage, Tags.Physical, self)
 
+    if cls is ChaosBarrage:
+
+        def on_init(self):
+            self.name = "Chaos Barrage"
+            self.range = 7
+            self.damage = 9
+            self.num_targets = 8
+            self.angle = math.pi / 6
+            self.max_charges = 8
+            self.tags = [Tags.Chaos, Tags.Sorcery]
+
+            self.level = 2
+
+            self.upgrades['max_charges'] = (4, 1)
+            self.upgrades['damage'] = (4, 5)
+            self.upgrades['num_targets'] = (5, 4, "Extra Bolts")
+            self.upgrades["siege"] = (1, 5, "Chaos Siege", "Chaos Barrage becomes a channeled spell.\nEach turn you channel this spell, you randomly take [4_fire:fire], [4_lightning:lightning], or [4_physical:physical] damage per siege stack you have, and gain a siege stack, which causes Chaos Barrage to fire 2 more shards.\nSiege stacks are lost when you stop channeling, or if you cast this spell manually again.\nIf you never channel beyond the initial cast, you will never take damage from this upgrade.")
+
+        def cast(self, x, y, channel_cast=False):
+
+            siege = self.get_stat('siege')
+            if siege and not channel_cast:
+                self.caster.remove_buffs(ChaosSiegeBuff)
+                self.caster.apply_buff(ChannelBuff(self.cast, Point(x, y)))
+                return
+
+            possible_targets = [self.caster.level.get_unit_at(p.x, p.y) for p in self.get_cone_burst(x, y)]
+            possible_targets = [t for t in possible_targets if t and t != self.caster]
+            damage = self.get_stat('damage')
+
+            for _ in range(self.get_stat('num_targets')):
+                
+                possible_targets = [t for t in possible_targets if t.is_alive()]
+                if not possible_targets:
+                    break
+
+                cur_enemy = random.choice(possible_targets)
+                cur_element = random.choice([Tags.Fire, Tags.Lightning, Tags.Physical])
+
+                start = Point(self.caster.x, self.caster.y)
+                target = Point(cur_enemy.x, cur_enemy.y)
+                path = Bolt(self.caster.level, start, target)
+                for p in path:
+                    self.caster.level.show_effect(p.x, p.y, cur_element, minor=True)
+                    yield
+
+                self.caster.level.deal_damage(target.x, target.y, damage, cur_element, self)
+            
+            if siege:
+                for _ in range(self.caster.get_buff_stacks(ChaosSiegeBuff)):
+                    self.caster.deal_damage(4, random.choice([Tags.Fire, Tags.Lightning, Tags.Physical]), self)
+                self.caster.apply_buff(ChaosSiegeBuff())
+
     for func_name, func in [(key, value) for key, value in locals().items() if callable(value)]:
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing]:
+for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage]:
     modify_class(cls)
