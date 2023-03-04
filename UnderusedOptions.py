@@ -1224,6 +1224,34 @@ class ChaosSiegeBuff(Buff):
     def on_pass(self, evt):
         self.passed = True
 
+class SummonedVoidDrakeBreath(VoidBreath):
+
+    def __init__(self):
+        VoidBreath.__init__(self)
+        self.essence = False
+    
+    def get_description(self):
+        if self.essence:
+            return "Deals damage to enemies in a cone and melts walls. Temporary allies gain +1 duration."
+        else:
+            return VoidBreath.get_description(self)
+
+    def per_square_effect(self, x, y):
+
+        if not self.caster.level.tiles[x][y].is_chasm:
+            self.caster.level.make_floor(x, y)
+        
+        if not self.essence:
+            self.caster.level.deal_damage(x, y, self.get_stat("damage"), Tags.Arcane, self)
+        else:
+            unit = self.caster.level.get_unit_at(x, y)
+            if not unit or not are_hostile(unit, self.caster):
+                self.caster.level.show_effect(x, y, Tags.Arcane)
+                if unit and unit.turns_to_death is not None:
+                    unit.turns_to_death += 1
+            else:
+                unit.deal_damage(self.get_stat("damage"), Tags.Arcane, self)
+
 def modify_class(cls):
 
     if cls is DeathBolt:
@@ -2246,7 +2274,7 @@ def modify_class(cls):
             self.upgrades['radius'] = (3, 3)
             self.upgrades['pull_strength'] = (1, 2, "Pull Distance")
             self.upgrades['duration'] = (10, 2)
-            self.upgrades['universal'] = (1, 3, "Universal Magnetism", "Magnetize can target non [metallic] units")
+            self.upgrades['universal'] = (1, 3, "Universal Magnetism", "Magnetize can target non [metallic] units.")
 
     if cls is MeltSpell:
 
@@ -7113,9 +7141,51 @@ def modify_class(cls):
                     self.caster.deal_damage(4, random.choice([Tags.Fire, Tags.Lightning, Tags.Physical]), self)
                 self.caster.apply_buff(ChaosSiegeBuff())
 
+    if cls is SummonVoidDrakeSpell:
+
+        def on_init(self):
+            self.name = "Void Drake"
+            self.range = 4
+            self.max_charges = 2
+            self.tags = [Tags.Arcane, Tags.Conjuration, Tags.Dragon]
+            self.level = 4
+
+            self.minion_health = 45
+            self.minion_damage = 8
+            self.breath_damage = VoidDrake().spells[0].damage
+            self.minion_range = 7
+            self.upgrades['minion_health'] = (25, 2)
+            self.upgrades['shield_regen'] = (1, 3, "Shield Regen", "The Void Drake gains [1_SH:shields] every [3_turns:duration], to a max of [2_SH:shields].")
+            self.upgrades['dragon_mage'] = (1, 5, "Dragon Mage", "Summoned Void Drakes can cast Magic Missile with a 3 turn cooldown.\nThis Magic Missile gains all of your upgrades and bonuses.")
+            self.upgrades['essence'] = (1, 4, "Essence Breath", "The Void Drake's breath no longer damages allies, and instead increases temporary allies' remaining durations by [1_turn:minion_duration].")
+
+            self.must_target_empty = True
+
+        def cast_instant(self, x, y):
+            drake = VoidDrake()
+            drake.max_hp = self.get_stat('minion_health')
+            drake.spells[0] = SummonedVoidDrakeBreath()
+            drake.spells[0].damage = self.get_stat('breath_damage')
+            drake.spells[0].range = self.get_stat('minion_range')
+            if self.get_stat("essence"):
+                drake.spells[0].essence = True
+            drake.spells[1].damage = self.get_stat('minion_damage')
+            if self.get_stat("shield_regen"):
+                drake.buffs = [ShieldRegenBuff(2, 3)]
+
+            if self.get_stat('dragon_mage'):
+                mmiss = MagicMissile()
+                mmiss.statholder = self.caster
+                mmiss.max_charges = 0
+                mmiss.cur_charges = 0
+                mmiss.cool_down = 3
+                drake.spells.insert(1, mmiss)
+
+            self.summon(drake, Point(x, y))
+
     for func_name, func in [(key, value) for key, value in locals().items() if callable(value)]:
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage]:
+for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell]:
     modify_class(cls)

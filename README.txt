@@ -374,6 +374,10 @@ Storm Drake:
 - Strikechance (2 SP): +25% strikechance.
 - Cloud Surge (3 SP): If an affected tile already has a thunderstorm cloud, the unit on that tile is dealt lightning damage equal to the storm drake's breath damage. If you have the Strikechance upgrade, there is a 50% chance to deal damage again.
 
+Void Drake:
+- Shields upgrade replaced by Shield Regen (3 SP): The Void Drake gains 1 SH every 3 turns, to a max of 2 SH.
+- Essence Drake upgrade replaced by Essence Breath (4 SP): The Void Drake's breath no longer damages allies, and instead increases temporary allies' remaining durations by 1 turn.
+
 Wall of Ice:
 - Forceful Construction (4 SP): "Wall of Ice no longer requires line of sight to cast. Wall and chasm tiles in the affected area are converted to floor tiles before summoning the ice elementals. Units in the affected area take 22 ice damage and are frozen for 3 turns. If a unit is killed then an ice elemental is summoned in its tile.
 
