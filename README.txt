@@ -561,5 +561,8 @@ Lightning Warp:
 Scalespinner:
 - Now gives a minion additional resistance to bring it up to 100 if a minion has weakness to the triggering element.
 
+Metal Lord:
+- Now also gives +20 minion health.
+
 Orb Lord:
 - Now also gives +4 minion damage, +1 radius, and +1 num targets.
