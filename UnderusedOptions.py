@@ -5846,12 +5846,26 @@ def modify_class(cls):
             self.minion_health = 14
             self.minion_damage = 2
 
-            self.upgrades['damage'] = (32, 2, "Damage", "Deal [poison] damage to the target tile.")
+            self.upgrades['damage'] = (32, 2, "Damage", "Deal [poison] damage to the target tile if it contains an enemy.")
             self.upgrades['minion_health'] = (10, 3)
+            self.upgrades["tunneling"] = (1, 4, "Tunneling", "Walls and chasms in the affected area will now be turned into floors before summoning.")
             self.upgrades['aether_spiders'] = (1, 6, "Aether Spiders", "Summon aether spiders instead of regular spiders.", "species")
             self.upgrades['steel_spiders'] = (1, 6, "Steel Spiders", "Summon steel spiders instead of regular spiders.", "species")
 
             self.tags = [Tags.Nature, Tags.Conjuration]
+
+        def get_impacted_tiles(self, x, y):
+            points = self.caster.level.get_points_in_rect(x - 2, y - 2, x + 2, y + 2)
+            tunneling = self.get_stat("tunneling")
+            return [p for p in points if tunneling or not self.caster.level.tiles[p.x][p.y].is_wall()]
+
+        def get_description(self):
+            return ("Summons a ring of giant spiders at the target, surrounded by a ring of webs.\n"
+                    "Enemies blocking the spider ring are [poisoned] for [{duration}_turns:duration], and enemies blocking the web ring are [stunned] for [1_turn:duration].\n"
+                    "Giant spiders have [{minion_health}_HP:minion_health] and spin webs.\n"
+                    "Giant spiders have a melee attack which deals [{minion_damage}_physical:physical] and inflicts [10_turns:duration] of [poison].\n"
+                    "Webs [stun] non spider units which step on them for [1_turn:duration].\n"
+                    + text.poison_desc + " " + text.stun_desc).format(**self.fmt_dict())
 
         def cast(self, x, y):
             
@@ -5859,13 +5873,17 @@ def modify_class(cls):
             steel = self.get_stat("steel_spiders")
             damage = self.get_stat('damage')
             duration = self.get_stat('duration')
+            tunneling = self.get_stat("tunneling")
 
             for p in self.get_impacted_tiles(x, y):
+                
+                if tunneling:
+                    self.owner.level.make_floor(p.x, p.y)
                 unit = self.caster.level.get_unit_at(p.x, p.y)
 
                 rank = max(abs(p.x - x), abs(p.y - y))
 
-                if rank == 0:
+                if rank == 0 and unit and are_hostile(unit, self.caster):
                     if damage:
                         self.caster.level.deal_damage(x, y, damage, Tags.Poison, self)
                 elif rank == 1:
@@ -5876,19 +5894,18 @@ def modify_class(cls):
                             spider = SteelSpider()
                         else:
                             spider = GiantSpider()
-                        spider.spells[0].damage = self.get_stat('minion_damage', base=spider.spells[0].damage)
-                        spider.max_hp = self.get_stat('minion_health', base=spider.max_hp)
+                        apply_minion_bonuses(self, spider)
                         self.summon(spider, p)
-                    if unit:
+                    if unit and are_hostile(unit, self.caster):
                         unit.apply_buff(Poison(), duration)
                 else:
                     if not unit and not self.caster.level.tiles[p.x][p.y].is_wall():
                         cloud = SpiderWeb()
                         cloud.owner = self.caster
                         self.caster.level.add_obj(cloud, *p)
-                    if unit:
+                    if unit and are_hostile(unit, self.caster):
                         unit.apply_buff(Stun(), 1)
-                yield
+            yield
 
     if cls is SlimeformSpell:
 
@@ -7196,9 +7213,82 @@ def modify_class(cls):
             self.level = 7
             self.resists[Tags.Physical] = 25
 
+    if cls is SummonSpiderQueen:
+
+        def on_init(self):
+            self.name = "Spider Queen"
+            self.tags = [Tags.Nature, Tags.Conjuration]
+
+            self.max_charges = 2
+            self.level = 5
+
+            self.upgrades["aether"] = (1, 3, "Aether Queen", "Summon an aether spider queen instead.", "species")
+            self.upgrades["steel"] = (1, 3, "Steel Queen", "Summon a steel spider queen instead.", "species")
+            self.upgrades["minion_health"] = (10, 3)
+            self.upgrades["hatchery"] = (1, 4, "Corpse Hatchery", "The spider queen now spawns an arachnid abomination on death, which will spawn a number of fully grown spiders on death equal to twice the queen's normal spawning amount.")
+
+            self.must_target_walkable = True
+            self.must_target_empty = True
+
+            self.minion_damage = GiantSpider().spells[0].damage
+            self.minion_health = 14
+
+            self.num_summons = 4
+
+        def cast_instant(self, x, y):
+
+            spawner = GiantSpider
+
+            if self.get_stat('aether'):
+                spawner = PhaseSpider
+            if self.get_stat('steel'):
+                spawner = SteelSpider
+
+            unit = spawner()
+            unit.max_hp = 96
+            apply_minion_bonuses(self, unit)
+
+            unit.name = "%s Queen" % unit.name
+            unit.asset_name += '_mother'
+
+            def babyspider():
+                unit = spawner()
+                unit.max_hp = 3
+                unit.name = "Baby %s" % unit.name
+                unit.asset_name += '_child'
+                
+                for s in unit.spells:
+                    if hasattr(s, 'damage'):
+                        s.damage = 1
+
+                unit.is_coward = True
+                unit.buffs = [b for b in unit.buffs if not isinstance(b, SpiderBuff)]
+                unit.buffs.append(MatureInto(spawner, 8))
+                unit.source = self
+                return unit
+
+            unit.spells.insert(0, SimpleSummon(babyspider, num_summons=self.get_stat('num_summons'), cool_down=12))
+
+            if self.get_stat("hatchery"):
+                def abomination():
+                    unit = spawner()
+                    unit.asset_name += "_mass"
+                    unit.name = "Arachnid Abomination"
+                    if spawner == PhaseSpider:
+                        unit.name = "Aether " + unit.name
+                    elif spawner == SteelSpider:
+                        unit.name = "Steel " + unit.name
+                    unit.max_hp *= 2
+                    unit.spells[0].damage += 3
+                    unit.buffs.append(SpawnOnDeath(spawner, 2*self.get_stat("num_summons")))
+                    return unit
+                unit.buffs.append(SpawnOnDeath(abomination, 1))
+
+            self.summon(unit, target=Point(x, y))
+
     for func_name, func in [(key, value) for key, value in locals().items() if callable(value)]:
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord]:
+for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord, SummonSpiderQueen]:
     modify_class(cls)

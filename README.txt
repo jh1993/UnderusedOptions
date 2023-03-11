@@ -432,9 +432,11 @@ Pyrostatic Curse:
 - Hex Ignition (5 SP): Targets that are already inflicted with Pyrostatic Hex will also take 6 fire damage when you cast this spell. This damage is equal to this spell's duration stat plus bonuses to damage.
 
 Ring of Spiders:
-- Damage upgrade SP cost reduced to 2.
+- No longer stuns or poisons allies.
+- Damage upgrade SP cost reduced to 2, and no longer damages allies.
 - Minion Health upgrade SP cost increased to 3.
 - Steel Spiders (6 SP): Summon steel spiders instead of regular spiders. Not compatible with Aether Spiders.
+- Tunneling (4 SP): Walls and chasms in the affected area will now be turned into floors before summoning.
 
 Slime Form:
 - As per my No More Scams mod, slimes now have a chance to gain max HP if their max HP divided by 10 isn't a whole number.
@@ -442,6 +444,10 @@ Slime Form:
 - Natural Slimes (4 SP): Summoned green slimes become nature minions. Summoned green slimes gain 10 HP and 7 damage. Incompatible with other slime color upgrades.
 - Minion Health (3 SP): +10 minion health.
 - Empowered Slimes (5 SP): Green slimes will acidify targets with their melee attacks, reducing poison resistance by 100. The attacks of red slimes gain 1 radius. The attacks of ice slimes will freeze targets for 1 turn. The attacks of void slimes gain 3 range.
+
+Spider Queen:
+- Now has a minion health upgrade in line with Ring of Spiders.
+- Corpse Hatchery (4 SP): The spider queen now spawns an arachnid abomination on death, which will spawn a number of fully grown spiders on death equal to twice the queen's normal spawning amount.
 
 Dragon Roar:
 - Retroactive (4 SP): You now gain Dragon Aura when you cast this spell, during which all [dragon] minions you summon will automatically gain Dragon Roar for the remaining duration.
