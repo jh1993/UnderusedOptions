@@ -1938,8 +1938,7 @@ def modify_class(cls):
                             if buff.buff_type == BUFF_TYPE_CURSE:
                                 unit.remove_buff(buff)
 
-                    if unit.cur_hp < unit.max_hp:
-                        unit.deal_damage(-heal, Tags.Heal, self)
+                    unit.deal_damage(-heal, Tags.Heal, self)
                     
                     if shields:
                         unit.add_shields(1)
@@ -2716,7 +2715,7 @@ def modify_class(cls):
             for unit in self.caster.level.get_units_in_ball(Point(x, y), self.get_stat('radius')):
                 if unit.is_player_controlled:
                     continue
-                if (Tags.Living in unit.tags or Tags.Holy in unit.tags) and not are_hostile(unit, self.caster) and unit.cur_hp < unit.max_hp:
+                if (Tags.Living in unit.tags or Tags.Holy in unit.tags) and not are_hostile(unit, self.caster):
                     unit.deal_damage(-self.heal, Tags.Heal, self)
                 if (Tags.Dark in unit.tags or Tags.Undead in unit.tags or Tags.Demon in unit.tags) and are_hostile(unit, self.caster):
                     unit.deal_damage(2, Tags.Fire, self)
