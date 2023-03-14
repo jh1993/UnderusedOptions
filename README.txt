@@ -152,6 +152,9 @@ Darkness:
 - Clinging Darkness (4 SP): When affecting an enemy, this spell now inflicts blind for 2 turns, which stacks in duration with pre-existing blind it has.
 - Dark Echoes (6 SP): While Darkness is active and you are blind, whenever your demon and undead minions deal damage to an enemy, the target loses current HP equal to half of the damage dealt.
 
+Death Chill:
+- Soothing Chill (2 SP): Death Chill now lasts indefinitely and is considered a buff if applied to one of your minions, instead healing it each turn by an amount equal to this spell's damage stat. This still allows the minion to release a freezing explosion on death.
+
 Devour Mind:
 - All of the HP threshold effects are now calculated after redeals, to make the spell more forgiving.
 - Now also works on nature units by default.
@@ -215,7 +218,7 @@ Lightning Halo:
 Mercurize:
 - Mercurial Vengeance no longer affects allies.
 - Noxious Fumes now gains bonus radius equal to the square root of 10% of the geist's initial max HP, rounded up.
-- Corrosion upgrade replaced with Mercurial Fortitude (3 SP): Mercurize now lasts indefinitely and is considered a buff if applied to one of your minions, instead healing it each turn by an amount equal to this spell's damage stat. This still allows the minion to spawn a geist on death.
+- Corrosion upgrade replaced with Mercurial Fortitude (2 SP): Mercurize now lasts indefinitely and is considered a buff if applied to one of your minions, instead healing it each turn by an amount equal to this spell's damage stat. This still allows the minion to spawn a geist on death.
 
 Mystic Vision:
 - Vision Aura upgrade cost increased to 7 SP, but is now retroactive, automatically applying to all newly summoned minions.
