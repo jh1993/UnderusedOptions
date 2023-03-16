@@ -1492,7 +1492,7 @@ def modify_class(cls):
                 wolf.resists[Tags.Fire] = -50
                 wolf.resists[Tags.Dark] = 50
                 wolf.name = "Ice Hound"
-                wolf.tags = [Tags.Demon, Tags.Ice, Tags.Nature]
+                wolf.tags = [Tags.Demon, Tags.Ice]
                 wolf.buffs.append(Thorns(4, Tags.Ice))
 
             elif self.get_stat('clay_hound'):
@@ -6445,6 +6445,7 @@ def modify_class(cls):
         def summon_faestone(self):
 
             faestone = Unit()
+            faestone.unique = True
             faestone.name = "Fae Stone"
 
             faestone.max_hp = self.minion_health
@@ -6485,17 +6486,17 @@ def modify_class(cls):
 
         def on_advance(self):
             for unit in [unit for unit in self.owner.level.units if unit is not self.owner and not are_hostile(self.owner, unit)]:
-                if Tags.Living in unit.tags or Tags.Nature in unit.tags:
+                if Tags.Living in unit.tags or Tags.Nature in unit.tags or Tags.Ice in unit.tags:
                     unit.apply_buff(HibernationBuff())
 
         def get_description(self):
-            return ("Your [living] and [nature] minions gain [75_ice:ice] resistance, [freeze] for [3_turns:duration] upon taking [ice] damage, and heal for [15_HP:heal] each turn while [frozen].\n"
+            return ("Your [living], [nature], and [ice] minions gain [75_ice:ice] resistance, [freeze] for [3_turns:duration] upon taking [ice] damage, and heal for [15_HP:heal] each turn while [frozen].\n"
                     "For every [100_ice:ice] resistance a minion has above 100, it will be healed each turn for the same amount. An excess of less than 100 instead has a chance to heal the minion.").format(**self.fmt_dict())
 
     if cls is HibernationBuff:
 
         def on_pre_advance(self):
-            if Tags.Living not in self.owner.tags and Tags.Nature not in self.owner.tags:
+            if Tags.Living not in self.owner.tags and Tags.Nature not in self.owner.tags and Tags.Ice not in self.owner.tags:
                 self.owner.remove_buff(self)
                 return
             if self.owner.has_buff(FrozenBuff):
@@ -6564,7 +6565,7 @@ def modify_class(cls):
                 evt.unit.apply_buff(SpiderPoisonResistance())
 
         def get_description(self):
-            return ("Your [spider] minions gain [100_poison:poison] resistance.\n"
+            return ("Your newly-summoned [spider] minions gain [100_poison:poison] resistance.\n"
                     "Whenever an enemy dies to [poison] damage, summon a friendly spider nearby.\n"
                     "Giant spiders have [{minion_health}_HP:minion_health] and spin webs.\n"
                     "Giant spiders have a melee attack which deals [{minion_damage}_physical:physical] and inflicts [5_turns:duration] of [poison].\n"

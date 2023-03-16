@@ -26,7 +26,6 @@ Poison Sting:
 - Torment (5 SP): Deal 1 extra damage per 10 turns of poison on the target, and 1 extra damage per turn of every other debuff on the target. Deal 1 extra damage per debuff on the target. Multiple stacks of the same type of debuff are counted as different debuffs.
 
 Wolf:
-- Ice hounds are now nature units.
 - Wolf Pack cost reduced to 7, because I don't think anything should cost more than 7 SP; 7 SP should be enough for this upgrade anyways. It also counts as casting the spell twice, to make you not lose out on Thorn Garden and Icy Spriggan shrine procs. Number of wolves summoned now benefits from num summons bonuses.
 
 Annihilate:
@@ -501,20 +500,21 @@ Arcane Accounting:
 - Arcane Credit now instead lasts 2 turns (starting from the next turn) with only 50% chance to refund 1 spell charge. Duration can be extended by Permanence.
 
 Faestone:
+- Now counts as a unique minion for the purpose of Conjure Memories.
 - Using a mana potion now resurrects the faestone if it's dead.
 
 Ghostfire:
 - Fire ghosts now have 100% dark resistance, to not anti-synergize with ghostfire tormentors.
 
 Hibernation:
-- Now also works on nature minions.
+- Now also works on nature and ice minions.
 - For every 100 ice resistance a minion has above 100, it will be healed each turn for the same amount. An excess of less than 100 instead has a chance to heal the minion.
 
 Holy Water:
 - Affected allies also deal 2 holy or ice damage once to all enemies in a radius equal to the number of SH they have, even if their SH are maxed out. Holy damage from this skill cannot trigger itself. Cost increased to 5 SP.
 
 Spider Spawning:
-- Now also gives spider minions +100 poison resistance.
+- Now also gives newly-summoned spider minions +100 poison resistance.
 
 Unholy Alliance:
 - Now retroactively applies to already summoned minions, including when a minion's tags change.
