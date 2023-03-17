@@ -232,6 +232,9 @@ Pain Mirror:
 - Masochism (3 SP): Damage inflicted by allies will cause Pain Mirror to deal double damage.
 - Holy Martyr (6 SP): Dark damage dealt by Pain Mirror that is resisted or blocked by SH will be redealt as holy damage.
 
+Prison of Thorns:
+- Ice thorns upgrade no longer removes the thorns' melee attacks, which will be used against ice-immune enemies.
+
 Seal Fate:
 - The curse now uses a timer that ticks down as a per-turn effect instead of remaining duration, to interact better with reworked Permanence and Time Dilation from my Missing Synergies mod.
 - Spreading Curse upgrade cost increased to 4 SP, but now if a cursed enemy dies to anything else, the curse jumps to a new enemy with its remaining duration.
@@ -395,6 +398,9 @@ Wheel of Death:
 Ball Lightning:
 - Weakness changed to arcane damage.
 - Magnetic Pulse upgrade replaced by Lightning Barrage (6 SP): Targeting an existing lightning orb causes it to shoot a number of beams equal to twice its num targets, each targeting a random enemy in line of sight. An enemy can be hit by more than one beam.
+
+Blue Lion:
+- Holy bolt upgrade is now given in addition to the lion's melee attack, instead of replacing the latter.
 
 Cantrip Cascade:
 - Focused Cascade (4 SP): Each cantrip has a chance to be cast an additional time. This chance is equal to 1 divided by the number of units in the affected area at the time of casting this spell.

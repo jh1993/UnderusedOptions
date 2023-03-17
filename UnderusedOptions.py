@@ -7330,9 +7330,103 @@ def modify_class(cls):
             else:
                 self.owner.deal_damage(self.spell.get_stat('damage'), Tags.Dark, self.spell)
 
+    if cls is ThornyPrisonSpell:
+
+        def on_init(self):
+            self.max_charges = 6
+            self.name = "Prison of Thorns"
+            self.range = 10
+            self.minion_damage = 3
+            self.minion_health = 7
+            
+            self.upgrades['minion_damage'] = (3, 2)
+            self.upgrades['minion_health'] = (7, 2)
+            self.upgrades['iron'] = (1, 5, "Iron Prison", "Summon iron thorns instead, which deal 3 more damage and are resistant to many forms of damage.", 'prison')
+            self.upgrades['icy'] = (1, 6, "Icy Prison", "Summon icy thorns instead, which have a ranged [ice] attack in addition to [physical] melee.", 'prison')
+            
+            self.minion_duration = 15
+
+            self.tags = [Tags.Nature, Tags.Conjuration]
+            self.level = 3
+
+        def cast(self, x, y):
+            target_points = self.get_impacted_tiles(x, y)
+
+            random.shuffle(target_points)
+
+            for p in target_points:
+                
+                unit = Unit()
+                unit.name = "Thorny Plant"
+                unit.max_hp = self.get_stat('minion_health')
+                unit.spells.append(SimpleMeleeAttack(self.get_stat('minion_damage')))
+                unit.stationary = True
+                unit.turns_to_death = self.get_stat('minion_duration')
+                unit.tags = [Tags.Nature]
+
+                if self.get_stat('iron'):
+                    unit.name = "Iron Thorn"
+                    unit.asset_name = "fae_thorn_iron"
+                    unit.tags.append(Tags.Metallic)
+                    unit.spells[0].damage += 3
+                if self.get_stat('icy'):
+                    unit.name = "Icy Thorn"
+                    unit.asset_name = "spriggan_bush_icy"
+                    unit.spells.insert(0, SimpleRangedAttack(damage=self.get_stat('minion_damage'), range=3 + self.get_stat('minion_range'), damage_type=Tags.Ice))
+                    
+                self.summon(unit, p, radius=0)
+
+                yield
+
+    if cls is SummonBlueLion:
+
+        def on_init(self):
+            self.name = "Blue Lion"
+            self.tags = [Tags.Nature, Tags.Holy, Tags.Conjuration, Tags.Arcane]
+            self.max_charges = 2
+            self.level = 5
+            self.minion_health = 28
+            self.minion_damage = 7
+            self.shield_max = 2
+            self.shield_cooldown = 3
+
+            self.upgrades['shield_max'] = (2, 4)
+            self.upgrades['shield_cooldown'] = (-1, 2)
+            self.upgrades['minion_damage'] = (9, 2)
+            self.upgrades['holy_bolt'] = (1, 4, "Holy Bolt", "The Blue Lion gains a [{minion_range}_range:minion_range] [holy] bolt attack.")
+
+        def cast_instant(self, x, y):
+            lion = Unit()
+            lion.name = "Blue Lion"
+            lion.team = self.caster.team
+            lion.sprite.char = 'L'
+            lion.sprite.color = Color(100, 120, 255)
+            lion.max_hp = self.get_stat('minion_health')
+
+            lion.flying = True
+
+            sheen_spell = ShieldSightSpell(self.get_stat('shield_cooldown'), self.get_stat('shield_max'))
+            sheen_spell.name = "Blue Lion Sheen"
+
+            lion.spells.append(sheen_spell)
+            lion.spells.append(SimpleMeleeAttack(self.get_stat('minion_damage')))
+
+            if self.get_stat('holy_bolt'):
+                bolt = SimpleRangedAttack(damage=self.get_stat('minion_damage'), damage_type=Tags.Holy, range=6 + self.get_stat('minion_range'))
+                bolt.name = "Blue Lion Bolt"
+                lion.spells.insert(1, bolt)
+                
+
+
+            lion.tags = [Tags.Nature, Tags.Arcane, Tags.Holy]
+            lion.resists[Tags.Arcane] = 50
+            lion.resists[Tags.Physical] = 50
+            
+            self.summon(lion, Point(x, y))
+
     for func_name, func in [(key, value) for key, value in locals().items() if callable(value)]:
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord, SummonSpiderQueen, DeathChill, DeathChillDebuff]:
+for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord, SummonSpiderQueen, DeathChill, DeathChillDebuff, ThornyPrisonSpell, SummonBlueLion]:
     modify_class(cls)
