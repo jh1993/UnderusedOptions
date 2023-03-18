@@ -6697,22 +6697,16 @@ def modify_class(cls):
 
     if cls is FrozenFragility:
 
-        def on_init(self):
-            self.name = "Frozen Fragility"
-            self.level = 5
-            self.tags = [Tags.Ice]
-            self.global_triggers[EventOnBuffApply] = self.on_frozen
-
         def get_description(self):
             return ("Whenever an enemy is [frozen:freeze], inflict Fragility for the same duration, which reduces [ice] and [physical] resistances by 100.\n"
                     "Whenever the remaining duration of [freeze] on an enemy is refreshed or extended, the remaining duration of fragility will be lengthened to match if it is shorter.").format(**self.fmt_dict())
 
-        def on_buff_apply(self, evt):
+        def on_frozen(self, evt):
             if not isinstance(evt.buff, FrozenBuff):
                 return
             if not are_hostile(self.owner, evt.unit):
                 return
-            evt.unit.apply_buff(FragilityBuff(self), evt.buff.turns_left)
+            evt.unit.apply_buff(FragilityBuff(), evt.buff.turns_left)
 
     if cls is Teleblink:
 
