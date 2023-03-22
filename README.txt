@@ -437,7 +437,7 @@ Pyrostatic Curse:
 - No longer requires line of sight, and can now target your own tile.
 - Linear Conductance no longer damages allies.
 - Num Targets (4 SP): +2 num targets.
-- Hex Ignition (5 SP): Targets that are already inflicted with Pyrostatic Hex will also take 6 fire damage when you cast this spell. This damage is equal to this spell's duration stat plus bonuses to damage.
+- Hex Ignition (5 SP): Targets that are already inflicted with Pyrostatic Hex will also take fire damage when you cast this spell. This damage is equal to the target's remaining Pyrostatic Hex duration plus this spell's bonuses to damage.
 
 Ring of Spiders:
 - No longer stuns or poisons allies.

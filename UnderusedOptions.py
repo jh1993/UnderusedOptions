@@ -5777,22 +5777,19 @@ def modify_class(cls):
             self.upgrades['duration'] = (6, 3)
             self.upgrades["num_targets"] = (2, 4)
             self.upgrades['beam'] = (1, 5, "Linear Conductance", "Redealt [lightning] damage is dealt to enemies along a beam instead of just to one target.")
-            self.upgrades["ignition"] = (1, 5, "Hex Ignition", "Targets that are already inflicted with Pyrostatic Hex will also take [{ignition_damage}_fire:fire] damage when you cast this spell.\nThis damage is equal to this spell's [duration] stat plus bonuses to [damage].")
-
-        def fmt_dict(self):
-            stats = Spell.fmt_dict(self)
-            stats["ignition_damage"] = self.get_stat("damage", base=self.get_stat("duration"))
-            return stats
+            self.upgrades["ignition"] = (1, 5, "Hex Ignition", "Targets that are already inflicted with Pyrostatic Hex will also take [fire] damage when you cast this spell.\nThis damage is equal to the target's remaining Pyrostatic Hex duration plus this spell's bonuses to [damage].")
 
         def cast_instant(self, x, y):
             duration = self.get_stat('duration')
             ignition = self.get_stat("ignition")
-            damage = self.get_stat("damage", base=duration)
+            damage = self.get_stat("damage", base=0)
             for p in self.owner.level.get_points_in_ball(x, y, self.get_stat('radius')):
                 u = self.owner.level.get_unit_at(p.x, p.y)
                 if u and are_hostile(u, self.caster):
-                    if ignition and u.has_buff(PyroStaticHexBuff):
-                        u.deal_damage(damage, Tags.Fire, self)
+                    if ignition:
+                        existing = u.get_buff(PyroStaticHexBuff)
+                        if existing:
+                            u.deal_damage(existing.turns_left + damage, Tags.Fire, self)
                     u.apply_buff(PyroStaticHexBuff(self), duration)
 
     if cls is PyroStaticHexBuff:
