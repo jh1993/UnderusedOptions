@@ -489,8 +489,8 @@ class FieryTormentorRemorse(Upgrade):
 
     def on_init(self):
         self.name = "Tormentor's Remorse"
-        self.level = 4
-        self.description = "The range of the tormentor's soul suck becomes the same as the radius of its torment, if the latter is higher.\nIts soul suck now also heals the wizard, but the total amount healed cannot exceed the total damage that the wizard has taken from tormentors summoned by this spell, before counting healing penalty."
+        self.level = 2
+        self.description = "The tormentor's soul suck now also heals the wizard, but the total amount healed cannot exceed the total damage that the wizard has taken from tormentors summoned by this spell, before counting healing penalty."
         self.global_triggers[EventOnUnitAdded] = self.on_unit_added
         self.global_triggers[EventOnDamaged] = self.on_damaged
         self.healing_pool = 0
@@ -499,10 +499,6 @@ class FieryTormentorRemorse(Upgrade):
         if evt.unit.source is not self.prereq:
             return
         evt.unit.apply_buff(FieryTormentorRemorseIndicator(self))
-        for spell in evt.unit.spells:
-            if spell.name == "Soul Suck":
-                spell.range = max(self.prereq.get_stat("minion_range"), self.prereq.get_stat("radius"))
-                return
     
     def on_damaged(self, evt):
         if not evt.source.owner or evt.source.owner.source is not self.prereq:
@@ -522,9 +518,8 @@ class FieryTormentorRemorseIndicator(Buff):
         Buff.__init__(self)
         self.color = Tags.Heal.color
         self.buff_type = BUFF_TYPE_PASSIVE
-        self.description = "Soul Suck heals the wizard for an amount equal to the damage done. Can apply no more than 0 healing."
-    def on_advance(self):
-        self.description = "Soul Suck heals the wizard for an amount equal to the damage done. Can apply no more than %i healing." % self.upgrade.healing_pool
+    def get_description(self):
+        return "Soul Suck heals the wizard for an amount equal to the damage done. Can apply no more than %i healing." % self.upgrade.healing_pool
 
 class LightningFormBuff(Buff):
 
@@ -4584,10 +4579,36 @@ def modify_class(cls):
             self.upgrades['radius'] = (2, 3)
             self.upgrades['frostfire'] = (1, 3, "Frostfire Tormentor", "Summons a frostfire tormentor instead.", "variant")
             self.upgrades['ghostfire'] = (1, 3, "Ghostfire Tormentor", "Summons a ghostfire tormentor instead.", "variant")
+            self.upgrades["relentless"] = (1, 3, "Relentless Torment", "The tormentor gains a teleport attack that deals the same damage as its soul suck, with range equal to its soul suck range plus torment radius.")
             self.add_upgrade(FieryTormentorRemorse())
 
             self.must_target_walkable = True
             self.must_target_empty = True
+
+        def cast_instant(self, x, y):
+
+            if self.get_stat('frostfire'):
+                unit = FrostfireTormentor()
+            elif self.get_stat('ghostfire'):
+                unit = GhostfireTormentor()
+            else:
+                unit = FieryTormentor()
+
+            apply_minion_bonuses(self, unit)
+            unit.max_hp = self.get_stat('minion_health')
+
+            for s in unit.spells:
+                if 'Torment' in s.name:
+                    s.radius = self.get_stat('radius')
+
+            unit.turns_to_death = self.get_stat('minion_duration')
+
+            if self.get_stat("relentless"):
+                leap = LeapAttack(damage=self.get_stat("minion_damage", base=2), damage_type=Tags.Dark, is_ghost=True, range=self.get_stat("minion_range") + self.get_stat("radius"))
+                leap.name = "Soul Rush"
+                unit.spells.append(leap)
+            
+            self.summon(unit, Point(x, y))
 
     if cls is SummonIceDrakeSpell:
 
@@ -7301,6 +7322,9 @@ def modify_class(cls):
             self.upgrades['duration'] = (4, 3)
             self.upgrades["friendly"] = (1, 2, "Soothing Chill", "Death Chill now lasts indefinitely and is considered a buff if applied to one of your minions, instead healing it each turn by an amount equal to this spell's [damage] stat.\nThis still allows the minion to release a freezing explosion on death.")
 
+        def get_impacted_tiles(self, x, y):
+            return [Point(x, y)]
+
         def cast_instant(self, x, y):
             unit = self.caster.level.get_unit_at(x, y)
             if not unit:
@@ -7406,8 +7430,6 @@ def modify_class(cls):
                 bolt = SimpleRangedAttack(damage=self.get_stat('minion_damage'), damage_type=Tags.Holy, range=6 + self.get_stat('minion_range'))
                 bolt.name = "Blue Lion Bolt"
                 lion.spells.insert(1, bolt)
-                
-
 
             lion.tags = [Tags.Nature, Tags.Arcane, Tags.Holy]
             lion.resists[Tags.Arcane] = 50
@@ -7415,9 +7437,59 @@ def modify_class(cls):
             
             self.summon(lion, Point(x, y))
 
+    if cls is FlameGateSpell:
+
+        def on_init(self):
+            self.range = 0
+            self.max_charges = 4
+            self.name = "Flame Gate"
+            self.minion_duration = 9
+            self.tags = [Tags.Fire, Tags.Enchantment, Tags.Conjuration]
+            self.level = 3
+
+            self.minion_damage = 7
+            self.minion_health = 22
+            self.minion_range = 4
+
+            self.upgrades['minion_range'] = (2, 2)
+            self.upgrades['minion_duration'] = (7, 2)
+            self.upgrades['minion_damage'] = (7, 4)
+            self.upgrades["remnant"] = (1, 3, "Gate Remnant", "When Flame Gate expires, or if you cast this spell again when it's active, you summon a fire elemental gate next to yourself, which automatically summons a fire elemental from this spell every 7 to 10 turns.")
+
+    if cls is FlameGateBuff:
+
+        def __init__(self, spell):
+            Buff.__init__(self)
+            self.name = "Flame Gate"
+            self.spell = spell
+            self.buff_type = BUFF_TYPE_BLESS
+            self.stack_type = STACK_REPLACE
+            self.asset = ['status', 'flame_gate']
+            self.cast = True
+            self.description = "Whenever you cast a fire spell, temporarily summon a fire elemental near the target.\n\nThis enchantment ends if you move or cast a non fire spell."
+
+        def on_unapplied(self):
+            if not self.spell.get_stat("remnant"):
+                return
+            def FireElemental():
+                elemental = Unit()
+                elemental.name = 'Fire Elemental'
+                elemental.spells.append(SimpleRangedAttack("Elemental Fire", self.spell.minion_damage, Tags.Fire, self.spell.minion_range))
+                elemental.resists[Tags.Fire] = 100
+                elemental.resists[Tags.Physical] = 50
+                elemental.resists[Tags.Ice] = -100
+                elemental.turns_to_death = self.spell.minion_duration
+                elemental.max_hp = self.spell.minion_health
+                elemental.tags = [Tags.Elemental, Tags.Fire]
+                return elemental
+            gate = MonsterSpawner(FireElemental)
+            apply_minion_bonuses(self.spell, gate)
+            gate.turns_to_death = None
+            self.spell.summon(gate, target=self.spell.caster, radius=5)
+
     for func_name, func in [(key, value) for key, value in locals().items() if callable(value)]:
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord, SummonSpiderQueen, DeathChill, DeathChillDebuff, ThornyPrisonSpell, SummonBlueLion]:
+for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord, SummonSpiderQueen, DeathChill, DeathChillDebuff, ThornyPrisonSpell, SummonBlueLion, FlameGateBuff, FlameGateSpell]:
     modify_class(cls)

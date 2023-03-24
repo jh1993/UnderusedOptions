@@ -152,6 +152,7 @@ Darkness:
 - Dark Echoes (6 SP): While Darkness is active and you are blind, whenever your demon and undead minions deal damage to an enemy, the target loses current HP equal to half of the damage dealt.
 
 Death Chill:
+- Now counts as a single-target spell for the purpose of Mass Enchantment from my Missing Synergies mod.
 - Soothing Chill (2 SP): Death Chill now lasts indefinitely and is considered a buff if applied to one of your minions, instead healing it each turn by an amount equal to this spell's damage stat. This still allows the minion to release a freezing explosion on death.
 
 Devour Mind:
@@ -175,6 +176,9 @@ Earthquake:
 Flame Burst:
 - Bright Flame upgrade replaced by Phoenix Flame, which costs 4 SP and heals allies (except the wizard) instead of damaging them, and does not change the damage type. This makes it a natural extension of the base spell while providing additional healing with Pyrophilia, instead of changing the damage type to holy and losing out on all fire synergies.
 - Spreading Flame now counts as casting the spell once per charge consumed.
+
+Flame Gate:
+- Gate Remnant (3 SP): When Flame Gate expires, or if you cast this spell again when it's active, you summon a fire elemental gate next to yourself, which automatically summons a fire elemental from this spell every 7 to 10 turns.
 
 Frostfire Hydra:
 - Beams now benefit from both minion damage and breath damage bonuses.
@@ -320,7 +324,8 @@ Essence Flux:
 - Imbalanced Flux (5 SP): After affecting an enemy, the higher resistance of each pair will instead be set to the average of the pair. After affecting an ally, the lower resistance of each pair will instead be set to the average of the pair.
 
 Fiery Tormentor:
-- Tormentor's Remorse (4 SP): The range of the tormentor's soul suck is increased by its the radius of its torment. Its soul suck now also heals the wizard, but the total amount healed cannot exceed the total damage that the wizard has taken from tormentors summoned by this spell, before counting heal resistance.
+- Relentless Torment (3 SP): The tormentor gains a teleport attack that deals the same damage as its soul suck, with range equal to its soul suck range plus torment radius.
+- Tormentor's Remorse (2 SP): The tormentor's soul suck now also heals the wizard, but the total amount healed cannot exceed the total damage that the wizard has taken from tormentors summoned by this spell, before counting healing penalty.
 
 Ice Drake:
 - Dragon Mage changed to cast your Icicle every 3 turns.
