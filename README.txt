@@ -585,4 +585,4 @@ Metal Lord:
 - Now also gives +20 minion health.
 
 Orb Lord:
-- Now also gives +4 minion damage, +1 radius, and +1 num targets.
+- Now also gives +4 minion damage and +1 radius.

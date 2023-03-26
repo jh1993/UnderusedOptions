@@ -7055,7 +7055,6 @@ def modify_class(cls):
             self.tag_bonuses[Tags.Orb]['minion_health'] = 35
             self.tag_bonuses[Tags.Orb]["minion_damage"] = 4
             self.tag_bonuses[Tags.Orb]["radius"] = 1
-            self.tag_bonuses[Tags.Orb]["num_targets"] = 1
             self.level = 7
 
     if cls is DragonScalesSkill:
