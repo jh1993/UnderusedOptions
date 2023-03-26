@@ -2117,6 +2117,9 @@ def modify_class(cls):
                 self.owner.tags.append(Tags.Undead)
 
         def on_unapplied(self):
+            self.owner.level.queue_spell(self.unmodify_unit())
+
+        def unmodify_unit(self):
             if self.buff_type == BUFF_TYPE_CURSE:
                 self.owner.max_hp += self.hp
             else:
@@ -2125,6 +2128,7 @@ def modify_class(cls):
                 self.owner.tags.remove(Tags.Undead)
             if self.originally_living and Tags.Living not in self.owner.tags:
                 self.owner.tags.append(Tags.Living)
+            yield
 
     if cls is VoidMaw:
 
