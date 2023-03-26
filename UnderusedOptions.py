@@ -21,6 +21,7 @@ class TempScalespinnerRemoval(Buff):
         self.buff = buff
         Buff.__init__(self)
         self.buff_type = BUFF_TYPE_PASSIVE
+        self.stack_type = STACK_INTENSITY
     
     def on_advance(self):
         self.buff.owner.remove_buff(self.buff)
