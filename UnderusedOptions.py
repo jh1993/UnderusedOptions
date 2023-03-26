@@ -15,6 +15,17 @@ import sys, math, random
 
 curr_module = sys.modules[__name__]
 
+class TempScalespinnerRemoval(Buff):
+
+    def __init__(self, buff):
+        self.buff = buff
+        Buff.__init__(self)
+        self.buff_type = BUFF_TYPE_PASSIVE
+    
+    def on_advance(self):
+        self.buff.owner.remove_buff(self.buff)
+        self.owner.remove_buff(self)
+
 class PossessedAlly(Thorns):
 
     def __init__(self, spell):
@@ -7060,7 +7071,26 @@ def modify_class(cls):
     if cls is DragonScalesSkill:
 
         def get_description(self):
-            return "Whenever an allied [dragon] uses a breath weapon, all your minions gain 100 resistance to that breath weapon's element.\nIf a minion's resistance to that element is still less than 100, it gains enough additional resistance to that element to make it 100.\nLasts [{duration}_turns:duration].".format(**self.fmt_dict())
+            return "Whenever an allied [dragon] uses a breath weapon, all your minions gain 100 resistance to that breath weapon's element for [{duration}_turns:duration].\nIf a minion's resistance to that element is still less than 100, it gains enough additional resistance to that element to make it 100.\nYou will also gain the same effect, but it expires at the end of the dragon's turn.".format(**self.fmt_dict())
+
+        def on_spell_cast(self, evt):
+            
+            if not isinstance(evt.spell, BreathWeapon):
+                return
+            if are_hostile(evt.caster, self.owner):
+                return
+            if evt.caster == self.owner:
+                return
+            
+            duration = self.get_stat('duration')
+            for u in list(self.owner.level.units):
+                if are_hostile(u, self.owner):
+                    continue
+                buff = DragonScalesBuff(evt.spell.damage_type)
+                buff.show_effect = not u.is_player_controlled
+                u.apply_buff(buff, duration if not u.is_player_controlled else 0)
+                if u.is_player_controlled and buff.applied:
+                    evt.spell.caster.apply_buff(TempScalespinnerRemoval(buff))
 
     if cls is DragonScalesBuff:
 

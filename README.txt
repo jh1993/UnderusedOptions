@@ -580,6 +580,7 @@ Lightning Warp:
 
 Scalespinner:
 - Now gives a minion additional resistance to bring it up to 100 if a minion has weakness to the triggering element.
+- Now also gives you the same effect, but that effect is removed at the end of the dragon's turn, so it only protects you from friendly fire.
 
 Metal Lord:
 - Now also gives +20 minion health.
