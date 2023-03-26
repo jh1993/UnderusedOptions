@@ -2069,7 +2069,7 @@ def modify_class(cls):
                         if existing.buff_type == BUFF_TYPE_CURSE:
                             unit.deal_damage(existing.hp//4, Tags.Poison, self)
                         else:
-                            unit.deal_damage(-existing.hp//4, Tags.Heal, self)
+                            unit.deal_damage(-(existing.hp//4), Tags.Heal, self)
                 buff = mods.Bugfixes.Bugfixes.RotBuff(self)
                 if friendly and not are_hostile(unit, self.caster):
                     buff.buff_type = BUFF_TYPE_BLESS
