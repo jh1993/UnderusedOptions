@@ -7076,11 +7076,11 @@ def modify_class(cls):
 
         def on_spell_cast(self, evt):
             
-            if not isinstance(evt.spell, BreathWeapon):
+            if not isinstance(evt.spell, BreathWeapon) or Tags.Dragon not in evt.caster.tags:
                 return
             if are_hostile(evt.caster, self.owner):
                 return
-            if evt.caster == self.owner:
+            if evt.caster is self.owner:
                 return
             
             duration = self.get_stat('duration')
@@ -7091,7 +7091,7 @@ def modify_class(cls):
                 buff.show_effect = not u.is_player_controlled
                 u.apply_buff(buff, duration if not u.is_player_controlled else 0)
                 if u.is_player_controlled and buff.applied:
-                    evt.spell.caster.apply_buff(TempScalespinnerRemoval(buff))
+                    evt.caster.apply_buff(TempScalespinnerRemoval(buff))
 
     if cls is DragonScalesBuff:
 
