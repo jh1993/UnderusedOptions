@@ -3811,7 +3811,7 @@ def modify_class(cls):
             damage = event.damage
             if damage <= 0:
                 return
-            if self.masochism and event.source.owner and not are_hostile(event.source.owner, self.owner):
+            if self.masochism and not(isinstance(event.source, Buff) and event.source.buff_type == BUFF_TYPE_CURSE) and event.source.owner and not are_hostile(event.source.owner, self.owner):
                 damage *= 2
             self.owner.level.queue_spell(self.reflect(damage))
 
