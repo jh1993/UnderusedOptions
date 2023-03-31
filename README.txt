@@ -15,7 +15,7 @@ Death Bolt:
 - Withering upgrade replaced by Soul Feedback (5 SP): Death Bolt deals additional damage equal to twice the number of undead, demon, holy, and arcane minions you have that are not summoned by itself. Mutually exclusive with Soul Battery.
 
 Fireball:
-- Damage type upgrades changed to redeal all fire damage resisted or blocked by SH as a split between the other damage types.
+- Damage type upgrades changed to redeal all fire damage resisted by enemies as a split between the other damage types.
 
 Magic Missile:
 - The bolt upgrades are no longer mutually exclusive. All of them will apply simultaneously if the target has the appropriate tags.
@@ -234,7 +234,7 @@ Pain Mirror:
 - Max Charges upgrade removed.
 - False Pain (6 SP): Pain Mirror now counts incoming damage twice. The first time counts the raw incoming damage before resistances and SH, and the second time counts actual damage taken. The first count will trigger even if all of the incoming damage is resisted or blocked.
 - Masochism (3 SP): Damage inflicted by allies will cause Pain Mirror to deal double damage.
-- Holy Martyr (6 SP): Dark damage dealt by Pain Mirror that is resisted or blocked by SH will be redealt as holy damage.
+- Holy Martyr (6 SP): Dark damage dealt by Pain Mirror that is resisted will be redealt as holy damage.
 
 Prison of Thorns:
 - Ice thorns upgrade no longer removes the thorns' melee attacks, which will be used against ice-immune enemies.

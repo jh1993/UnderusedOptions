@@ -1323,37 +1323,35 @@ def modify_class(cls):
             self.upgrades['max_charges'] = (8, 2)
             self.upgrades['range'] = (3, 1)
 
-            self.upgrades['chaos'] = (1, 3, "Chaos Ball", "Fireball redeals [fire] damage that is resisted or blocked by [SH:shields] as a split between [lightning] and [physical] damage.", "damage type")
-            self.upgrades['energy'] = (1, 4, "Energy Ball", "Fireball redeals [fire] damage that is resisted or blocked by [SH:shields] as a split between [arcane] and [holy] damage.", "damage type")
-            self.upgrades['ash'] = (1, 5, "Ash Ball", "Fireball redeals [fire] damage that is resisted or blocked by [SH:shields] as a split between [dark] and [poison] damage.\nFireball blinds for 1 turn.", "damage type")
+            self.upgrades['chaos'] = (1, 3, "Chaos Ball", "Fireball redeals [fire] damage that is resisted by enemies as a split between [lightning] and [physical] damage.", "damage type")
+            self.upgrades['energy'] = (1, 4, "Energy Ball", "Fireball redeals [fire] damage that is resisted by enemies as a split between [arcane] and [holy] damage.", "damage type")
+            self.upgrades['ash'] = (1, 5, "Ash Ball", "Fireball redeals [fire] damage that is resisted by enemies as a split between [dark] and [poison] damage.\nFireball blinds for [1_turn:duration].", "damage type")
 
         def cast(self, x, y):
             target = Point(x, y)
+            damage = self.get_stat('damage')
+            blind = False
+            redeals = []
+            if self.get_stat("chaos"):
+                redeals = [Tags.Lightning, Tags.Physical]
+            elif self.get_stat("energy"):
+                redeals = [Tags.Arcane, Tags.Holy]
+            elif self.get_stat("ash"):
+                redeals = [Tags.Dark, Tags.Poison]
+                blind = True
             for stage in Burst(self.caster.level, target, self.get_stat('radius')):
                 for point in stage:
-                    damage = self.get_stat('damage')
                     unit = self.caster.level.get_unit_at(point.x, point.y)
-                    if unit:
-                        if unit.shields > 0:
-                            resisted = damage
-                        else:
-                            resisted = math.floor(damage*unit.resists[Tags.Fire]/100)
+                    resisted = 0
+                    if unit and are_hostile(unit, self.caster):
+                        resisted = max(0, math.floor(damage*min(100, unit.resists[Tags.Fire])/100))
                     self.caster.level.deal_damage(point.x, point.y, damage, Tags.Fire, self)
-
-                    redeals = []
-                    if self.get_stat("chaos"):
-                        redeals = [Tags.Lightning, Tags.Physical]
-                    elif self.get_stat("energy"):
-                        redeals = [Tags.Arcane, Tags.Holy]
-                    elif self.get_stat("ash"):
-                        redeals = [Tags.Dark, Tags.Poison]
                     if not redeals or not unit:
-                        continue
-                    
-                    if are_hostile(unit, self.caster):
+                        continue                    
+                    if resisted > 0:
                         for dtype in redeals:
                             unit.deal_damage(resisted//2, dtype, self)
-                    if self.get_stat('ash'):
+                    if blind:
                         unit.apply_buff(BlindBuff(), 1)
                 yield
     
@@ -3784,7 +3782,7 @@ def modify_class(cls):
             self.upgrades['duration'] = (10, 2)
             self.upgrades["false"] = (1, 6, "False Pain", "Pain Mirror now counts incoming damage twice. The first time counts the raw incoming damage before resistances and [SH:shields], and the second time counts actual damage taken.\nThe first count will trigger even if all of the incoming damage is resisted or blocked.")
             self.upgrades["masochism"] = (1, 3, "Masochism", "Damage inflicted by allies will cause Pain Mirror to deal double damage.")
-            self.upgrades["holy"] = (1, 6, "Holy Martyr", "[Dark] damage dealt by Pain Mirror that is resisted or blocked by [SH:shields] will be redealt as [holy] damage.")
+            self.upgrades["holy"] = (1, 6, "Holy Martyr", "[Dark] damage dealt by Pain Mirror that is resisted will be redealt as [holy] damage.")
 
             self.tags = [Tags.Dark, Tags.Enchantment]
 
@@ -3820,10 +3818,7 @@ def modify_class(cls):
                 if are_hostile(self.owner, u):
                     resisted = 0
                     if self.holy:
-                        if u.shields:
-                            resisted = damage
-                        else:
-                            resisted = math.floor(damage*u.resists[Tags.Dark]/100)
+                        resisted = max(0, math.floor(damage*min(100, u.resists[Tags.Dark])/100))
                     u.deal_damage(damage, Tags.Dark, self.source or self)
                     if resisted:
                         u.deal_damage(resisted, Tags.Holy, self.source or self)
