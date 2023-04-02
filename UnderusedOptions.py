@@ -3904,7 +3904,7 @@ def modify_class(cls):
             self.num_targets = 16
 
             self.upgrades['num_targets'] = (12, 3, "More Shrapnel", "[12:num_targets] more shrapnel shards are shot.")
-            self.upgrades["channel"] = (1, 7, "Particle Surge", "Shrapnel Blast becomes a channeled spell, and no longer destroys the target wall.\nEach shard now deals damage in a beam between the target tile and its destination.", "behavior")
+            self.upgrades["channel"] = (1, 7, "Particle Surge", "Shrapnel Blast becomes a channeled spell, and no longer destroys the target wall.\nEach shard now deals damage in a beam between the target tile and its destination.\nThis spell no longer refunds charges based on the number of shards missed.", "behavior")
             self.upgrades['homing'] = (1, 7, "Magnetized Shards", "The shrapnel shards now only target enemies.\nIf no enemies are in the affected area, no more shards will be fired.\nShards not fired do not count as missed; no shards can miss with this upgrade.", "behavior")
             self.upgrades["chasm"] = (1, 4, "Unearth", "This spell can now be cast on chasms.")
 
@@ -3964,9 +3964,8 @@ def modify_class(cls):
 
             if not channel:
                 self.caster.level.make_floor(x, y)
-            
-            if random.random() < shards_missed/num_shards/2:
-                self.cur_charges = min(self.get_stat("max_charges"), self.cur_charges + 1)
+                if random.random() < shards_missed/num_shards/2:
+                    self.cur_charges = min(self.get_stat("max_charges"), self.cur_charges + 1)
 
         def get_impacted_tiles(self, x, y):
             return list(self.caster.level.get_points_in_ball(x, y, self.get_stat('radius')))
