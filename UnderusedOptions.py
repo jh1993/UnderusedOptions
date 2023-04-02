@@ -3904,7 +3904,7 @@ def modify_class(cls):
             self.num_targets = 16
 
             self.upgrades['num_targets'] = (12, 3, "More Shrapnel", "[12:num_targets] more shrapnel shards are shot.")
-            self.upgrades["channel"] = (1, 7, "Particle Surge", "Shrapnel Blast becomes a channeled spell, and no longer destroys the target wall.\nEach shard now deals damage in a beam between the target tile and its destination.\nThis spell no longer refunds charges based on the number of shards missed.", "behavior")
+            self.upgrades["channel"] = (1, 7, "Particle Surge", "Shrapnel Blast becomes a channeled spell, and no longer destroys the target wall.\nEach shard now deals damage in a beam between the target tile and its destination, and no longer hurts allies.\nThis spell no longer refunds charges based on the number of shards missed.", "behavior")
             self.upgrades['homing'] = (1, 7, "Magnetized Shards", "The shrapnel shards now only target enemies.\nIf no enemies are in the affected area, no more shards will be fired.\nShards not fired do not count as missed; no shards can miss with this upgrade.", "behavior")
             self.upgrades["chasm"] = (1, 4, "Unearth", "This spell can now be cast on chasms.")
 
@@ -3948,14 +3948,13 @@ def modify_class(cls):
                 if targets:
                     target = random.choice(targets)
                     if channel:
-                        missed = True
                         for point in Bolt(self.caster.level, Point(x, y), target, find_clear=False):
-                            if self.caster.level.get_unit_at(point.x, point.y):
-                                missed = False
-                            self.caster.level.deal_damage(point.x, point.y, damage, Tags.Physical, self)
+                            unit = self.caster.level.get_unit_at(point.x, point.y)
+                            if not unit or not are_hostile(unit, self.caster):
+                                self.caster.level.show_effect(point.x, point.y, Tags.Physical)
+                            else:
+                                unit.deal_damage(damage, Tags.Physical, self)
                             yield
-                        if missed:
-                            shards_missed += 1
                     else:
                         if not self.caster.level.get_unit_at(target.x, target.y):
                             shards_missed += 1
