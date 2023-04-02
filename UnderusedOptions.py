@@ -5337,7 +5337,7 @@ def modify_class(cls):
 
             self.upgrades['max_charges'] = (3, 4)
             self.upgrades['cascade'] = (1, 7, "Death Roulette", "On kill, gain a Roulette stack for [{duration}_turns:duration].\nWheel of Death hits an additional enemy for each Roulette stack you have at cast time.", "fate")
-            self.upgrades["annihilate"] = (1, 7, "Royal Flush", "Wheel of Death now deals an additional hit of [fire], [lightning], [physical], and [arcane] damage, each targeting a random enemy.", "fate")
+            self.upgrades["annihilate"] = (1, 7, "Royal Flush", "Wheel of Death now deals an additional hit of [fire], [lightning], [physical], and [arcane] damage, each targeting a random enemy.\nThe same enemy can be hit more than once.", "fate")
 
         def cast(self, x, y):
             
@@ -5347,11 +5347,12 @@ def modify_class(cls):
             cascade = self.get_stat('cascade')
             duration = self.get_stat('duration', 10)
             iter = range(num_targets)
-            if self.get_stat("annihilate"):
+            annihilate = self.get_stat("annihilate")
+            if annihilate:
                 iter = [Tags.Dark, Tags.Fire, Tags.Lightning, Tags.Physical, Tags.Arcane]
 
             for i in iter:
-                valid_targets = [u for u in self.caster.level.units if self.caster.level.are_hostile(self.caster, u) and u not in prev_hit]
+                valid_targets = [u for u in self.caster.level.units if self.caster.level.are_hostile(self.caster, u) and (annihilate or u not in prev_hit)]
                 if not valid_targets:
                     return
                 target = random.choice(valid_targets)

@@ -398,7 +398,7 @@ Watcher Form:
 - Watcher's Instinct (6 SP): While in Watcher Form, each turn you will automatically cast a random one of your lightning or arcane sorcery spells at a random valid enemy target, consuming charges as usual.
 
 Wheel of Death:
-- Royal Flush (7 SP): Wheel of Death now deals an additional hit of fire, lightning, physical, and arcane damage, each targeting a random enemy. Not compatible with Death Roulette.
+- Royal Flush (7 SP): Wheel of Death now deals an additional hit of fire, lightning, physical, and arcane damage, each targeting a random enemy. The same enemy can be hit more than once. Not compatible with Death Roulette.
 
 Ball Lightning:
 - Weakness changed to arcane damage.
