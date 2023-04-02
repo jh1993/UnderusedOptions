@@ -15,6 +15,55 @@ import sys, math, random
 
 curr_module = sys.modules[__name__]
 
+class ShrapnelSpell(SimpleRangedAttack):
+
+    def __init__(self, spell):
+        self.spell = spell
+        SimpleRangedAttack.__init__(self, name="Shrapnel", damage=spell.damage, range=spell.range)
+        self.requires_los = False
+        self.shards = spell.get_stat("num_targets")
+    
+    def get_stat(self, attr, base=None):
+        if attr == "radius":
+            return 0
+        return self.spell.get_stat(attr, base)
+    
+    def get_description(self):
+        return "Pierces through walls. Damage is based on the wizard's Shrapnel Blast. User has 75%% chance to act again after using this attack, but dies after using it %i times." % self.shards
+
+    def hit(self, x, y):
+        self.caster.level.deal_damage(x, y, self.get_stat("damage"), Tags.Physical, self.spell)
+
+    def cast(self, x, y):
+        yield from SimpleRangedAttack.cast(self, x, y)
+        self.shards -= 1
+        if self.shards <= 0:
+            self.caster.kill()
+            # In case the user is resurrected.
+            self.shards = self.spell.get_stat("num_targets")
+        elif self.caster.is_alive() and random.random() < 0.75:
+            self.caster.advance()
+
+class ShrapnelGolemExplosion(Buff):
+
+    def __init__(self, spell):
+        self.spell = spell
+        Buff.__init__(self)
+        self.owner_triggers[EventOnDeath] = self.on_death
+        self.color = Tags.Fire.color
+    
+    def get_tooltip(self):
+        return "On death, deal %i fire damage to all enemies in a %i tile radius." % (self.spell.get_stat("damage"), self.spell.get_stat("radius"))
+    
+    def on_death(self, evt):
+        damage = self.spell.get_stat("damage")
+        for p in self.owner.level.get_points_in_ball(self.owner.x, self.owner.y, self.spell.get_stat("radius")):
+            unit = self.owner.level.get_unit_at(p.x, p.y)
+            if not unit or not are_hostile(unit, self.spell.caster):
+                self.owner.level.show_effect(p.x, p.y, Tags.Fire)
+            else:
+                unit.deal_damage(damage, Tags.Fire, self.spell)
+
 class TempScalespinnerRemoval(Buff):
 
     def __init__(self, buff):
@@ -3904,15 +3953,20 @@ def modify_class(cls):
             self.num_targets = 16
 
             self.upgrades['num_targets'] = (12, 3, "More Shrapnel", "[12:num_targets] more shrapnel shards are shot.")
-            self.upgrades["channel"] = (1, 7, "Particle Surge", "Shrapnel Blast becomes a channeled spell, and no longer destroys the target wall.\nEach shard now deals damage in a beam between the target tile and its destination, and no longer hurts allies.\nThis spell no longer refunds charges based on the number of shards missed.", "behavior")
-            self.upgrades['homing'] = (1, 7, "Magnetized Shards", "The shrapnel shards now only target enemies.\nIf no enemies are in the affected area, no more shards will be fired.\nShards not fired do not count as missed; no shards can miss with this upgrade.", "behavior")
+            self.upgrades["golem"] = (1, 7, "Shrapnel Golem", "Shrapnel Blast instead summons a shrapnel golem on the target tile, which is a [fire] [metallic] [construct] minion with [{minion_health}_HP:minion_health].\nThe golem can fire shards that deal [physical] damage, which counts as damage dealt by this spell and inherits all of this spell's stats.\nIt can fire the same number of shards as this spell otherwise can before dying, which will then deal [fire] damage from this spell to all enemies in the radius of the initial explosion of Shrapnel Blast.\nThe golem has a 75% chance to immediately act again after firing a shard.", "behavior")
+            self.upgrades['homing'] = (1, 7, "Magnetized Shards", "The shrapnel shards now only target enemies.\nIf no enemies are in the affected area, no more shards will be fired.\nThe initial explosion also no longer damages allies.", "behavior")
             self.upgrades["chasm"] = (1, 4, "Unearth", "This spell can now be cast on chasms.")
+
+        def fmt_dict(self):
+            stats = Spell.fmt_dict(self)
+            stats["minion_health"] = self.get_stat("minion_health", base=50)
+            return stats
 
         def get_description(self):
             return ("Detonate target wall tile.\n"
-                    "The explosion fires [{num_targets}_shards:num_targets] at random tiles in a [{radius}_tile:radius] radius.\n"
-                    "Each shard deals [{damage}_physical:physical] damage.\n"
-                    "There is a chance to refund a charge of this spell on cast, equal to half the number of shards that miss divided by the total number of shards.").format(**self.fmt_dict())
+                    "All units in a [{radius}_tile:radius] radius take [{damage}_fire:fire] damage.\n"
+                    "The explosion fires [{num_targets}_shards:num_targets] at random tiles in the same radius.\n"
+                    "Each shard deals [{damage}_physical:physical] damage.").format(**self.fmt_dict())
 
         def can_cast(self, x, y):
             if not Spell.can_cast(self, x, y):
@@ -3921,53 +3975,49 @@ def modify_class(cls):
                 return self.get_stat("chasm") and self.caster.level.tiles[x][y].is_chasm
             return True
 
-        def cast(self, x, y, channel_cast=False):
-
-            channel = self.get_stat('channel')
-            if channel and not channel_cast:
-                self.caster.apply_buff(ChannelBuff(self.cast, Point(x, y)))
-                return
+        def cast(self, x, y):
             
             damage = self.get_stat('damage')
             homing = self.get_stat("homing")
             num_shards = self.get_stat('num_targets')
-            possible_targets = list(self.caster.level.get_points_in_ball(x, y, self.get_stat('radius')))
-            shards_missed = 0
+            radius = self.get_stat('radius')
+            self.caster.level.make_floor(x, y)
 
-            for _ in range(num_shards):
-                targets = possible_targets
-
-                if homing:
-                    def can_home(t):
-                        u = self.caster.level.get_unit_at(t.x, t.y)
-                        if not u:
-                            return False
-                        return are_hostile(self.caster, u)
-                    targets = [t for t in possible_targets if can_home(t)]
-
-                if targets:
-                    target = random.choice(targets)
-                    if channel:
-                        for point in Bolt(self.caster.level, Point(x, y), target, find_clear=False):
-                            unit = self.caster.level.get_unit_at(point.x, point.y)
-                            if not unit or not are_hostile(unit, self.caster):
-                                self.caster.level.show_effect(point.x, point.y, Tags.Physical)
-                            else:
-                                unit.deal_damage(damage, Tags.Physical, self)
-                            yield
+            if not self.get_stat("golem"):
+                possible_targets = list(self.caster.level.get_points_in_ball(x, y, radius))
+                for p in possible_targets:
+                    unit = self.caster.level.get_unit_at(p.x, p.y)
+                    if not unit or (homing and not are_hostile(unit, self.caster)):
+                        self.caster.level.show_effect(p.x, p.y, Tags.Fire)
                     else:
-                        if not self.caster.level.get_unit_at(target.x, target.y):
-                            shards_missed += 1
+                        unit.deal_damage(damage, Tags.Fire, self)
+                for _ in range(num_shards):
+                    targets = possible_targets
+                    if homing:
+                        def can_home(t):
+                            u = self.caster.level.get_unit_at(t.x, t.y)
+                            if not u:
+                                return False
+                            return are_hostile(self.caster, u)
+                        targets = [t for t in possible_targets if can_home(t)]
+                    if targets:
+                        target = random.choice(targets)
                         self.caster.level.deal_damage(target.x, target.y, damage, Tags.Physical, self)
-                    yield
-
-            if not channel:
-                self.caster.level.make_floor(x, y)
-                if random.random() < shards_missed/num_shards/2:
-                    self.cur_charges = min(self.get_stat("max_charges"), self.cur_charges + 1)
+                        yield
+            else:
+                golem = Unit()
+                golem.name = "Shrapnel Golem"
+                golem.asset_name = "golem_spike"
+                golem.tags = [Tags.Fire, Tags.Metallic, Tags.Construct]
+                golem.max_hp = self.get_stat("minion_health", base=50)
+                golem.spells = [ShrapnelSpell(self)]
+                golem.buffs = [ShrapnelGolemExplosion(self)]
+                self.summon(golem, target=Point(x, y))
 
         def get_impacted_tiles(self, x, y):
-            return list(self.caster.level.get_points_in_ball(x, y, self.get_stat('radius')))
+            if self.get_stat("golem"):
+                return [Point(x, y)]
+            return Spell.get_impacted_tiles(self, x, y)
 
     if cls is BestowImmortality:
 

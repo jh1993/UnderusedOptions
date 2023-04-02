@@ -244,11 +244,10 @@ Seal Fate:
 - Spreading Curse upgrade cost increased to 4 SP, but now if a cursed enemy dies to anything else, the curse jumps to a new enemy with its remaining duration.
 
 Shrapnel Blast:
-- The initial fire explosion is removed, because it's superfluous and not relevant in most uses.
+- The initial fire explosion now hits all units in the radius.
 - The Puncturing Shards upgrade, which actually lets the shards pass through walls, is rolled into the base spell.
-- Now has a chance to refund a charge on cast, equal to half the number of shards that miss divided by the total number of shards.
-- The Magnetized Shards upgrade now makes it so that if there are no enemies in the area, no more shards will be fired; shards not fired do not count as shards missed. If it's smart enough to seek enemies, it should be smart enough to not hit allies. Not compatible with the new Particle Surge upgrade below.
-- Particle Surge (7 SP): Shrapnel Blast becomes a channeled spell, and no longer destroys the target wall. Each shard now deals damage in a beam between the target tile and its destination, and no longer hurts allies. This spell no longer refunds charges based on the number of shards missed. Not compatible with Magnetized Shards.
+- The Magnetized Shards upgrade now makes it so that if there are no enemies in the area, no more shards will be fired. If it's smart enough to seek enemies, it should be smart enough to not hit allies. Also makes the initial explosion not hurt allies. Not compatible with the new Shrapnel Golem upgrade below.
+- Shrapnel Golem (7 SP): Shrapnel Blast instead summons a shrapnel golem on the target tile, which is a fire metallic construct minion with 50 HP. The golem can fire shards that deal physical damage, which counts as damage dealt by this spell and inherits all of this spell's stats. It can fire the same number of shards as this spell otherwise can before dying, which will then deal fire damage from this spell to all enemies in the radius of the initial explosion of Shrapnel Blast. The golem has a 75% chance to immediately act again after firing a shard. Not compatible with Magnetized Shards.
 - Unearth (4 SP): This spell can now be cast on chasms.
 
 Silver Spear:
