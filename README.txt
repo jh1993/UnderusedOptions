@@ -414,7 +414,9 @@ Chill Wind:
 
 Death Cleave:
 - Level reduced to 4.
-- Patient Butcher (3 SP): Each turn, the remaining duration of Death Cleave will not decrease if it is not used to cleave a spell to an additional target.
+- Instead of working in sometimes unintuitive ways dependent on the game's internal spell queue that isn't visible to the player, a spell will now try to cleave as long as it kills its main target before the start of your next turn. This still works with channeling.
+- Patient Butcher (3 SP): Each turn, the remaining duration of Death Cleave has a chance to not decrease, equal to 100% divided by 1 plus the number of spells copied by Death Cleave that turn. This resets before the beginning of your turn.
+- Hungering Reach (4 SP): Each time your spell kills its primary target while Death Cleave is active, that spell gains a stacking range bonus of 2 tiles until the beginning of your next turn.
 
 Fae Court:
 - Glass Faery cost reduced to 6. It's anti-synergistic with Cracklevoid so the cost shouldn't be that high.

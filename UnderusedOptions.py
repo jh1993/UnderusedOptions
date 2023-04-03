@@ -15,6 +15,13 @@ import sys, math, random
 
 curr_module = sys.modules[__name__]
 
+class HungeringReachBuff(Buff):
+    def __init__(self, spell):
+        Buff.__init__(self)
+        self.spell_bonuses[spell]["range"] = 2
+        self.buff_type = BUFF_TYPE_PASSIVE
+        self.stack_type = STACK_INTENSITY
+
 class ShrapnelSpell(SimpleRangedAttack):
 
     def __init__(self, spell):
@@ -5535,53 +5542,67 @@ def modify_class(cls):
         def on_init(self):
             self.name = "Death Cleave"
             self.description = "Spells will cleave to nearby targets if they kill their main target"
-            self.cur_target = None	
             self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
-            self.cleaved = False
-            self.patient = self.spell.get_stat("patient")
+            self.global_triggers[EventOnDeath] = lambda evt: on_death(self, evt)
+            self.cleaves = 0
+            self.tried_cleaves = set()
 
+        def on_spell_cast(self, evt):
+            unit = self.owner.level.get_unit_at(evt.x, evt.y)
+            if not unit or unit is self.owner:
+                return
+            self.tried_cleaves.add((unit, evt.spell))
+        
+        def on_death(self, evt):
+            if not evt.damage_event or not evt.damage_event.source:
+                return
+            should_cleave = False
+            for pair in list(self.tried_cleaves):
+                if pair[0] is evt.unit:
+                    if pair[1] is evt.damage_event.source:
+                        should_cleave = True
+                    self.tried_cleaves.discard(pair)
+            if not should_cleave:
+                return
+            if self.spell.get_stat("reach"):
+                self.owner.apply_buff(HungeringReachBuff(type(evt.damage_event.source)))
+            self.owner.level.queue_spell(self.effect(evt))
+        
         def effect(self, evt):
-            if self.cur_target and not self.cur_target.is_alive():
+            def can_cleave(t):
+                if not self.owner.level.are_hostile(t, self.owner):
+                    return False
+                if not evt.damage_event.source.can_cast(t.x, t.y):
+                    return False
+                if distance(t, evt.unit) > self.spell.get_stat('cascade_range'):
+                    return False
+                return True
+            cleave_targets = [u for u in self.owner.level.units if can_cleave(u)]
+            if not cleave_targets:
+                return
+            target = random.choice(cleave_targets)
+            for p in Bolt(self.owner.level, evt.unit, target):
+                self.owner.level.show_effect(p.x, p.y, Tags.Dark, minor=True)
+                yield
+            self.cleaves += 1
+            self.owner.level.act_cast(self.owner, evt.damage_event.source, target.x, target.y, pay_costs=False)
 
-                def can_cleave(t):
-                    if not evt.caster.level.are_hostile(t, evt.caster):
-                        return False
-                    if not evt.spell.can_cast(t.x, t.y):
-                        return False
-                    if distance(t, self.cur_target) > self.spell.get_stat('cascade_range'):
-                        return False
-                    return True
+        def on_pre_advance(self):
+            self.cleaves = 0
+            self.tried_cleaves = set()
+            for buff in list(self.owner.buffs):
+                if isinstance(buff, HungeringReachBuff):
+                    self.owner.remove_buff(buff)
 
-                cleave_targets = [u for u in evt.caster.level.units if can_cleave(u)]
-
-                if cleave_targets:
-                    target = random.choice(cleave_targets)
-                    # Draw chain
-                    for p in Bolt(self.owner.level, self.cur_target, target, find_clear=False):
-                        self.owner.level.show_effect(p.x, p.y, Tags.Dark, minor=True)
-                        yield
-                    evt.caster.level.act_cast(evt.caster, evt.spell, target.x, target.y, pay_costs=False)
-                    self.cleaved = True
-                # If no cleavable targets exist, show a fizzling out effect on the last target
-                else:
-                    evt.caster.level.queue_spell(self.show_fizzle(evt.caster))
-
-            elif self.cur_target and self.cur_target.is_alive():
-                evt.caster.level.queue_spell(self.show_fizzle(self.cur_target))
+        def on_unapplied(self):
+            for buff in list(self.owner.buffs):
+                if isinstance(buff, HungeringReachBuff):
+                    self.owner.remove_buff(buff)
 
         def on_advance(self):
-            for buff in self.owner.buffs:
-                if not isinstance(buff, ChannelBuff):
-                    continue
-                target = self.owner.level.get_unit_at(buff.spell_target.x, buff.spell_target.y)
-                if not target:
-                    continue
-                self.cur_target = target
-                spell = buff.spell.__self__
-                self.owner.level.queue_spell(self.effect(EventOnSpellCast(spell, spell.caster, target.x, target.y)))
-            if self.patient and not self.cleaved:
-                self.turns_left += 1
-            self.cleaved = False
+            if not self.spell.get_stat("patient") or random.random() >= 1/(1 + self.cleaves):
+                return
+            self.turns_left += 1
 
     if cls is DeathCleaveSpell:
 
@@ -5591,12 +5612,18 @@ def modify_class(cls):
             self.upgrades['duration'] = (3, 3)
             self.upgrades['max_charges'] = (4, 2)
             self.upgrades['cascade_range'] = (3, 4)
-            self.upgrades["patient"] = (1, 3, "Patient Butcher", "Each turn, the remaining duration of Death Cleave will not decrease if it is not used to cleave a spell to an additional target.")
+            self.upgrades["patient"] = (1, 3, "Patient Butcher", "Each turn, the remaining duration of Death Cleave has a chance to not decrease, equal to 100% divided by 1 plus the number of spells copied by Death Cleave that turn.\nThis resets before the beginning of your turn.")
+            self.upgrades["reach"] = (1, 4, "Hungering Reach", "Each time your spell kills its primary target while Death Cleave is active, that spell gains a stacking range bonus of [2_tiles:range] until the beginning of your next turn.")
             self.max_charges = 4
             self.cascade_range = 5
             self.range = 0
             self.level = 4
             self.tags = [Tags.Enchantment, Tags.Arcane, Tags.Dark]
+
+        def get_description(self):
+            return ("Whenever a spell you cast kills its primary target before the start of your next turn, that spell is recast on a randomly selected nearby valid enemy target up to [{cascade_range}_tiles:cascade_range] away.\n"
+                    "This process repeats until the target survives the spell, or there are no nearby valid targets.\n"
+                    "Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
 
     if cls is FaeCourt:
 
