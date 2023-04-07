@@ -144,6 +144,7 @@ Choir of Angels:
 - For consistency with other aura-type effects, the angels' song are no longer affected by damage bonuses, instead dealing fixed 2 fire and 2 holy damage. To compensate, they no longer damage allies or heal enemies.
 - The angels' default resistances changed to 100% fire, 100% holy, and 0% dark.
 - Fallen Choir (7 SP): The angels become demon units and gain 100 dark resistance. They gain a wailing attack with a cooldown of 7 turns that deals 7 dark damage to enemies in the same radius as their song, and an attack with 4 range that deals 4 fire damage. Unlike their song, these attacks benefit from bonuses to minion damage.
+- The angels now sing passively each turn instead of requiring to act, so the singing won't interfere with the new abilities they can get from Fallen Choir. Even if an angel has no active abilities, its AI will still approach enemies that can be harmed by its song.
 
 Darkness:
 - Max Charges upgrade removed.

@@ -15,6 +15,43 @@ import sys, math, random
 
 curr_module = sys.modules[__name__]
 
+class AngelSongBuff(Buff):
+
+    def __init__(self, heal, radius):
+        Buff.__init__(self)
+        self.heal = heal
+        self.radius = radius
+        self.name = "Angelic Chorus"
+        self.color = Tags.Holy.color
+        self.tags = []
+
+    def get_tooltip(self):
+        return "Each turn, living and holy allies in a %i tile radius are healed for %i HP. Undead, demon, and dark enemies in the radius take 2 fire and 2 holy damage." % (self.get_stat("radius"), self.heal)
+
+    def on_advance(self):
+        for unit in self.owner.level.get_units_in_ball(self.owner, self.get_stat('radius')):
+            if unit.is_player_controlled:
+                continue
+            if (Tags.Living in unit.tags or Tags.Holy in unit.tags) and not are_hostile(unit, self.owner):
+                unit.deal_damage(-self.heal, Tags.Heal, self)
+            if (Tags.Dark in unit.tags or Tags.Undead in unit.tags or Tags.Demon in unit.tags) and are_hostile(unit, self.owner):
+                unit.deal_damage(2, Tags.Fire, self)
+                unit.deal_damage(2, Tags.Holy, self)
+
+    def get_stat(self, attr, base=None):
+        if base is None:
+            base = getattr(self, attr, 0)
+        if self.owner:
+            return self.owner.get_stat(base, self, attr)
+        else:
+            return base
+
+class AngelicSinger(Unit):
+    def can_harm(self, other):
+        if Unit.can_harm(self, other):
+            return True
+        return Tags.Dark in other.tags or Tags.Undead in other.tags or Tags.Demon in other.tags
+
 class HungeringReachBuff(Buff):
     def __init__(self, spell):
         Buff.__init__(self)
@@ -2765,38 +2802,6 @@ def modify_class(cls):
             self.upgrades['lightning_blink'] = (1, 4, "Lightning Blink", "Blink deals [lightning] damage in a [{radius}_tile:radius] burst upon arrival.\n The damage is equal to twice the range of this spell.\nIf this spell has blindcasting, the burst can pass through walls.", 'damage')
             self.upgrades['dark_blink'] = (1, 4, "Dark Blink", "Blink deals [dark] damage in a [{radius}_tile:radius] burst upon arrival.\n The damage is equal to twice the range of this spell.\nIf this spell has blindcasting, the burst can pass through walls.", 'damage')
 
-    if cls is AngelSong:
-
-        def on_init(self):
-            self.name = "Sing"
-            self.radius = 5
-            self.heal = 1
-            self.range = 0
-
-        def get_description(self):
-            return "Living and holy allies are healed for %i HP. Undead, demon, and dark enemies take 2 fire and 2 holy damage." % self.heal
-
-        def cast_instant(self, x, y):
-            for unit in self.caster.level.get_units_in_ball(Point(x, y), self.get_stat('radius')):
-                if unit.is_player_controlled:
-                    continue
-                if (Tags.Living in unit.tags or Tags.Holy in unit.tags) and not are_hostile(unit, self.caster):
-                    unit.deal_damage(-self.heal, Tags.Heal, self)
-                if (Tags.Dark in unit.tags or Tags.Undead in unit.tags or Tags.Demon in unit.tags) and are_hostile(unit, self.caster):
-                    unit.deal_damage(2, Tags.Fire, self)
-                    unit.deal_damage(2, Tags.Holy, self)
-
-        def get_ai_target(self):
-            units = self.caster.level.get_units_in_ball(self.caster, self.get_stat('radius'))
-            for unit in units:
-                if unit.is_player_controlled:
-                    continue
-                if (Tags.Living in unit.tags or Tags.Holy in unit.tags) and not are_hostile(unit, self.caster) and unit.cur_hp < unit.max_hp:
-                    return self.caster
-                if (Tags.Undead in unit.tags or Tags.Demon in unit.tags or Tags.Dark in unit.tags) and are_hostile(unit, self.caster):
-                    return self.caster
-            return None
-
     if cls is AngelicChorus:
 
         def on_init(self):
@@ -2832,7 +2837,7 @@ def modify_class(cls):
         def get_description(self):
             return ("Summons a choir of [{num_summons}:num_summons] angelic singers.\n"
                     "The singers have [{minion_health}_HP:minion_health], [{shields}_SH:shields], and immunity to [fire] and [holy] damage.\n"
-                    "The angels can sing, dealing [2_fire:fire] and [2_holy:holy] damage to all [undead], [demon], and [dark] enemies in a [{radius}_tile:radius] radius. This damage is fixed, and cannot be increased using shrines, skills, or buffs.\n"
+                    "Each turn the angels automatically sing, dealing [2_fire:fire] and [2_holy:holy] damage to all [undead], [demon], and [dark] enemies in a [{radius}_tile:radius] radius. This damage is fixed, and cannot be increased using shrines, skills, or buffs.\n"
                     "[Living] and [holy] allies in the song's radius except the Wizard are healed for [{heal}_HP:heal].\n"
                     "The angels vanish after [{minion_duration}:minion_duration] turns.").format(**self.fmt_dict())
 
@@ -2848,17 +2853,12 @@ def modify_class(cls):
             hellfire_damage = self.get_stat("minion_damage", base=4)
             minion_range = self.get_stat("minion_range", base=4)
 
-
             for _ in range(self.get_stat('num_summons')):
-                angel = Unit()
+                angel = AngelicSinger()
                 angel.name = "Angelic Singer"
                 angel.max_hp = health
                 angel.shields = shields
-                
-                song = AngelSong()
-                song.heal = heal
-                song.radius = radius
-                angel.spells.append(song)
+                angel.buffs.append(AngelSongBuff(heal, radius))
 
                 angel.flying = True
                 angel.tags = [Tags.Holy]
@@ -2874,12 +2874,12 @@ def modify_class(cls):
                     cacophony = WailOfPain()
                     cacophony.damage = cacophony_damage
                     cacophony.radius = radius
-                    angel.spells.extend([cacophony, SimpleRangedAttack(name="Hellfire", damage=hellfire_damage, damage_type=Tags.Fire, range=minion_range)])
+                    angel.spells = [cacophony, SimpleRangedAttack(name="Hellfire", damage=hellfire_damage, damage_type=Tags.Fire, range=minion_range)]
 
                 angel.turns_to_death = duration
 
                 self.summon(angel, Point(x, y))
-                yield
+            yield
 
     if cls is Darkness:
 
@@ -7623,5 +7623,5 @@ def modify_class(cls):
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelSong, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, FaestoneBuff, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord, SummonSpiderQueen, DeathChill, DeathChillDebuff, ThornyPrisonSpell, SummonBlueLion, FlameGateBuff, FlameGateSpell]:
+for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, FaestoneBuff, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, SpiderSpawning, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord, SummonSpiderQueen, DeathChill, DeathChillDebuff, ThornyPrisonSpell, SummonBlueLion, FlameGateBuff, FlameGateSpell]:
     modify_class(cls)
