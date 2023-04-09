@@ -7136,12 +7136,14 @@ def modify_class(cls):
                         unit.remove_buff(buff)
 
         def do_teleports(self, evt):
-
             for unit in self.owner.level.get_units_in_ball(evt, self.get_stat("radius")):
                 if not are_hostile(unit, self.owner):
                     continue
                 unit.apply_buff(WarpLightningBuff())
+            yield
+            self.owner.level.queue_spell(zap(self, evt))
 
+        def zap(self, evt):
             warp_range = self.get_stat("range")
             damage = self.get_stat('damage')
             for unit in list(self.owner.level.units):
@@ -7153,7 +7155,7 @@ def modify_class(cls):
                     point = random.choice(points)
                     self.owner.level.act_move(unit, point.x, point.y, teleport=True)
                 unit.deal_damage(damage, Tags.Lightning, self)
-                yield
+            yield
 
     if cls is OrbLord:
 
