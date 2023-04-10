@@ -1781,7 +1781,7 @@ def modify_class(cls):
                 self.caster.level.show_effect(target.x, target.y, Tags.Translocation)
                 self.caster.level.act_move(target, target_point.x, target_point.y, teleport=True)
                 self.caster.level.show_effect(target.x, target.y, Tags.Translocation)
-                if shadow and not self.caster.level.get_unit_at(old.x, old.y):
+                if shadow:
                     ghost = GhostVoid()
                     apply_minion_bonuses(self, ghost)
                     self.summon(ghost, target=old)
