@@ -7118,7 +7118,7 @@ def modify_class(cls):
 
         def get_description(self):
             return ("Whenever you cast a [lightning] spell, all enemy units within [{radius}_tiles:radius] of the target are inflicted with Warp Lightning.\n"
-                    "Then teleport all enemies with Warp Lightning to random spaces [4_to_8_tiles:range] away and deal [{damage}_lightning:lightning] damage to them.\n"
+                    "Then teleport all enemies with Warp Lightning to random spaces up to [12_tiles:range] away and deal [{damage}_lightning:lightning] damage to them.\n"
                     "Warp Lightning is removed from all units before the beginning of your turn.").format(**self.fmt_dict())
 
         def on_pre_advance(self):
@@ -7140,11 +7140,7 @@ def modify_class(cls):
             for unit in list(self.owner.level.units):
                 if not are_hostile(unit, self.owner) or not unit.has_buff(WarpLightningBuff):
                     continue
-                points = self.owner.level.get_points_in_ball(evt.x, evt.y, 8)
-                points = [p for p in points if distance(p, self.owner) >= 4 and self.owner.level.can_stand(p.x, p.y, unit)]
-                if points:
-                    point = random.choice(points)
-                    self.owner.level.act_move(unit, point.x, point.y, teleport=True)
+                randomly_teleport(unit, 12)
                 unit.deal_damage(damage, Tags.Lightning, self)
             yield
 

@@ -586,6 +586,7 @@ Inferno Engines:
 Lightning Warp:
 - Now inflicts a Warp Lightning debuff on affected enemies, then deals damage to all enemies with Warp Lightning. This means that if Lightning Warp is triggered more than once in a turn, the initially affected enemies will be damaged every time the skill triggers, no matter where they're teleported to.
 - Damage now occurs even if the target is not teleported.
+- Max teleport range increased to 12 but no longer has a minimum teleport range. This means the teleport no longer fails if there are no empty tiles within minimum range.
 
 Scalespinner:
 - Now gives a minion additional resistance to bring it up to 100 if a minion has weakness to the triggering element.
