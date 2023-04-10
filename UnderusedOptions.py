@@ -357,7 +357,6 @@ class BasiliskArmorBuff(Buff):
         self.color = Tags.Nature.color
         self.petrify_duration = self.spell.get_stat("petrify_duration")
         self.thorns = self.spell.get_stat("thorns")
-        self.damage = self.spell.get_stat("damage", base=16)
         if self.spell.get_stat("stun"):
             self.debuff = Stun
         elif self.spell.get_stat("freeze"):
@@ -369,16 +368,17 @@ class BasiliskArmorBuff(Buff):
         self.global_triggers[EventOnSpellCast] = self.on_spell_cast
     
     def on_spell_cast(self, evt):
+        damage = self.spell.get_stat("damage", base=16)
         if are_hostile(evt.caster, self.owner) and evt.x == self.owner.x and evt.y == self.owner.y:
             evt.caster.apply_buff(self.debuff(), self.petrify_duration)
             if self.thorns:
-                evt.caster.deal_damage(self.damage, Tags.Poison, self.spell)
+                evt.caster.deal_damage(damage, Tags.Poison, self.spell)
                 if self.debuff is Stun:
-                    evt.caster.deal_damage(self.damage, Tags.Lightning, self.spell)
+                    evt.caster.deal_damage(damage, Tags.Lightning, self.spell)
                 elif self.debuff is FrozenBuff:
-                    evt.caster.deal_damage(self.damage, Tags.Ice, self.spell)
+                    evt.caster.deal_damage(damage, Tags.Ice, self.spell)
                 elif self.debuff is GlassPetrifyBuff:
-                    evt.caster.deal_damage(self.damage, Tags.Physical, self.spell)
+                    evt.caster.deal_damage(damage, Tags.Physical, self.spell)
 
 class DarknessBuff(Spells.DarknessBuff):
 
@@ -922,7 +922,6 @@ class FrostbiteBuff(Buff):
         self.asset = ["UnderusedOptions", "Statuses", "frostbite"]
         self.color = Tags.Dark.color
         self.buff_type = BUFF_TYPE_CURSE
-        self.damage = self.upgrade.get_stat("damage")
     
     def on_pre_advance(self):
         freeze = self.owner.get_buff(FrozenBuff)
@@ -930,7 +929,7 @@ class FrostbiteBuff(Buff):
             self.turns_left = max(self.turns_left, freeze.turns_left)
 
     def on_advance(self):
-        self.owner.deal_damage(self.damage, Tags.Dark, self.upgrade)
+        self.owner.deal_damage(self.upgrade.get_stat("damage"), Tags.Dark, self.upgrade)
 
 class HolyArmorBuff(Buff):
 
@@ -944,7 +943,6 @@ class HolyArmorBuff(Buff):
         self.color = Tags.Holy.color
         resist = self.spell.get_stat("resist")
         self.passed = True
-        self.damage = self.spell.get_stat("damage", base=18)
         for tag in [Tags.Fire, Tags.Lightning, Tags.Physical, Tags.Dark]:
             self.resists[tag] = resist
         if self.spell.get_stat("riposte"):
@@ -968,7 +966,7 @@ class HolyArmorBuff(Buff):
         for point in Bolt(self.owner.level, self.owner, target, find_clear=False):
             self.owner.level.show_effect(point.x, point.y, Tags.Holy, minor=True)
             yield
-        target.deal_damage(self.damage, Tags.Holy, self.spell)
+        target.deal_damage(self.spell.get_stat("damage", base=18), Tags.Holy, self.spell)
 
 class ConjureMemoriesBuff(Buff):
 
