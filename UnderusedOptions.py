@@ -7114,17 +7114,11 @@ def modify_class(cls):
             self.name = "Lightning Warp"
             self.level = 6
             self.radius = 3
-            self.range = 4
             self.tags = [Tags.Lightning, Tags.Translocation]
-
-        def fmt_dict(self):
-            stats = Upgrade.fmt_dict(self)
-            stats["double_range"] = self.get_stat("range")*2
-            return stats
 
         def get_description(self):
             return ("Whenever you cast a [lightning] spell, all enemy units within [{radius}_tiles:radius] of the target are inflicted with Warp Lightning.\n"
-                    "Then teleport all enemies with Warp Lightning to random spaces [{range}_to_{double_range}_tiles:range] away and deal [{damage}_lightning:lightning] damage to them.\n"
+                    "Then teleport all enemies with Warp Lightning to random spaces [4_to_8_tiles:range] away and deal [{damage}_lightning:lightning] damage to them.\n"
                     "Warp Lightning is removed from all units before the beginning of your turn.").format(**self.fmt_dict())
 
         def on_pre_advance(self):
@@ -7142,13 +7136,12 @@ def modify_class(cls):
             self.owner.level.queue_spell(zap(self, evt))
 
         def zap(self, evt):
-            warp_range = self.get_stat("range")
             damage = self.get_stat('damage')
             for unit in list(self.owner.level.units):
                 if not are_hostile(unit, self.owner) or not unit.has_buff(WarpLightningBuff):
                     continue
-                points = self.owner.level.get_points_in_ball(evt.x, evt.y, 2*warp_range)
-                points = [p for p in points if distance(p, self.owner) >= warp_range and self.owner.level.can_stand(p.x, p.y, unit)]
+                points = self.owner.level.get_points_in_ball(evt.x, evt.y, 8)
+                points = [p for p in points if distance(p, self.owner) >= 4 and self.owner.level.can_stand(p.x, p.y, unit)]
                 if points:
                     point = random.choice(points)
                     self.owner.level.act_move(unit, point.x, point.y, teleport=True)
