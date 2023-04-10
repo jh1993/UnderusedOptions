@@ -512,6 +512,9 @@ Arcane Accounting:
 - Now has a chance to trigger on every arcane spell cast, equal to the spell's percentage of missing charges. Cannot be triggered by spells with no max charges.
 - Arcane Credit now instead lasts 2 turns (starting from the next turn) with only 50% chance to refund 1 spell charge. Duration can be extended by Permanence.
 
+Arcane Shield:
+- SH limit increased to 2.
+
 Faestone:
 - Now counts as a unique minion for the purpose of Conjure Memories.
 - Using a mana potion now resurrects the faestone if it's dead.
@@ -562,6 +565,9 @@ Purestrike:
 - As per my No More Scams mod, no longer harms allies, and is based on damage pre-resistances.
 - Now has a grace period of 1 turn where a unit can be unshielded but still benefit. The grace period is fixed.
 - Cost increased to 6 SP.
+
+Righteous March:
+- Now also deals 1 fixed holy damage to all enemies in LoS of the target.
 
 Storm Caller:
 - Thunderstorm clouds now benefit doubly from damage bonuses.
