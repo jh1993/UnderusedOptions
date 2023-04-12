@@ -134,8 +134,9 @@ Basilisk Armor:
 - Glassifying Armor (2 SP): Basilisk Armor inflicts glassify instead of petrify. Only one armor upgrade allowed.
 
 Blinding Light:
-- Dark Units upgrade was superfluous and thus folded into the base spell.
+- Dark Units and damage upgrades were superfluous and thus folded into the base spell.
 - Safety (3 SP): No longer affects friendly units.
+- Searing Light (4 SP): Blinding Light now deals 1/7 of its normal damage to affected units that are not undead, demon, or dark, rounded up.
 
 Blink:
 - The damage upgrades now deal damage equal to the spell's range, and the bursts can pass through walls if the spell has blindcasting.
@@ -175,6 +176,7 @@ Earthquake:
 - Added a 3 SP +25% strikechance upgrade.
 
 Flame Burst:
+- Melting Flame upgrade now passes through walls and melts all walls in the affected area.
 - Bright Flame upgrade replaced by Phoenix Flame, which costs 4 SP and heals allies (except the wizard) instead of damaging them, and does not change the damage type. This makes it a natural extension of the base spell while providing additional healing with Pyrophilia, instead of changing the damage type to holy and losing out on all fire synergies.
 - Spreading Flame now counts as casting the spell once per charge consumed.
 

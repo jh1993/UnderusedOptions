@@ -2723,13 +2723,13 @@ def modify_class(cls):
             self.range = 0
             self.max_charges = 4
             self.duration = 4
-            self.damage = 5
+            self.damage = 14
 
             self.tags = [Tags.Holy, Tags.Sorcery]
             self.level = 3
-            self.upgrades['damage'] = (9, 4)
             self.upgrades['duration'] = (4, 2)
             self.upgrades["safety"] = (1, 3, "Safety", "No longer affects friendly units.")
+            self.upgrades['searing'] = (1, 4, "Searing Light", "Blinding Light now deals 1/7 of its normal damage to affected units that are not [undead], [demon], or [dark], rounded up.")
 
         def get_description(self):
             return ("[Blind] all units in line of sight of the caster for [{duration}_turns:duration].\n"
@@ -2744,12 +2744,15 @@ def modify_class(cls):
 
             duration = self.get_stat('duration')
             damage = self.get_stat('damage')
+            searing = self.get_stat("searing")
             for target in targets:
                 target.apply_buff(BlindBuff(), duration)
 
                 if not (Tags.Undead in target.tags or Tags.Demon in target.tags or Tags.Dark in target.tags):
-                    continue
-                target.deal_damage(damage, Tags.Holy, self)
+                    if searing:
+                        target.deal_damage(math.ceil(damage/7), Tags.Holy, self)
+                else:
+                    target.deal_damage(damage, Tags.Holy, self)
 
                 yield
 
@@ -3152,9 +3155,15 @@ def modify_class(cls):
             self.upgrades['damage'] = (15, 3)
             self.upgrades['max_charges'] = (3, 2)
 
-            self.upgrades['meltflame'] = (1, 4, "Melting Flame", "Melt walls adjacent to the blast", "flame")
+            self.upgrades['meltflame'] = (1, 4, "Melting Flame", "Flame Burst now passes through walls, and melts walls on affected tiles.", "flame")
             self.upgrades['healflame'] = (1, 4, "Phoenix Flame", "Flame Burst heals allied units instead of damaging them.\nThe wizard cannot be healed this way.", "flame")
             self.upgrades['spreadflame'] = (1, 7, "Spreading Flame", "Each cast of Flame Burst consumes all remaining charges, counting as casting the spell once per charge consumed.\nFor each charge consumed, Flame Burst gets +1 radius and +1 damage.\nSlain enemies create additional explosions with half radius and damage.", "flame")
+
+        def get_impacted_tiles(self, x, y):
+            radius = self.get_stat('radius')
+            if self.get_stat('spreadflame'):
+                radius += self.cur_charges
+            return [p for stage in Burst(self.caster.level, Point(x, y), radius, ignore_walls=self.get_stat("meltflame")) for p in stage]
 
         def cast(self, x, y, secondary=False, last_radius=None, last_damage=None):
 
@@ -3186,7 +3195,7 @@ def modify_class(cls):
             melt = self.get_stat("meltflame")
 
             stagenum = 0
-            for stage in Burst(self.caster.level, Point(x, y), radius):
+            for stage in Burst(self.caster.level, Point(x, y), radius, ignore_walls=melt):
                 stagenum += 1
 
                 for p in stage:
@@ -3204,20 +3213,14 @@ def modify_class(cls):
                             slain.append(unit)
 
                     if melt:
-                        for q in self.caster.level.get_points_in_ball(p.x, p.y, 1):
-                            if self.caster.level.tiles[q.x][q.y].is_wall():
-                                to_melt.add(q)
+                        if self.caster.level.tiles[p.x][p.y].is_wall():
+                            self.caster.level.make_floor(p.x, p.y)
                         
                 yield
 
             if self.get_stat('spreadflame'):
                 for unit in slain:
                     self.owner.level.queue_spell(self.cast(unit.x, unit.y, secondary=True, last_damage=damage, last_radius=radius))
-
-            if self.get_stat('meltflame'):
-                for p in to_melt:
-                    self.caster.level.make_floor(p.x, p.y)
-                    self.caster.level.show_effect(p.x, p.y, Tags.Fire)
 
     if cls is SummonFrostfireHydra:
 
