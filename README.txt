@@ -520,8 +520,9 @@ Arcane Shield:
 Faestone:
 - Now counts as a unique minion for the purpose of Conjure Memories.
 - Using a mana potion now resurrects the faestone if it's dead.
-- Now has 100% arcane and poison resistance.
+- Now has 100% arcane and poison resistance and is flying.
 - The arcane and nature spell effects have been combined into one that triggers for either tag, and now also makes the faestone immediately act once.
+- Can now swap places with your other minions when teleporting.
 
 Ghostfire:
 - Fire ghosts now have 100% dark resistance, to not anti-synergize with ghostfire tormentors.

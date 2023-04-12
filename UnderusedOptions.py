@@ -6532,8 +6532,9 @@ def modify_class(cls):
 
         def get_description(self):
             return ("Whenever you enter a new level, summon a Fae Stone nearby.\n"
-                    "The Fae Stone has [{minion_health}_HP:minion_health], and is stationary. It has a melee attack that deals [{minion_damage}_physical:physical] damage.\n"
+                    "The Fae Stone has [{minion_health}_HP:minion_health], and is flying and stationary. It has a melee attack that deals [{minion_damage}_physical:physical] damage.\n"
                     "Whenever you cast a [nature] or [arcane] spell, the Fae Stone heals for [10_HP:heal], gains [1_SH:shields], teleports near the target, and immediately acts once.\n"
+                    "The Fae Stone will always teleport next to the target if possible, and can swap places with your other minions.\n"
                     "If the Fae Stone is dead, using a mana potion will resurrect it.").format(**self.fmt_dict())
 
         def on_unit_added(self, evt):
@@ -6562,6 +6563,7 @@ def modify_class(cls):
             faestone.buffs.append(buff)
 
             faestone.stationary = True
+            faestone.flying = True
 
             faestone.resists[Tags.Physical] = 50
             faestone.resists[Tags.Fire] = 50
@@ -6586,9 +6588,28 @@ def modify_class(cls):
                 self.owner.level.queue_spell(self.teleport(evt))
 
         def teleport(self, target):
-            dest = self.owner.level.get_summon_point(target.x, target.y, radius_limit=4)
+            dest = None
+            if distance(self.owner, target) < 2:
+                dest = self.owner
+            else:
+                points = [p for p in self.owner.level.get_points_in_ball(target.x, target.y, 4) if not self.owner.level.tiles[p.x][p.y].is_wall()]
+                def can_swap(point):
+                    unit = self.owner.level.get_unit_at(point.x, point.y)
+                    if not unit or unit is self.owner:
+                        return True
+                    return not are_hostile(unit, self.owner) and not unit.is_player_controlled and self.owner.level.can_stand(self.owner.x, self.owner.y, unit, check_unit=False)
+                points = [p for p in points if can_swap(p)]
+                if points:
+                    random.shuffle(points)
+                    dest = min(points, key=lambda p: distance(p, target))
             if dest:
-                self.owner.level.act_move(self.owner, dest.x, dest.y, teleport=True)
+                if dest.x == self.owner.x and dest.y == self.owner.y:
+                    self.owner.level.event_manager.raise_event(EventOnMoved(self.owner, dest.x, dest.y, teleport=True), self.owner)
+                    self.owner.level.show_effect(dest.x, dest.y, Tags.Translocation)
+                else:
+                    self.owner.level.show_effect(self.owner.x, self.owner.y, Tags.Translocation)
+                    self.owner.level.act_move(self.owner, dest.x, dest.y, teleport=True, force_swap=True)
+                    self.owner.level.show_effect(self.owner.x, self.owner.y, Tags.Translocation)
             self.owner.add_shields(1)
             self.owner.deal_damage(-self.healing, Tags.Heal, self)
             self.owner.level.queue_spell(free_action(self))
