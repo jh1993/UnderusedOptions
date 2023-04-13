@@ -386,7 +386,7 @@ class DarknessBuff(Spells.DarknessBuff):
         self.spell = spell
         Spells.DarknessBuff.__init__(self)
         self.stack_type = STACK_REPLACE
-        self.horizon = spell.get_stat("horizon")
+        self.holy = spell.get_stat("holy")
         self.clinging = spell.get_stat("clinging")
         if spell.get_stat("echo"):
             self.global_triggers[EventOnDamaged] = self.on_damaged
@@ -394,8 +394,9 @@ class DarknessBuff(Spells.DarknessBuff):
     def effect_unit(self, unit):
         hostile = are_hostile(unit, self.owner)
         if Tags.Undead in unit.tags or Tags.Demon in unit.tags:
-            if not self.horizon or not hostile or random.random() < 2/distance(unit, self.owner):
-                return
+            if hostile and self.holy and self.owner.is_blind():
+                unit.deal_damage(2, Tags.Holy, self)
+            return
         if self.clinging and hostile:
             existing = unit.get_buff(BlindBuff)
             if existing:
@@ -2151,11 +2152,10 @@ def modify_class(cls):
             return Spell.get_impacted_tiles(self, x, y)
 
         def get_description(self):
-            return ("Curse units in a [{radius}_tile:radius] radius except the caster with the essence of undeath.\n"
-                    "Affected units become [undead] and lose [living].\n"
+            return ("Curse units in a [{radius}_tile:radius] radius except the caster to become [undead].\n"
                     "Affected units lose [{max_health_loss}%:damage] of their max HP.\n"
-                    "Affected units lose [100_holy:holy] resist.\n"
-                    "Affected units gain [100_dark:dark] resist.\n"
+                    "Affected units lose [100_holy:holy] resistance.\n"
+                    "Affected units gain [100_dark:dark] resistance.\n"
                     "Affected units suffer 100% healing penalty.").format(**self.fmt_dict())
 
         def cast(self, x, y):
@@ -2185,40 +2185,40 @@ def modify_class(cls):
             self.color = Tags.Undead.color
             self.name = "Hollow Flesh"
             self.asset = ['status', 'rot']
-            self.originally_living = False
             self.originally_undead = False
             self.stack_type = STACK_REPLACE
+            self.friendly = self.spell.get_stat("friendly")
+            self.mockery = self.spell.get_stat("mockery")
+            self.hp = 0
 
         def on_applied(self, owner):
-
-            self.hp = math.floor(self.owner.max_hp*self.spell.get_stat('max_health_loss')/100)
+            self.owner.level.queue_spell(self.modify_unit())
             self.resists[Tags.Dark] = 100
             self.resists[Tags.Holy] = -100
-
-            if self.spell.get_stat("friendly") and not are_hostile(self.owner, self.spell.caster):
-                if self.spell.get_stat("mockery"):
+            if self.friendly and self.buff_type == BUFF_TYPE_BLESS:
+                if self.mockery:
                     self.resists[Tags.Holy] = 0
-                self.owner.max_hp += self.hp
-                self.owner.deal_damage(-self.hp, Tags.Heal, self.spell)
                 self.resists[Tags.Poison] = 100
                 self.resists[Tags.Ice] = self.spell.get_stat('fire_vulnerability')
             else:
-                if self.spell.get_stat("mockery"):
+                if self.mockery:
                     self.resists[Tags.Dark] = 0
-                drain_max_hp(self.owner, self.hp)
                 self.resists[Tags.Fire] = -self.spell.get_stat('fire_vulnerability')
                 self.resists[Tags.Heal] = 100
-            
-            if Tags.Living in self.owner.tags:
-                self.owner.tags.remove(Tags.Living)
-                self.originally_living = True
+
+        def modify_unit(self):
+            self.hp = math.floor(self.owner.max_hp*self.spell.get_stat('max_health_loss')/100)
+
+            if self.friendly and self.buff_type == BUFF_TYPE_BLESS:
+                self.owner.max_hp += self.hp
+                self.owner.deal_damage(-self.hp, Tags.Heal, self.spell)
+            else:
+                drain_max_hp(self.owner, self.hp)
             if Tags.Undead in self.owner.tags:
                 self.originally_undead = True
             else:
                 self.owner.tags.append(Tags.Undead)
-
-        def on_unapplied(self):
-            self.owner.level.queue_spell(self.unmodify_unit())
+            yield
 
         def unmodify_unit(self):
             if self.buff_type == BUFF_TYPE_CURSE:
@@ -2227,8 +2227,6 @@ def modify_class(cls):
                 drain_max_hp(self.owner, self.hp)
             if not self.originally_undead and Tags.Undead in self.owner.tags:
                 self.owner.tags.remove(Tags.Undead)
-            if self.originally_living and Tags.Living not in self.owner.tags:
-                self.owner.tags.append(Tags.Living)
             yield
 
     if cls is VoidMaw:
@@ -2893,8 +2891,8 @@ def modify_class(cls):
             self.range = 0
 
             self.upgrades['duration'] = (3, 2)
-            self.upgrades["horizon"] = (1, 3, "Dark Horizon", "Hostile [demon] and [undead] units also have a chance to be [blinded] each turn.\nThe chance for this skill to fail is equal to 100% divided by half the distance between you and each enemy, up to 100%.")
             self.upgrades["clinging"] = (1, 4, "Clinging Darkness", "When affecting an enemy, this spell now inflicts [blind] for [2_turns:duration], which stacks in duration with pre-existing [blind] it has.")
+            self.upgrades["holy"] = (1, 4, "Holy Night", "While Darkness is active and you are [blind], [demon] and [undead] enemies take [2_holy:holy] damage each turn.\nThis damage is fixed, and cannot be increased using shrines, skills, or buffs.")
             self.upgrades["echo"] = (1, 6, "Dark Echoes", "While Darkness is active and you are [blind], whenever your [demon] and [undead] minions deal damage to an enemy, the target loses current HP equal to half of the damage dealt.")
 
         def cast_instant(self, x, y):

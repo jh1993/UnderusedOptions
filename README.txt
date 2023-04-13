@@ -73,6 +73,7 @@ Heavenly Blast:
 
 Hollow Flesh:
 - Instead of affecting a contiguous group of units, now affects all units in a 4-tile radius.
+- No longer removes living tag from affected units.
 - Max charges reduced to 6. Range increased to 9, and no longer requires line of sight.
 - Max charges upgrade replaced by a +3 radius upgrade for 3 SP.
 - Max HP loss upgrade increased to 3 SP due to affecting enemies more easily.
@@ -149,8 +150,8 @@ Choir of Angels:
 
 Darkness:
 - Max Charges upgrade removed.
-- Dark Horizon (3 SP): Hostile demon and undead units also have a chance to be blinded each turn. The chance for this skill to fail is equal to 100% divided by half the distance between you and each enemy, up to 100%.
 - Clinging Darkness (4 SP): When affecting an enemy, this spell now inflicts blind for 2 turns, which stacks in duration with pre-existing blind it has.
+- Holy Night (4 SP): While Darkness is active and you are blind, demon and undead enemies take 2 holy damage each turn. This damage is fixed, and cannot be increased using shrines, skills, or buffs.
 - Dark Echoes (6 SP): While Darkness is active and you are blind, whenever your demon and undead minions deal damage to an enemy, the target loses current HP equal to half of the damage dealt.
 
 Death Chill:
