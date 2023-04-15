@@ -93,9 +93,11 @@ Invoke Savagery:
 - Stampede (5 SP): If no melee targets are available, each ally will instead try to perform a charge attack with a range of 6 tiles. This attack does not stun.
 
 Magnetize:
+- Now counts as a single-target spell for the purpose of Mass Enchantment from my Missing Synergies mod.
 - Base radius and radius upgrade increased by 1 each.
 - Pull strength and duration upgrades reduced to 2 SP.
 - Universal Magnetism upgrade reduced to 3 SP.
+- Planar Magnetism (4 SP): Each turn, after pulling all enemies in its radius, a magnetized target teleports a random enemy outside of its radius into a random tile in its radius.
 
 Melt:
 - As per my No More Scams mod, debuffs are now permanent.
