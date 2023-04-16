@@ -154,7 +154,7 @@ Darkness:
 - Max Charges upgrade removed.
 - Clinging Darkness (4 SP): When affecting an enemy, this spell now inflicts blind for 2 turns, which stacks in duration with pre-existing blind it has.
 - Holy Night (4 SP): While Darkness is active and you are blind, demon and undead enemies take 2 holy damage each turn. This damage is fixed, and cannot be increased using shrines, skills, or buffs.
-- Dark Echoes (6 SP): While Darkness is active and you are blind, whenever your demon and undead minions deal damage to an enemy, the target loses current HP equal to half of the damage dealt.
+- Concealing Darkness (6 SP): While Darkness is active and you are blind, whenever you or one of your demon or undead minions is about to take damage it is not immune to, and is not shielded, it has a 50% chance to gain 1 SH.
 
 Death Chill:
 - Now counts as a single-target spell for the purpose of Mass Enchantment from my Missing Synergies mod.

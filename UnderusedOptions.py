@@ -388,8 +388,8 @@ class DarknessBuff(Spells.DarknessBuff):
         self.stack_type = STACK_REPLACE
         self.holy = spell.get_stat("holy")
         self.clinging = spell.get_stat("clinging")
-        if spell.get_stat("echo"):
-            self.global_triggers[EventOnDamaged] = self.on_damaged
+        if spell.get_stat("conceal"):
+            self.global_triggers[EventOnPreDamaged] = self.on_pre_damaged
 
     def effect_unit(self, unit):
         hostile = are_hostile(unit, self.owner)
@@ -397,22 +397,30 @@ class DarknessBuff(Spells.DarknessBuff):
             if hostile and self.holy and self.owner.is_blind():
                 unit.deal_damage(2, Tags.Holy, self)
             return
+        existing = unit.get_buff(BlindBuff)
         if self.clinging and hostile:
-            existing = unit.get_buff(BlindBuff)
             if existing:
                 existing.turns_left += 2
             else:
                 unit.apply_buff(BlindBuff(), 2)
         else:
-            unit.apply_buff(BlindBuff(), 1, prepend=unit is self.owner)
+            if existing and existing.turns_left == 1 and unit is self.owner:
+                unit.remove_buff(existing)
+            unit.apply_buff(BlindBuff(), 1)
     
-    def on_damaged(self, evt):
-        if not are_hostile(evt.unit, self.owner) or not self.owner.is_blind():
+    def on_pre_damaged(self, evt):
+        if evt.damage <= 0:
             return
-        if evt.source and evt.source.owner and (Tags.Undead in evt.source.owner.tags or Tags.Demon in evt.source.owner.tags) and not are_hostile(evt.source.owner, self.owner):
-            evt.unit.cur_hp -= evt.damage//2
-            if evt.unit.cur_hp <= 0:
-                evt.unit.kill()
+        if are_hostile(evt.unit, self.owner) or not self.owner.is_blind():
+            return
+        if evt.unit is not self.owner and Tags.Undead not in evt.unit.tags and Tags.Demon not in evt.unit.tags:
+            return
+        penetration = evt.penetration if hasattr(evt, "penetration") else 0
+        if evt.unit.resists[evt.damage_type] - penetration >= 100:
+            return
+        if evt.unit.shields or random.random() >= 0.5:
+            return
+        evt.unit.add_shields(1)
 
 class SpiritBindingBuff(Buff):
 
@@ -2931,7 +2939,7 @@ def modify_class(cls):
             self.upgrades['duration'] = (3, 2)
             self.upgrades["clinging"] = (1, 4, "Clinging Darkness", "When affecting an enemy, this spell now inflicts [blind] for [2_turns:duration], which stacks in duration with pre-existing [blind] it has.")
             self.upgrades["holy"] = (1, 4, "Holy Night", "While Darkness is active and you are [blind], [demon] and [undead] enemies take [2_holy:holy] damage each turn.\nThis damage is fixed, and cannot be increased using shrines, skills, or buffs.")
-            self.upgrades["echo"] = (1, 6, "Dark Echoes", "While Darkness is active and you are [blind], whenever your [demon] and [undead] minions deal damage to an enemy, the target loses current HP equal to half of the damage dealt.")
+            self.upgrades["conceal"] = (1, 6, "Concealing Darkness", "While Darkness is active and you are [blind], whenever you or one of your [demon] or [undead] minions is about to take damage it is not immune to, and is not shielded, it has a 50% chance to gain [1_SH:shields].")
 
         def cast_instant(self, x, y):
             self.caster.apply_buff(curr_module.DarknessBuff(self), self.get_stat('duration'))
