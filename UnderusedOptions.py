@@ -4498,7 +4498,7 @@ def modify_class(cls):
                 unit.apply_buff(curr_module.ConductanceBuff(self), self.get_stat("duration"))
 
         def get_description(self):
-            return ("The target enemy enemy loses [{resistance_debuff}_lightning:lightning] resistance.\n"
+            return ("The target enemy loses [{resistance_debuff}_lightning:lightning] resistance.\n"
                     "Whenever [lightning] damage is dealt to a target with conductance, there is a [{strikechance}%:strikechance] chance to redeal the raw incoming damage, before counting resistances, to another random enemy in a [{cascade_range}_tile:cascade_range] burst, and apply conductance to that enemy for the same duration as the remaining duration of conductance on the original target.\n"
                     "Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
 
