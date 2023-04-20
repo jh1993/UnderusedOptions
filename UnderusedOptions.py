@@ -761,16 +761,18 @@ class SightOfBloodBuff(Buff):
             random.choice(targets).apply_buff(SightOfBloodBuff(self.spell), self.turns_left)
 
 class SummonedStormDrakeBreath(StormBreath):
+
     def __init__(self, spell):
         StormBreath.__init__(self)
         self.damage = spell.get_stat("breath_damage")
         self.range = spell.get_stat("minion_range")
         self.strikechance = spell.get_stat("strikechance")/100
         self.surge = spell.get_stat("surge")
+
     def per_square_effect(self, x, y):
         if self.surge:
             existing = self.caster.level.tiles[x][y].cloud
-            if isinstance(existing, StormCloud):
+            if isinstance(existing, BlizzardCloud) or isinstance(existing, StormCloud):
                 self.caster.level.deal_damage(x, y, self.get_stat("damage"), Tags.Lightning, self)
                 if self.strikechance > 0.5 and random.random() < 0.5:
                     self.caster.level.deal_damage(x, y, self.get_stat("damage"), Tags.Lightning, self)
@@ -780,20 +782,23 @@ class SummonedStormDrakeBreath(StormBreath):
         self.caster.level.add_obj(cloud, x, y)
 
 class IcePhoenixFreeze(Upgrade):
+
     def on_init(self):
         self.name = "Freeze Chance"
         self.level = 4
         self.description = "All of the ice phoenix's [ice] damage will [freeze] enemies for [3_turns:duration]."
         self.global_triggers[EventOnDamaged] = self.on_damaged
+
     def on_damaged(self, evt):
         if not are_hostile(evt.unit, self.owner):
             return
         if evt.damage_type != Tags.Ice:
             return
-        if evt.source.owner and evt.source.owner.source is self.prereq:
+        if evt.source.owner and evt.source.owner.source is self.prereq and evt.source.owner.name == "Ice Phoenix":
             evt.unit.apply_buff(FrozenBuff(), 3)
 
 class IcePhoenixIcyJudgment(Upgrade):
+
     def on_init(self):
         self.name = "Icy Judgment"
         self.level = 5
@@ -805,14 +810,18 @@ class IcePhoenixIcyJudgment(Upgrade):
             return False
         if damage_type != Tags.Ice:
             return False
-        if source.owner and source.owner.source is self.prereq:
+        if source.owner and source.owner.source is self.prereq and source.owner.name == "Ice Phoenix":
             return True
         return False
     
     def on_pre_damaged(self, evt):
         if self.qualifies(evt.unit, evt.source, evt.damage_type):
-            evt.unit.deal_damage(evt.damage//2, Tags.Holy, evt.source)
+            self.owner.level.queue_spell(self.deal_damage(evt))
     
+    def deal_damage(self, evt):
+        evt.unit.deal_damage(evt.damage//2, Tags.Holy, evt.source)
+        yield
+
     # For my No More Scams mod
     def can_redeal(self, target, source, damage_type, already_checked):
         return self.qualifies(target, source, damage_type) and not is_immune(target, source, Tags.Holy, already_checked)
@@ -4320,7 +4329,7 @@ def modify_class(cls):
             self.upgrades['radius'] = (2, 3)
             self.upgrades['duration'] = (5, 2)
             self.upgrades['requires_los'] = (-1, 3, "Blindcasting", "Blizzard can be cast without line of sight")
-            self.upgrades["hailstorm"] = (1, 6, "Hailstorm", "If an affected tile already has a blizzard cloud, the unit on that tile is dealt [ice] damage equal to twice the damage of this spell, and [frozen:freeze] for [1_turn:duration].")
+            self.upgrades["hailstorm"] = (1, 6, "Hailstorm", "If an affected tile already has a blizzard or thunderstorm cloud, the unit on that tile is dealt [ice] damage equal to twice the damage of this spell, and [frozen:freeze] for [1_turn:duration].")
 
         def cast(self, x, y):
             duration = self.get_stat('duration')
@@ -4330,7 +4339,7 @@ def modify_class(cls):
                 for p in stage:
                     if hailstorm:
                         existing = self.caster.level.tiles[p.x][p.y].cloud
-                        if isinstance(existing, BlizzardCloud):
+                        if isinstance(existing, BlizzardCloud) or isinstance(existing, StormCloud):
                             self.caster.level.deal_damage(p.x, p.y, damage*2, Tags.Ice, self)
                             unit = self.caster.level.get_unit_at(p.x, p.y)
                             if unit:
@@ -4797,7 +4806,7 @@ def modify_class(cls):
             self.upgrades['requires_los'] = (-1, 3, "Blindcasting", "Lightning Storm can be cast without line of sight")
             self.upgrades['radius'] = (2, 2)
             self.upgrades['damage'] = 7
-            self.upgrades["twice"] = (1, 5, "Strike Twice", "If an affected tile already has a thunderstorm cloud, the unit on that tile is dealt [lightning] damage equal to the damage of this spell.\nIf you have the Strikechance upgrade, there is a 50% chance to deal damage again.")
+            self.upgrades["twice"] = (1, 5, "Strike Twice", "If an affected tile already has a blizzard or thunderstorm cloud, the unit on that tile is dealt [lightning] damage equal to the damage of this spell.\nIf you have the Strikechance upgrade, there is a 50% chance to deal damage again.")
 
             self.tags = [Tags.Lightning, Tags.Nature, Tags.Enchantment]
             self.level = 4
@@ -4811,7 +4820,7 @@ def modify_class(cls):
                 for p in stage:
                     if twice:
                         existing = self.caster.level.tiles[p.x][p.y].cloud
-                        if isinstance(existing, StormCloud):
+                        if isinstance(existing, BlizzardCloud) or isinstance(existing, StormCloud):
                             self.caster.level.deal_damage(p.x, p.y, damage, Tags.Lightning, self)
                             if strikechance > 0.5 and random.random() < 0.5:
                                 self.caster.level.deal_damage(p.x, p.y, damage, Tags.Lightning, self)
@@ -5198,7 +5207,7 @@ def modify_class(cls):
             self.range = 0
 
             self.upgrades['duration'] = (2, 3)
-            self.upgrades['clouds'] = (1, 2, "Cloud Nova", "The nova leaves storm clouds and blizzards behind")
+            self.upgrades['clouds'] = (1, 4, "Cloud Nova", "The nova leaves storm clouds and blizzards behind, chosen at random per tile.\nIf a tile already contains a blizzard cloud, [lightning] damage is dealt to that tile again.\nIf a tile already contains a thunderstorm cloud, [ice] damage is dealt to that tile again.")
             self.upgrades['radius'] = (2, 3)
 
         def get_description(self):
@@ -5226,6 +5235,11 @@ def modify_class(cls):
                         if lightning_dealt:
                             unit.apply_buff(Stun(), duration)
                     if clouds:
+                        existing = self.caster.level.tiles[p.x][p.y].cloud
+                        if isinstance(existing, BlizzardCloud):
+                            self.caster.level.deal_damage(p.x, p.y, damage, Tags.Lightning, self)
+                        elif isinstance(existing, StormCloud):
+                            self.caster.level.deal_damage(p.x, p.y, damage, Tags.Ice, self)
                         if random.choice([True, False]):
                             cloud = BlizzardCloud(self.caster)
                             cloud.damage += damage_bonus
@@ -5252,7 +5266,7 @@ def modify_class(cls):
             self.strikechance = 50
             self.upgrades['minion_health'] = (25, 2)
             self.upgrades["strikechance"] = (25, 2)
-            self.upgrades["surge"] = (1, 3, "Cloud Surge", "If an affected tile already has a thunderstorm cloud, the unit on that tile is dealt [lightning] damage equal to the storm drake's breath damage.\nIf you have the Strikechance upgrade, there is a 50% chance to deal damage again.")
+            self.upgrades["surge"] = (1, 3, "Cloud Surge", "If an affected tile already has a blizzard or thunderstorm cloud, the unit on that tile is dealt [lightning] damage equal to the storm drake's breath damage.\nIf you have the Strikechance upgrade, there is a 50% chance to deal damage again.")
             self.upgrades['dragon_mage'] = (1, 5, "Dragon Mage", "Summoned Storm Drakes can cast Lightning Bolt with a 3 turn cooldown.\nThis Lightning Bolt gains all of your upgrades and bonuses.")
         
             self.must_target_empty = True

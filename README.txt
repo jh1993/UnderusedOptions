@@ -281,7 +281,7 @@ Void Orb:
 - Void Walk upgrade affects twice the radius, and no longer turns chasms into floors; the teleport fails if the orb is on a chasm but the explosion still happens. Cost increased to 3 SP.
 
 Blizzard:
-- Hailstorm (6 SP): If an affected tile already has a blizzard cloud, the unit on that tile is dealt ice damage equal to twice the damage of this spell, and frozen for 1 turn.
+- Hailstorm (6 SP): If an affected tile already has a blizzard or thunderstorm cloud, the unit on that tile is dealt ice damage equal to twice the damage of this spell, and frozen for 1 turn.
 
 Bone Barrage:
 - Now no longer requires line of sight.
@@ -341,7 +341,7 @@ Lightning Form:
 - Ice Infusion (4 SP): Now also gives 100 ice resistance and functions with ice spells.
 
 Lightning Storm:
-- Strike Twice (5 SP): If an affected tile already has a thunderstorm cloud, the unit on that tile is dealt lightning damage equal to the damage of this spell. If you have the Strikechance upgrade, there is a 50% chance to deal damage again.
+- Strike Twice (5 SP): If an affected tile already has a blizzard or thunderstorm cloud, the unit on that tile is dealt lightning damage equal to the damage of this spell. If you have the Strikechance upgrade, there is a 50% chance to deal damage again.
 
 Orb Control:
 - Max Charges (4 SP): +9 max charges.
@@ -382,12 +382,13 @@ Siphon Shields:
 
 Storm Burst:
 - Damage is halved but now deals both ice and lightning damage.
-- Cloud Nova chooses cloud type randomly. The clouds now benefit from damage and duration bonuses; thunderstorm clouds benefit doubly from damage.
+- Cloud Nova now chooses cloud type randomly. The clouds now benefit from damage and duration bonuses; thunderstorm clouds benefit doubly from damage.
+- Cloud Nova increased to 4 SP, and now deals lightning damage to tiles containing blizzard clouds, and ice damage to tiles containing thunderstorm clouds.
 
 Storm Drake:
 - Drake Swap and Cloudform upgrades removed.
 - Strikechance (2 SP): +25% strikechance.
-- Cloud Surge (3 SP): If an affected tile already has a thunderstorm cloud, the unit on that tile is dealt lightning damage equal to the storm drake's breath damage. If you have the Strikechance upgrade, there is a 50% chance to deal damage again.
+- Cloud Surge (3 SP): If an affected tile already has a blizzard or thunderstorm cloud, the unit on that tile is dealt lightning damage equal to the storm drake's breath damage. If you have the Strikechance upgrade, there is a 50% chance to deal damage again.
 
 Void Drake:
 - Shields upgrade replaced by Shield Regen (3 SP): The Void Drake gains 1 SH every 3 turns, to a max of 2 SH.
