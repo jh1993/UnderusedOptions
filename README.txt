@@ -43,7 +43,7 @@ Chaos Barrage:
 - Chaos Siege (5 SP): Chaos Barrage becomes a channeled spell. Each turn you channel this spell, you randomly take 4 fire, 4 lightning, or 4 physical damage per siege stack you have, and gain a siege stack, which causes Chaos Barrage to fire 2 more shards. Siege stacks are lost when you stop channeling, or if you cast this spell manually again. If you never channel beyond the initial cast, you will never take damage from this upgrade.
 
 Disperse:
-- Quantum Shadow (6 SP): Summon a void ghost in the former location of each unit teleported away. These void ghosts cannot be affected by this spell.
+- Phantom Zone (6 SP): Summon a void ghost in the former location of each unit teleported away. These void ghosts cannot be affected by this spell.
 
 Eye of Fire:
 - Eye of Blasting (3 SP): On hit, Eye of Fire also deals damage to all enemies adjacent to the target.

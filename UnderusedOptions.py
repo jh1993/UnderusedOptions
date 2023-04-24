@@ -1772,10 +1772,10 @@ def modify_class(cls):
 
             self.upgrades['radius'] = (2, 2)
             self.upgrades['max_charges'] = (10, 2)
-            self.upgrades["shadow"] = (1, 6, "Quantum Shadow", "Summon a void ghost in the former location of each unit teleported away.\nThese void ghosts cannot be affected by this spell.")
+            self.upgrades["phantom"] = (1, 6, "Phantom Zone", "Summon a void ghost in the former location of each unit teleported away.\nThese void ghosts cannot be affected by this spell.")
 
         def cast(self, x, y):
-            shadow = self.get_stat("shadow")
+            phantom = self.get_stat("phantom")
             for p in self.caster.level.get_units_in_ball(Point(x, y), self.get_stat('radius')):
                 target = self.caster.level.get_unit_at(p.x, p.y)
 
@@ -1797,7 +1797,7 @@ def modify_class(cls):
                 self.caster.level.show_effect(target.x, target.y, Tags.Translocation)
                 self.caster.level.act_move(target, target_point.x, target_point.y, teleport=True)
                 self.caster.level.show_effect(target.x, target.y, Tags.Translocation)
-                if shadow:
+                if phantom:
                     ghost = GhostVoid()
                     apply_minion_bonuses(self, ghost)
                     self.summon(ghost, target=old)
