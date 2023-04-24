@@ -538,9 +538,6 @@ Hibernation:
 Holy Water:
 - Affected allies also deal 2 holy or ice damage once to all enemies in a radius equal to the number of SH they have, even if their SH are maxed out. Holy damage from this skill cannot trigger itself. Cost increased to 5 SP.
 
-Spider Spawning:
-- Now also gives newly-summoned spider minions +100 poison resistance.
-
 Unholy Alliance:
 - Now retroactively applies to already summoned minions, including when a minion's tags change.
 - Demon and undead minions gain 100% holy resistance.
