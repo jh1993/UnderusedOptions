@@ -395,6 +395,7 @@ Void Drake:
 - Essence Drake upgrade replaced by Essence Breath (4 SP): The Void Drake's breath no longer damages allies, and instead increases temporary allies' remaining durations by 1 turn.
 
 Wall of Ice:
+- Thawing Remnant (4 SP): When an ice elemental dies, it behaves as if it is unfrozen by fire damage, triggering all effects that are normally triggered by such events.
 - Forceful Construction (4 SP): "Wall of Ice no longer requires line of sight to cast. Wall and chasm tiles in the affected area are converted to floor tiles before summoning the ice elementals. Units in the affected area take 22 ice damage and are frozen for 3 turns. If a unit is killed then an ice elemental is summoned in its tile.
 
 Watcher Form:

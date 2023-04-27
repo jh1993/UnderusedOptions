@@ -1084,6 +1084,18 @@ class IceWallForcefulConstruction(Upgrade):
     def get_description(self):
         return "Wall of Ice no longer requires line of sight to cast.\nWall and chasm tiles in the affected area are converted to floor tiles before summoning the ice elementals.\nUnits in the affected area take [%i_ice:ice] damage and are [frozen] for [%i_turns:duration]. If a unit is killed then an ice elemental is summoned in its tile." % (self.prereq.get_stat("damage", base=22), self.prereq.get_stat("duration", base=3))
 
+class ThawingRemnantBuff(Buff):
+
+    def on_init(self):
+        self.owner_triggers[EventOnDeath] = self.on_death
+    
+    def on_death(self, evt):
+        freeze = FrozenBuff()
+        freeze.turns_left = 0
+        freeze.break_dtype = Tags.Fire
+        self.owner.level.event_manager.raise_event(EventOnUnfrozen(self.owner, Tags.Fire), self.owner)
+        self.owner.level.event_manager.raise_event(EventOnBuffRemove(freeze, self.owner), self.owner)
+
 class InfernoCannonBlast(SimpleRangedAttack):
 
     def __init__(self, damage, range, radius, heal, demo):
@@ -5311,6 +5323,7 @@ def modify_class(cls):
             self.upgrades['radius'] = (1, 2)
             self.upgrades['minion_range'] = (3, 3)
             self.upgrades['minion_damage'] = (5, 3)
+            self.upgrades["thaw"] = (1, 4, "Thawing Remnant", "When an ice elemental dies, it behaves as if it is unfrozen by [fire] damage, triggering all effects that are normally triggered by such events.")
             self.add_upgrade(IceWallForcefulConstruction())
 
         def get_impacted_tiles(self, x, y): 
@@ -5328,6 +5341,7 @@ def modify_class(cls):
             forceful = self.get_stat("forceful")
             damage = self.get_stat("damage", base=22)
             duration = self.get_stat("duration", base=3)
+            thaw = self.get_stat("thaw")
 
             for p in self.get_impacted_tiles(x, y):
                 elemental = Unit()
@@ -5345,6 +5359,8 @@ def modify_class(cls):
                 elemental.resists[Tags.Ice] = 100
                 
                 elemental.turns_to_death = minion_duration
+                if thaw:
+                    elemental.buffs = [ThawingRemnantBuff()]
 
                 if forceful:
                     self.caster.level.make_floor(p.x, p.y)
