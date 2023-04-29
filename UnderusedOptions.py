@@ -5423,7 +5423,7 @@ def modify_class(cls):
                 if self.arcane:
                     if self.owner.level.tiles[p.x][p.y].is_wall():
                         self.owner.level.make_floor(p.x, p.y)
-                    self.owner.level.deal_damage(p.x, p.y, self.damage, Tags.Arcane, self.spell)
+                    self.owner.level.deal_damage(p.x, p.y, self.damage//2, Tags.Arcane, self.spell)
             yield
 
     if cls is WatcherFormSpell:
@@ -5441,7 +5441,7 @@ def modify_class(cls):
             self.upgrades['damage'] = (30, 3)
             self.upgrades['max_charges'] = (3, 2)
             self.upgrades['duration'] = 3
-            self.upgrades["arcane"] = (1, 6, "Void Watcher", "Watcher Form also grants [100_arcane:arcane] resist.\nWatcher Form now instead targets the furthest unit from the caster regardless of line of sight, melts through walls, and also deals [arcane] damage.")
+            self.upgrades["arcane"] = (1, 5, "Void Watcher", "Watcher Form also grants [100_arcane:arcane] resist.\nWatcher Form now instead targets the furthest unit from the caster regardless of line of sight, melts through walls, and also deals half [arcane] damage.")
             self.upgrades["instinct"] = (1, 6, "Watcher's Instinct", "While in Watcher Form, each turn you will automatically cast a random one of your [lightning] or [arcane] [sorcery] spells at a random valid enemy target, consuming charges as usual.")
 
         def cast_instant(self, x, y):
