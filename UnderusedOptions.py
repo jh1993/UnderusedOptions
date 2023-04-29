@@ -655,25 +655,10 @@ class LightningFormBuff(Buff):
         remove = not self.cast
         if self.cloud:
             cloud = self.owner.level.tiles[self.owner.x][self.owner.y].cloud
-            targets = [p for p in self.owner.level.get_points_in_ball(self.owner.x, self.owner.y, self.spell.get_stat("radius", base=3)) if not self.owner.level.tiles[p.x][p.y].is_wall() and not self.owner.level.tiles[p.x][p.y].cloud]
-            if targets:
-                target = random.choice(targets)
-            else:
-                target = None
             if isinstance(cloud, StormCloud):
                 remove = False
-                if target:
-                    new_cloud = StormCloud(self.owner)
-                    new_cloud.source = self.spell
-                    new_cloud.duration = self.spell.get_stat("duration", base=5)
-                    self.owner.level.add_obj(new_cloud, target.x, target.y)
             elif self.ice and isinstance(cloud, BlizzardCloud):
                 remove = False
-                if target:
-                    new_cloud = BlizzardCloud(self.owner)
-                    new_cloud.source = self.spell
-                    new_cloud.duration = self.spell.get_stat("duration", base=5)
-                    self.owner.level.add_obj(new_cloud, target.x, target.y)
         if remove:
             self.owner.remove_buff(self)
         self.cast = False
@@ -687,18 +672,37 @@ class LightningFormBuff(Buff):
         self.owner_triggers[EventOnPass] = self.on_pass
 
     def on_spell_cast(self, spell_cast_event):
-        if Tags.Lightning in spell_cast_event.spell.tags or (self.ice and Tags.Ice in spell_cast_event.spell.tags):
+        tags = []
+        if Tags.Lightning in spell_cast_event.spell.tags:
             self.cast = True
+            tags.append(Tags.Lightning)
+        if self.ice and Tags.Ice in spell_cast_event.spell.tags:
+            self.cast = True
+            tags.append(Tags.Ice)
+        if self.cast:
+            tag = random.choice(tags)
             if self.owner.level.can_move(self.owner, spell_cast_event.x, spell_cast_event.y, teleport=True):
-                self.owner.level.queue_spell(self.do_teleport(spell_cast_event.x, spell_cast_event.y))
+                self.owner.level.queue_spell(self.do_teleport(spell_cast_event.x, spell_cast_event.y, tag))
                     
     def on_pass(self, evt):
         if self.owner.has_buff(ChannelBuff):
             self.cast = True
 
-    def do_teleport(self, x, y):
+    def do_teleport(self, x, y, tag):
         if self.owner.level.can_move(self.owner, x, y, teleport=True):
-            yield self.owner.level.act_move(self.owner, x, y, teleport=True)
+            self.owner.level.act_move(self.owner, x, y, teleport=True)
+        if not self.cloud:
+            return
+        if tag == Tags.Lightning:
+            cloud = StormCloud(self.owner)
+            cloud.damage += self.spell.get_stat("damage")*2
+        else:
+            cloud = BlizzardCloud(self.owner)
+            cloud.damage += self.spell.get_stat("damage")
+        cloud.source = self.spell
+        cloud.duration = self.spell.get_stat("duration", base=5)
+        self.owner.level.add_obj(cloud, self.owner.x, self.owner.y)
+        yield
 
 class SightOfBloodBuff(Buff):
 
@@ -4792,12 +4796,7 @@ def modify_class(cls):
 
             self.upgrades['max_charges'] = (3, 2)
             self.upgrades["ice"] = (1, 4, "Ice Infusion", "Now also gives [100_ice:ice] resistance and functions with [ice] spells.")
-            self.upgrades["cloud"] = (1, 3, "Cloud Form", "When inside a thunderstorm cloud, Lightning Form will not run out, and you will automatically generate a thunderstorm cloud within [{radius}_tiles:radius] every turn.\nIf you have Ice Infusion, this upgrade also works with blizzard clouds.")
-
-        def fmt_dict(self):
-            stats = Spell.fmt_dict(self)
-            stats["radius"] = self.get_stat("radius", base=3)
-            return stats
+            self.upgrades["cloud"] = (1, 3, "Cloud Form", "When inside a thunderstorm cloud, Lightning Form will not run out, and you will automatically generate a thunderstorm cloud on your own tile after teleporting when you cast a [lightning] spell.\nIf you have Ice Infusion, this upgrade also works with blizzard clouds.")
 
         def cast(self, x, y):
             self.caster.apply_buff(curr_module.LightningFormBuff(self))

@@ -337,7 +337,7 @@ Ice Drake:
 
 Lightning Form:
 - Is now also a translocation spell.
-- Cloud Form (3 SP): When inside a thunderstorm cloud, Lightning Form will not run out, and you will automatically generate a thunderstorm cloud within 3 tiles every turn. If you have Ice Infusion, this upgrade also works with blizzard clouds.
+- Cloud Form (3 SP): When inside a thunderstorm cloud, Lightning Form will not run out, and you will automatically generate a thunderstorm cloud on your own tile after teleporting when you cast a lightning spell. If you have Ice Infusion, this upgrade also works with blizzard clouds.
 - Ice Infusion (4 SP): Now also gives 100 ice resistance and functions with ice spells.
 
 Lightning Storm:
