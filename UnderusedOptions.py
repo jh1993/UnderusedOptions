@@ -904,17 +904,20 @@ class SlimeFormAdvancedSlimes(Upgrade):
         return False
 
 class UnholyAllianceHolyBuff(Buff):
+
     def on_init(self):
         self.buff_type = BUFF_TYPE_PASSIVE
         self.global_bonuses["damage"] = 7
 
 class UnholyAllianceUnholyBuff(Buff):
+
     def on_init(self):
         self.buff_type = BUFF_TYPE_PASSIVE
         self.global_bonuses["damage"] = 7
         self.resists[Tags.Holy] = 100
 
 class WhiteFlameDebuff(Buff):
+
     def on_init(self):
         self.name = "White Flame"
         self.color = Tags.Fire.color
@@ -922,16 +925,11 @@ class WhiteFlameDebuff(Buff):
         self.resists[Tags.Fire] = -100
 
 class PureGraceBuff(Buff):
+
     def on_init(self):
         self.show_effect = False
-    def on_applied(self, owner):
-        if self.owner.team == TEAM_PLAYER:
-            self.name = "Pure Grace"
-        else:
-            self.name = "Pure Penance"
-            self.buff_type = BUFF_TYPE_CURSE
+        self.name = "Pure Grace"
         self.color = Tags.Holy.color
-        self.description = "All physical damage to the wizard's enemies will be redealt as half holy and half arcane."
 
 class FrostbiteBuff(Buff):
 
@@ -7041,6 +7039,10 @@ def modify_class(cls):
         def on_advance(self):
             for unit in self.owner.level.units:
                 if unit.shields > 0:
+                    buff = PureGraceBuff()
+                    if are_hostile(unit, self.owner):
+                        buff.buff_type = BUFF_TYPE_CURSE
+                        buff.name = "Pure Penance"
                     unit.apply_buff(PureGraceBuff(), 1)
         
         def get_description(self):
