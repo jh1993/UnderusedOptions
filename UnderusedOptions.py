@@ -7723,9 +7723,94 @@ def modify_class(cls):
                     u.deal_damage(1, Tags.Holy, self)
             yield
 
+    if cls is PlagueOfFilth:
+
+        def on_init(self):
+
+            self.tags = [Tags.Nature, Tags.Dark, Tags.Conjuration]
+            self.name = "Plague of Filth"
+            self.minion_health = 12
+            self.minion_damage = 2
+            self.minion_range = 4
+
+            self.minion_duration = 7
+            self.num_summons = 2
+
+            self.max_channel = 15
+
+            self.level = 3
+            self.max_charges = 5
+
+            self.upgrades['num_summons'] = (2, 4)
+            self.upgrades['minion_duration'] = (4, 3)
+            self.upgrades['minion_damage'] = (3, 3)
+            self.upgrades['max_channel'] = (25, 1)
+            self.upgrades["fire"] = (1, 7, "Fiery Vermin", "Instead summon flame toads and fire fly swarms, which are [fire] minions.\nFlame toads have more HP, damage, and range, and can no longer pull enemies, but instead shoot fireballs that deal [fire] damage in a [1_tile:radius] burst.\nFire fly swarms have their melee attacks replaced by ranged attacks dealing [fire] damage.", "vermin")
+            self.upgrades["arcane"] = (1, 7, "Void Vermin", "Instead summon void toads and brain fly swarms, which are [arcane] minions.\nVoid toads have more HP, damage, and range, and their pull attacks are now beams that deal [arcane] damage and melt through walls.\nBrain flies' melee attacks deal [arcane] damage and increase the cooldown of a random one of the target's abilities by [1_turn:cooldown] if possible (does not work on units that can gain clarity); otherwise the target takes the same damage again.", "vermin")
+
+        def cast(self, x, y, channel_cast=False):
+
+            if not channel_cast:
+                self.caster.apply_buff(ChannelBuff(self.cast, Point(x, y)), self.get_stat('max_channel'))
+                return
+
+            damage_bonus = self.get_stat('minion_damage', base=0)
+            health_bonus = self.get_stat('minion_health', base=0)
+            range_bonus = self.get_stat("minion_range", base=0)
+            duration = self.get_stat('minion_duration')
+            fire = self.get_stat("fire")
+            arcane = self.get_stat("arcane")
+
+            for _ in range(self.get_stat('num_summons')):
+
+                if random.random() < .5:
+                    if fire:
+                        unit = FlameToad()
+                    elif arcane:
+                        unit = VoidToad()
+                    else:
+                        unit = HornedToad()
+                    unit.max_hp += health_bonus
+                    for s in unit.spells:
+                        if hasattr(s, 'damage'):
+                            s.damage += damage_bonus
+                        if s.range >= 2:
+                            s.range += range_bonus
+                
+                else:
+                    if fire:
+                        unit = FireFlies()
+                    elif arcane:
+                        unit = BrainFlies()
+                        melee = unit.spells[0]
+                        def increase_cooldown(caster, target):
+                            spells = [s for s in target.spells if s.cool_down and target.cool_downs.get(s, 0) < s.cool_down]
+                            if target.gets_clarity:
+                                spells = []
+                            if not spells:
+                                target.deal_damage(melee.get_stat("damage"), melee.damage_type, melee)
+                                return
+                            spell = random.choice(spells)
+                            cooldown = target.cool_downs.get(spell, 0)
+                            target.cool_downs[spell] = cooldown + 1
+                        melee.onhit = increase_cooldown
+                        melee.description = "On hit, increase a random ability cooldown by 1 turn if possible; otherwise deal damage again."
+                    else:
+                        unit = FlyCloud()
+                    unit.max_hp += health_bonus//2
+                    for s in unit.spells:
+                        if hasattr(s, 'damage'):
+                            s.damage += damage_bonus//2
+                        if s.range >= 2:
+                            s.range += range_bonus
+                
+                unit.turns_to_death = duration
+                self.summon(unit, Point(x, y), radius=5)
+            yield
+
     for func_name, func in [(key, value) for key, value in locals().items() if callable(value)]:
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, FaestoneBuff, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord, SummonSpiderQueen, DeathChill, DeathChillDebuff, ThornyPrisonSpell, SummonBlueLion, FlameGateBuff, FlameGateSpell, ArcaneShield, MarchOfTheRighteous, MagnetizeBuff]:
+for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, FaestoneBuff, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord, SummonSpiderQueen, DeathChill, DeathChillDebuff, ThornyPrisonSpell, SummonBlueLion, FlameGateBuff, FlameGateSpell, ArcaneShield, MarchOfTheRighteous, MagnetizeBuff, PlagueOfFilth]:
     modify_class(cls)

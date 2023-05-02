@@ -242,6 +242,9 @@ Pain Mirror:
 - Masochism (3 SP): Damage inflicted by allies will cause Pain Mirror to deal double damage.
 - Holy Martyr (6 SP): Dark damage dealt by Pain Mirror that is resisted will be redealt as holy damage.
 
+Plague of Filth:
+- Serpent Plague replaced by Fiery Vermin and Void Vermin, both of which cost 7 SP and are incompatible with each other, making the spell summon flame toads and fire fly swarms or void toads and brain fly swarms respectively. Brain fly swarms' attacks are changed to increasing one of the target's ability cooldowns by 1 if possible (doesn't work on units that can gain clarity), and otherwise deal damage again.
+
 Prison of Thorns:
 - Ice thorns upgrade no longer removes the thorns' melee attacks, which will be used against ice-immune enemies.
 
