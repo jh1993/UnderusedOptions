@@ -4244,11 +4244,15 @@ def modify_class(cls):
 
             self.upgrades['range'] = (5, 2)
             self.upgrades['minion_damage'] = (9, 3)
-            self.upgrades['orb_walk'] = (1, 3, "Void Walk", "Targeting an existing Void Orb with another detonates it, dealing its damage and melting walls in a radius equal to twice the orb's radius.\nYou are then teleported to that location if possible.")
+            self.upgrades['orb_walk'] = (1, 3, "Void Walk", "Targeting an existing Void Orb with another detonates it, dealing its damage and melting walls in a radius equal to twice the orb's radius.\nYou are then teleported to that location if possible.\nThis has a chance to refund a charge of Void Orb, equal to the orb's remaining duration divided by maximum duration.")
             self.add_upgrade(VoidOrbRedGiant())
             self.upgrades["dark"] = (1, 5, "Black Hole", "Each turn, Void Orb pulls all nearby enemies [1_tile:range] toward itself before dealing damage; the pull range is three times the orb's radius.\nVoid Orb also deals [dark] damage.")
 
         def on_orb_walk(self, existing):
+
+            if random.random() < existing.turns_to_death/(self.get_stat("range") - 1):
+                self.cur_charges = min(self.cur_charges + 1, self.get_stat("max_charges"))
+
             # Burst
             x = existing.x
             y = existing.y
