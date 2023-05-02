@@ -9,7 +9,7 @@ from Consumables import *
 import mods.Bugfixes.Bugfixes
 import mods.NoMoreScams.NoMoreScams
 from mods.NoMoreScams.NoMoreScams import is_immune, FloatingEyeBuff, is_conj_skill_summon
-from mods.Bugfixes.Bugfixes import RemoveBuffOnPreAdvance, MinionBuffAura
+from mods.Bugfixes.Bugfixes import RemoveBuffOnPreAdvance, MinionBuffAura, drain_max_hp_kill, increase_cooldown
 
 import sys, math, random
 
@@ -7114,8 +7114,8 @@ def modify_class(cls):
         def get_description(self):
             return ("Begin each level accompanied by [{num_summons}:num_summons] bone knights and a bone archer, all of which have 1 reincarnation.\n"
                     "Bone knights have [{minion_health}_HP:minion_health], [1_SH:shields], [100_dark:dark] resist, and [50_ice:ice] resist.\n"
-                    "Bone knights have a melee attack which deals [{minion_damage}_dark:dark] damage and drains 2 max HP from [living] targets.\n"
-                    "The bone archer has a ranged attack with the same damage and [{minion_range}_range:minion_range], which drains 1 max HP from [living] targets.\n"
+                    "Bone knights have a melee attack which deals [{minion_damage}_dark:dark] damage and drains 2 max HP, instantly killing those with less; this counts as killing with [dark] damage.\n"
+                    "The bone archer has a ranged attack with the same damage and [{minion_range}_range:minion_range], which drains 1 max HP similarly.\n"
                     "Missing knights and archers are automatically replenished when you use a mana potion.").format(**self.fmt_dict())
 
         def on_unit_added(self, evt):
@@ -7142,12 +7142,20 @@ def modify_class(cls):
         def summon_knights(self, num):
             for _ in range(num):
                 unit = BoneKnight()
+                melee = unit.spells[0]
+                melee.onhit = lambda caster, target: drain_max_hp_kill(target, 2, melee)
+                melee.description = "Drains 2 max HP."
+                melee.can_redeal = lambda unit, already_checked: True
                 apply_minion_bonuses(self, unit)
                 unit.buffs.append(ReincarnationBuff(1))
                 self.summon(unit, target=self.owner, radius=5)
 
         def summon_archer(self):
             unit = BoneKnightArcher()
+            bow = unit.spells[0]
+            bow.onhit = lambda caster, target: drain_max_hp_kill(target, 1, bow)
+            bow.description = "Drains 1 max HP."
+            bow.can_redeal = lambda unit, already_checked: True
             apply_minion_bonuses(self, unit)
             unit.buffs.append(ReincarnationBuff(1))
             self.summon(unit, target=self.owner, radius=5)
@@ -7783,17 +7791,7 @@ def modify_class(cls):
                     elif arcane:
                         unit = BrainFlies()
                         melee = unit.spells[0]
-                        def increase_cooldown(caster, target):
-                            spells = [s for s in target.spells if s.cool_down and target.cool_downs.get(s, 0) < s.cool_down]
-                            if target.gets_clarity:
-                                spells = []
-                            if not spells:
-                                target.deal_damage(melee.get_stat("damage"), melee.damage_type, melee)
-                                return
-                            spell = random.choice(spells)
-                            cooldown = target.cool_downs.get(spell, 0)
-                            target.cool_downs[spell] = cooldown + 1
-                        melee.onhit = increase_cooldown
+                        melee.onhit = lambda caster, target: increase_cooldown(caster, target, melee)
                         melee.description = "On hit, increase a random ability cooldown by 1 turn if possible; otherwise deal damage again."
                     else:
                         unit = FlyCloud()
