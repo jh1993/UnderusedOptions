@@ -1790,8 +1790,7 @@ def modify_class(cls):
 
         def cast(self, x, y):
             phantom = self.get_stat("phantom")
-            for p in self.caster.level.get_units_in_ball(Point(x, y), self.get_stat('radius')):
-                target = self.caster.level.get_unit_at(p.x, p.y)
+            for target in self.caster.level.get_units_in_ball(Point(x, y), self.get_stat('radius')):
 
                 if target is self.caster or target.source is self:
                     continue
