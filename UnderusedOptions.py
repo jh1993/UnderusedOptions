@@ -1398,7 +1398,7 @@ def modify_class(cls):
             self.upgrades['damage'] = (12, 1)
             self.upgrades['max_charges'] = (10, 2)
             self.upgrades['minion_damage'] = (9, 3)
-            self.upgrades["soulfeedback"] = (1, 5, "Soul Feedback", "Death Bolt deals additional damage equal to twice the number of [undead], [demon], [holy], and [arcane] minions you have that are not summoned by itself.", "soul")
+            self.upgrades["soulfeedback"] = (1, 5, "Soul Feedback", "Death Bolt deals additional damage equal to 4 times the number of [undead], [demon], [holy], and [arcane] minions you have.", "soul")
             self.upgrades['soulbattery'] = (1, 7, "Soul Battery", "Death Bolt permenantly gains [1_damage:damage] whenever it slays a [living] target.", "soul")
 
             self.can_target_empty = False
@@ -1416,11 +1416,9 @@ def modify_class(cls):
                 for u in self.caster.level.units:
                     if are_hostile(u, self.owner):
                         continue
-                    if u.source is self:
-                        continue
                     if not [tag for tag in [Tags.Undead, Tags.Demon, Tags.Holy, Tags.Arcane] if tag in u.tags]:
                         continue
-                    damage += 2
+                    damage += 4
             unit.deal_damage(damage, Tags.Dark, self)
 
     if cls is FireballSpell:
