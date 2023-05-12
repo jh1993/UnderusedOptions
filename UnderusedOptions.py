@@ -3844,18 +3844,18 @@ def modify_class(cls):
             self.upgrades['duration'] = 15
             self.upgrades['max_charges'] = (4, 2)
 
-            self.upgrades['dark_dream'] = (1, 5, "Dark Dream", "Upon ending, summon an old witch for every 25 damage dealt by the aura. Each minion randomly lasts [{min_duration}_to_{max_duration}_turns:minion_duration].\nOld witches fly, have life-draining ranged attacks dealing [dark] damage, and can summon temporary ghosts.", "dream")
-            self.upgrades['electric_dream'] = (1, 5, "Electric Dream", "Upon ending, summon an aelf for every 25 damage dealt by the aura. Each minion randomly lasts [{min_duration}_to_{max_duration}_turns:minion_duration].\nAelves have melee attacks dealing [dark] damage, and weak but very long-ranged attacks dealing [lightning] damage.", "dream")
-            self.upgrades['fever_dream'] = (1, 5, "Fever Dream", "Upon ending, summon a flame rift for every 25 damage dealt by the aura. Each minion randomly lasts [{min_duration}_to_{max_duration}_turns:minion_duration].\nFlame rifts are stationary, randomly teleport, have ranged attacks dealing [fire] damage, and have a chance to summon fire bombers each turn.", "dream")
-            self.upgrades["dormancy"] = (1, 3, "Dormancy", "If there are no enemies left in a realm, Nightmare Aura will not decrease in remaining duration.\nThis allows an instance of the buff to persist from one realm to the next.")
+            self.upgrades['dark_dream'] = (1, 5, "Dark Dream", "Upon ending, summon an old witch for every 25 damage dealt by the aura for [{minion_duration}_turns:minion_duration].\nOld witches fly, have life-draining ranged attacks dealing [dark] damage, and can summon temporary ghosts.", "dream")
+            self.upgrades['electric_dream'] = (1, 5, "Electric Dream", "Upon ending, summon an aelf for every 25 damage dealt by the aura for [{minion_duration}_turns:minion_duration].\nAelves have melee attacks dealing [dark] damage, and weak but very long-ranged attacks dealing [lightning] damage.", "dream")
+            self.upgrades['fever_dream'] = (1, 5, "Fever Dream", "Upon ending, summon a flame rift for every 25 damage dealt by the aura for [{minion_duration}_turns:minion_duration].\nFlame rifts are stationary, randomly teleport, have ranged attacks dealing [fire] damage, and have a chance to summon fire bombers each turn.", "dream")
+            self.upgrades["master"] = (1, 4, "Dream Master", "Nightmare Aura now begins with [{dream_bonus}:damage] damage already stored in its damage pool, for the purpose of its Dream upgrades.\nThis amount benefits 10 times from the [damage] bonuses of this spell.")
 
             self.tags = [Tags.Enchantment, Tags.Dark, Tags.Arcane]
             self.level = 3
 
         def fmt_dict(self):
             stats = Spell.fmt_dict(self)
-            stats["min_duration"] = self.get_stat("minion_duration", base=4)
-            stats["max_duration"] = self.get_stat("minion_duration", base=13)
+            stats["minion_duration"] = self.get_stat("minion_duration", base=9)
+            stats["dream_bonus"] = self.get_stat("damage", base=20)*10
             return stats
 
     if cls is NightmareBuff:
@@ -3863,13 +3863,8 @@ def modify_class(cls):
         def __init__(self, spell):
             self.spell = spell
             DamageAuraBuff.__init__(self, damage=self.spell.aura_damage, radius=self.spell.get_stat('radius'), damage_type=[Tags.Arcane, Tags.Dark], friendly_fire=False)
-            self.dormancy = spell.get_stat("dormancy")
-
-        def on_advance(self):
-            if self.dormancy and all([unit.team == TEAM_PLAYER for unit in self.owner.level.units]):
-                self.turns_left += 1
-                return
-            DamageAuraBuff.on_advance(self)
+            if spell.get_stat("master"):
+                self.damage_dealt += spell.get_stat("damage", base=20)*10
 
         def on_unapplied(self):
             spawner = None
@@ -3885,7 +3880,7 @@ def modify_class(cls):
 
             for _ in range(self.damage_dealt//25):
                 unit = spawner()
-                unit.turns_to_death = random.randint(4, 13)
+                unit.turns_to_death = 9
                 apply_minion_bonuses(self.spell, unit)
                 self.spell.summon(unit, sort_dist=False, radius=self.radius)
 
@@ -5626,7 +5621,6 @@ def modify_class(cls):
             self.description = "Spells will cleave to nearby targets if they kill their main target"
             self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
             self.global_triggers[EventOnDeath] = lambda evt: on_death(self, evt)
-            self.cleaves = 0
             self.tried_cleaves = set()
 
         def on_spell_cast(self, evt):
@@ -5638,39 +5632,36 @@ def modify_class(cls):
         def on_death(self, evt):
             if not evt.damage_event or not evt.damage_event.source:
                 return
-            should_cleave = False
+            reach = self.spell.get_stat("reach")
+            indiscriminate = self.spell.get_stat("indiscriminate")
             for pair in list(self.tried_cleaves):
-                if pair[0] is evt.unit:
-                    if pair[1] is evt.damage_event.source:
-                        should_cleave = True
-                    self.tried_cleaves.discard(pair)
-            if not should_cleave:
-                return
-            if self.spell.get_stat("reach"):
-                self.owner.apply_buff(HungeringReachBuff(type(evt.damage_event.source)))
-            self.owner.level.queue_spell(self.effect(evt))
+                if pair[0] is not evt.unit:
+                    continue
+                if indiscriminate or pair[1] is evt.damage_event.source:
+                    if reach:
+                        self.owner.apply_buff(HungeringReachBuff(type(pair[1])))
+                    self.owner.level.queue_spell(self.effect(pair[1], pair[0]))
+                self.tried_cleaves.discard(pair)
         
-        def effect(self, evt):
+        def effect(self, spell, unit):
             def can_cleave(t):
-                if not self.owner.level.are_hostile(t, self.owner):
+                if not are_hostile(t, self.owner):
                     return False
-                if not evt.damage_event.source.can_cast(t.x, t.y):
+                if not spell.can_cast(t.x, t.y):
                     return False
-                if distance(t, evt.unit) > self.spell.get_stat('cascade_range'):
+                if distance(t, unit) > self.spell.get_stat('cascade_range'):
                     return False
                 return True
             cleave_targets = [u for u in self.owner.level.units if can_cleave(u)]
             if not cleave_targets:
                 return
             target = random.choice(cleave_targets)
-            for p in Bolt(self.owner.level, evt.unit, target):
+            for p in Bolt(self.owner.level, unit, target):
                 self.owner.level.show_effect(p.x, p.y, Tags.Dark, minor=True)
                 yield
-            self.cleaves += 1
-            self.owner.level.act_cast(self.owner, evt.damage_event.source, target.x, target.y, pay_costs=False)
+            self.owner.level.act_cast(self.owner, spell, target.x, target.y, pay_costs=False)
 
         def on_pre_advance(self):
-            self.cleaves = 0
             self.tried_cleaves = set()
             for buff in list(self.owner.buffs):
                 if isinstance(buff, HungeringReachBuff):
@@ -5682,9 +5673,7 @@ def modify_class(cls):
                     self.owner.remove_buff(buff)
 
         def on_advance(self):
-            if not self.spell.get_stat("patient") or random.random() >= 1/(1 + self.cleaves):
-                return
-            self.turns_left += 1
+            pass
 
     if cls is DeathCleaveSpell:
 
@@ -5694,8 +5683,8 @@ def modify_class(cls):
             self.upgrades['duration'] = (3, 3)
             self.upgrades['max_charges'] = (4, 2)
             self.upgrades['cascade_range'] = (3, 4)
-            self.upgrades["patient"] = (1, 3, "Patient Butcher", "Each turn, the remaining duration of Death Cleave has a chance to not decrease, equal to 100% divided by 1 plus the number of spells copied by Death Cleave that turn.\nThis resets before the beginning of your turn.")
             self.upgrades["reach"] = (1, 4, "Hungering Reach", "Each time your spell kills its primary target while Death Cleave is active, that spell gains a stacking range bonus of [2_tiles:range] until the beginning of your next turn.")
+            self.upgrades["indiscriminate"] = (1, 6, "Indiscriminate Slaughter", "Now whenever your spell's target dies for any reason before the start of your next turn, that spell will cleave from that target.\nIf you targeted the dead unit with the same spell multiple times in one turn, the spell will only cleave once.\nIf you targeted the dead unit with multiple different spells in one turn, all of them will cleave.")
             self.max_charges = 4
             self.cascade_range = 5
             self.range = 0
@@ -5703,7 +5692,7 @@ def modify_class(cls):
             self.tags = [Tags.Enchantment, Tags.Arcane, Tags.Dark]
 
         def get_description(self):
-            return ("Whenever a spell you cast kills its primary target before the start of your next turn, that spell is recast on a randomly selected nearby valid enemy target up to [{cascade_range}_tiles:cascade_range] away.\n"
+            return ("Whenever a spell you cast kills its primary target with damage before the start of your next turn, that spell is recast on a randomly selected nearby valid enemy target up to [{cascade_range}_tiles:cascade_range] away.\n"
                     "This process repeats until the target survives the spell, or there are no nearby valid targets.\n"
                     "Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
 

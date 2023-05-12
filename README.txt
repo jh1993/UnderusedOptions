@@ -233,8 +233,8 @@ Mystic Vision:
 - Vision Aura upgrade cost increased to 7 SP, but is now retroactive, automatically applying to all newly summoned minions.
 
 Nightmare Aura:
-- The dream upgrades are changed to only summon old witches, aelves, and flame rifts. Each dream upgrade summons a minion for every 25 damage dealt, which should result in roughly the same amount as before.
-- Dormancy (3 SP): If there are no enemies left in a realm, Nightmare Aura will not decrease in remaining duration. This allows an instance of the buff to persist from one realm to the next.
+- The dream upgrades are changed to only summon old witches, aelves, and flame rifts. Each dream upgrade summons a minion for 9 turns for every 25 damage dealt, which should result in roughly the same amount as before.
+- Dream Master (4 SP): Nightmare Aura now begins with 200 damage already stored in its damage pool, for the purpose of its Dream upgrades. This amount benefits 10 times from the damage bonuses of this spell.
 
 Pain Mirror:
 - Max Charges upgrade removed.
@@ -426,8 +426,8 @@ Chill Wind:
 Death Cleave:
 - Level reduced to 4.
 - Instead of working in sometimes unintuitive ways dependent on the game's internal spell queue that isn't visible to the player, a spell will now try to cleave as long as it kills its main target before the start of your next turn. This still works with channeling.
-- Patient Butcher (3 SP): Each turn, the remaining duration of Death Cleave has a chance to not decrease, equal to 100% divided by 1 plus the number of spells copied by Death Cleave that turn. This resets before the beginning of your turn.
 - Hungering Reach (4 SP): Each time your spell kills its primary target while Death Cleave is active, that spell gains a stacking range bonus of 2 tiles until the beginning of your next turn.
+- Indiscriminate Slaughter (6 SP): Now whenever your spell's target dies for any reason before the start of your next turn, that spell will cleave from that target. If you targeted the dead unit with the same spell multiple times in one turn, the spell will only cleave once. If you targeted the dead unit with multiple different spells in one turn, all of them will cleave.
 
 Fae Court:
 - Glass Faery cost reduced to 6. It's anti-synergistic with Cracklevoid so the cost shouldn't be that high.
