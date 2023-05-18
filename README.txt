@@ -150,6 +150,9 @@ Choir of Angels:
 - Fallen Choir (7 SP): The angels become demon units and gain 100 dark resistance. They gain a wailing attack with a cooldown of 7 turns that deals 7 dark damage to enemies in the same radius as their song, and an attack with 4 range that deals 4 fire damage. Unlike their song, these attacks benefit from bonuses to minion damage.
 - The angels now sing passively each turn instead of requiring to act, so the singing won't interfere with the new abilities they can get from Fallen Choir. Even if an angel has no active abilities, its AI will still approach enemies that can be harmed by its song.
 
+Combust Poison:
+- Spontaneous Combustion (6 SP): Whenever a poisoned enemy dies from any reason other than Combust Poison, it will now explode as if you cast Combust Poison. This has a chance to consume 1 charge from Combust Poison, equal to 100% divided by 1 plus the number of other poisoned enemies in the realm, and counts as casting Combust Poison once. If this upgrade tries but fails to consume a charge, the explosion will not occur.
+
 Darkness:
 - Max Charges upgrade removed.
 - Clinging Darkness (4 SP): When affecting an enemy, this spell now inflicts blind for 2 turns, which stacks in duration with pre-existing blind it has.

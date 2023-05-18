@@ -15,6 +15,37 @@ import sys, math, random
 
 curr_module = sys.modules[__name__]
 
+class SpontaneousCombustion(Upgrade):
+
+    def on_init(self):
+        self.name = "Spontaneous Combustion"
+        self.level = 6
+        self.description = "Whenever a [poisoned] enemy dies from any reason other than Combust Poison, it will now explode as if you cast Combust Poison.\nThis has a chance to consume 1 charge from Combust Poison, equal to 100% divided by 1 plus the number of other [poisoned] enemies in the realm, and counts as casting Combust Poison once.\nIf this upgrade tries but fails to consume a charge, the explosion will not occur."
+        self.global_triggers[EventOnDeath] = self.on_death
+    
+    def on_death(self, evt):
+        if not are_hostile(evt.unit, self.owner):
+            return
+        if evt.damage_event and evt.damage_event.source is self.prereq:
+            return
+        buff = evt.unit.get_buff(Poison)
+        if not buff:
+            return
+        if random.random() < 1/(1 + len([u for u in self.owner.level.units if are_hostile(u, self.owner) and u is not evt.unit and u.has_buff(Poison)])):
+            if not self.prereq.cur_charges:
+                return
+            self.prereq.cur_charges -= 1
+        self.owner.level.event_manager.raise_event(EventOnSpellCast(self.prereq, self.owner, self.owner.x, self.owner.y), self.owner)
+        self.owner.level.queue_spell(self.boom(evt.unit, buff))
+
+    def boom(self, unit, buff):
+        damage = buff.turns_left*self.prereq.get_stat('multiplier')
+        for stage in Burst(self.owner.level, unit, self.prereq.get_stat("radius")):
+            for p in stage:
+                self.owner.level.deal_damage(p.x, p.y, damage, Tags.Fire, self.prereq)
+            yield
+        unit.remove_buff(buff)
+
 class AngelSongBuff(Buff):
 
     def __init__(self, heal, radius):
@@ -7796,9 +7827,28 @@ def modify_class(cls):
                 self.summon(unit, Point(x, y), radius=5)
             yield
 
+    if cls is IgnitePoison:
+
+        def on_init(self):
+            self.name = "Combust Poison"
+            self.level = 3
+            self.tags = [Tags.Sorcery, Tags.Fire, Tags.Nature]		
+
+            self.max_charges = 9
+
+            self.multiplier = 1
+            self.radius = 2
+
+            self.upgrades['radius'] = (1, 3)
+            self.upgrades['max_charges'] = (9, 2)
+            self.upgrades['multiplier'] = (1, 4)
+            self.add_upgrade(SpontaneousCombustion())
+
+            self.range = 0
+
     for func_name, func in [(key, value) for key, value in locals().items() if callable(value)]:
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, FaestoneBuff, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord, SummonSpiderQueen, DeathChill, DeathChillDebuff, ThornyPrisonSpell, SummonBlueLion, FlameGateBuff, FlameGateSpell, ArcaneShield, MarchOfTheRighteous, MagnetizeBuff, PlagueOfFilth]:
+for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, FaestoneBuff, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord, SummonSpiderQueen, DeathChill, DeathChillDebuff, ThornyPrisonSpell, SummonBlueLion, FlameGateBuff, FlameGateSpell, ArcaneShield, MarchOfTheRighteous, MagnetizeBuff, PlagueOfFilth, IgnitePoison]:
     modify_class(cls)
