@@ -678,7 +678,7 @@ class LightningFormBuff(Buff):
         self.buff_type = BUFF_TYPE_BLESS
         self.asset = ['status', 'lightning_form']
         self.color = Tags.Lightning.color
-        self.description = "Whenever you cast a lightning%s spell, if the target square is empty, teleport to the target square.\n\nThis enchantment ends if you move or cast a non lightning%s spell%s." % (" or ice" if self.ice else "", " or ice" if self.ice else "", (" on a tile without a storm%s cloud" % (" or blizzard" if self.ice else "")) if self.cloud else "")
+        self.description = "Whenever you cast a lightning%s spell, if the target square is empty, teleport to the target square.\n\nThis enchantment ends if you do not cast a lightning%s spell%s." % (" or ice" if self.ice else "", " or ice" if self.ice else "", (" on a tile without a storm%s cloud" % (" or blizzard" if self.ice else "")) if self.cloud else "")
         self.cast = True
         self.stack_type = STACK_TYPE_TRANSFORM
 
@@ -710,7 +710,7 @@ class LightningFormBuff(Buff):
         if self.ice and Tags.Ice in spell_cast_event.spell.tags:
             self.cast = True
             tags.append(Tags.Ice)
-        if self.cast:
+        if self.cast and tags:
             tag = random.choice(tags)
             if self.owner.level.can_move(self.owner, spell_cast_event.x, spell_cast_event.y, teleport=True):
                 self.owner.level.queue_spell(self.do_teleport(spell_cast_event.x, spell_cast_event.y, tag))
