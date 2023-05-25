@@ -15,7 +15,11 @@ Death Bolt:
 - Withering upgrade replaced by Soul Feedback (5 SP): Death Bolt deals additional damage equal to 4 times the number of undead, demon, holy, and arcane minions you have. Mutually exclusive with Soul Battery.
 
 Fireball:
-- Damage type upgrades changed to redeal all fire damage resisted by enemies as a split between the other damage types.
+- Damage type upgrades are more expensive, but now only affect enemies, and have been changed to redeal a percentage of fire damage as both of their respective damage types. The percentage is 50% plus half of each enemy's fire resistance, so overall this always deals double the original damage, if the enemy has no resistance to the two new damage types.
+- Ash Ball now only blinds enemies.
+
+Lightning Bolt:
+- Damage type upgrades now only deal extra damage to enemies.
 
 Magic Missile:
 - The bolt upgrades are no longer mutually exclusive. All of them will apply simultaneously if the target has the appropriate tags.
@@ -204,6 +208,9 @@ Giant Bear:
 - Minion health and minion damage upgrades replaced by True Giant (7 SP): The bear grows to gargantuan size. Its HP is multiplied by 6, and its melee damage multiplied by 2.
 - Venom bear healing nerfed to 1 HP whenever a unit takes poison damage, but its melee attack now inflicts 10 turns of poison that benefits from duration bonuses and stacks poison duration on the target.
 
+Holy Armor:
+- Divine Riposte (4 SP): While Holy Armor is active, if you pass your turn, you will retaliate for 18 holy damage whenever an enemy damages you, until the beginning of your next turn.
+
 Holy Fire:
 - No longer damages the caster.
 - Damage is halved but now deals both fire and holy damage.
@@ -211,8 +218,8 @@ Holy Fire:
 - Blindcasting (2 SP): Holy Fire no longer requires line of sight to cast.
 - Fractal Cross (6 SP): Each tile in an affected horizontal line has a 10% chance to create a vertical line, and each tile in an affected vertical line has a 10% chance to create a horizontal line. Each line can create at most one additional line.
 
-Holy Armor:
-- Divine Riposte (4 SP): While Holy Armor is active, if you pass your turn, you will retaliate for 18 holy damage whenever an enemy damages you, until the beginning of your next turn.
+Iceball:
+- Ice Crush upgrade reduced to 4 SP and now only affects enemies.
 
 Ironize:
 - No longer a conjuration spell.

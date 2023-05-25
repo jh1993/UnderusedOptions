@@ -488,15 +488,6 @@ class FrostfireHydraDragonMage(Upgrade):
         self.level = 6
         self.description = "The hydra will cast Melt on the target of its fire beam, and Freeze on the target of its ice beam.\nThese spells gains all of your upgrades and bonuses."
         self.global_triggers[EventOnSpellCast] = self.on_spell_cast
-    
-    def on_applied(self, owner):
-        self.melt = MeltSpell()
-        self.freeze = Freeze()
-        for spell in [self.melt, self.freeze]:
-            spell.range = RANGE_GLOBAL
-            spell.max_charges = 0
-            spell.cur_charges = 0
-            spell.statholder = self.owner
 
     def on_spell_cast(self, evt):
         if evt.caster.source is not self.prereq:
@@ -505,13 +496,17 @@ class FrostfireHydraDragonMage(Upgrade):
             return
         spell = None
         if evt.spell.damage_type == Tags.Ice:
-            spell = self.freeze
+            spell = Freeze()
         elif evt.spell.damage_type == Tags.Fire:
-            spell = self.melt
+            spell = MeltSpell()
         if not spell:
             return
         spell.caster = evt.caster
         spell.owner = evt.caster
+        spell.range = RANGE_GLOBAL
+        spell.max_charges = 0
+        spell.cur_charges = 0
+        spell.statholder = self.owner
         if not spell.can_cast(evt.x, evt.y):
             return
         self.owner.level.act_cast(evt.caster, spell, evt.x, evt.y, pay_costs=False)
@@ -522,11 +517,20 @@ class FrostfireHydraDragonMage(Upgrade):
             return False
         if source.name != "Hydra Beam":
             return False
+        spell = None
         if damage_type == Tags.Ice:
-            if self.freeze.get_stat("absolute_zero") and not target.has_buff(AbsoluteZeroBuff) and target.resists[Tags.Ice] < 200:
+            for s in self.owner.spells:
+                if type(s) == Freeze:
+                    spell = s
+                    break
+            if spell and spell.get_stat("absolute_zero") and not target.has_buff(AbsoluteZeroBuff) and target.resists[Tags.Ice] < 200:
                 return True
         if damage_type == Tags.Fire:
-            if self.melt.get_stat("fire_resist") and not target.has_buff(MeltBuff) and target.resists[Tags.Fire] < 200:
+            for s in self.owner.spells:
+                if type(s) == MeltSpell:
+                    spell = s
+                    break
+            if spell and spell.get_stat("fire_resist") and not target.has_buff(MeltBuff) and target.resists[Tags.Fire] < 200:
                 return True
         return False
 
@@ -1460,12 +1464,6 @@ def modify_class(cls):
             self.name = "Fireball"
             self.max_charges = 18
             self.range = 8
-            self.element = Tags.Fire
-
-            self.damage_type = Tags.Fire
-
-            self.whiteflame_bonus = 0
-            self.blueflame_bonus = 0
 
             self.tags = [Tags.Fire, Tags.Sorcery]
             self.level = 1
@@ -1475,9 +1473,9 @@ def modify_class(cls):
             self.upgrades['max_charges'] = (8, 2)
             self.upgrades['range'] = (3, 1)
 
-            self.upgrades['chaos'] = (1, 3, "Chaos Ball", "Fireball redeals [fire] damage that is resisted by enemies as a split between [lightning] and [physical] damage.", "damage type")
-            self.upgrades['energy'] = (1, 4, "Energy Ball", "Fireball redeals [fire] damage that is resisted by enemies as a split between [arcane] and [holy] damage.", "damage type")
-            self.upgrades['ash'] = (1, 5, "Ash Ball", "Fireball redeals [fire] damage that is resisted by enemies as a split between [dark] and [poison] damage.\nFireball blinds for [1_turn:duration].", "damage type")
+            self.upgrades['chaos'] = (1, 5, "Chaos Ball", "Fireball redeals a percentage of its [fire] damage to enemies as [lightning] and [physical] damage.\nThe percentage is equal to 50% plus half of each enemy's [fire] resistance.", "damage type")
+            self.upgrades['energy'] = (1, 5, "Energy Ball", "Fireball redeals a percentage of its [fire] damage to enemies as [arcane] and [holy] damage.\nThe percentage is equal to 50% plus half of each enemy's [fire] resistance.", "damage type")
+            self.upgrades['ash'] = (1, 6, "Ash Ball", "Fireball redeals a percentage of its [fire] damage to enemies as [dark] and [poison] damage.\nThe percentage is equal to 50% plus half of each enemy's [fire] resistance.\nEnemies are also [blinded] for [1_turn:duration].", "damage type")
 
         def cast(self, x, y):
             target = Point(x, y)
@@ -1493,18 +1491,19 @@ def modify_class(cls):
                 blind = True
             for stage in Burst(self.caster.level, target, self.get_stat('radius')):
                 for point in stage:
-                    unit = self.caster.level.get_unit_at(point.x, point.y)
-                    resisted = 0
-                    if unit and are_hostile(unit, self.caster):
-                        resisted = max(0, math.floor(damage*min(100, unit.resists[Tags.Fire])/100))
                     self.caster.level.deal_damage(point.x, point.y, damage, Tags.Fire, self)
-                    if not redeals or not unit:
-                        continue                    
-                    if resisted > 0:
-                        for dtype in redeals:
-                            unit.deal_damage(resisted//2, dtype, self)
-                    if blind:
-                        unit.apply_buff(BlindBuff(), 1)
+                    if not redeals:
+                        continue
+                    unit = self.caster.level.get_unit_at(point.x, point.y)
+                    if unit and are_hostile(unit, self.caster):
+                        bonus_damage = math.floor(damage*(50 + (unit.resists[Tags.Fire]/2 if unit.resists[Tags.Fire] > 0 else 0))/100)
+                        for tag in redeals:
+                            unit.deal_damage(bonus_damage, tag, self)
+                        if blind:
+                            unit.apply_buff(BlindBuff(), 1)
+                    else:
+                        for tag in redeals:
+                            self.caster.level.show_effect(point.x, point.y, tag)
                 yield
     
     if cls is MagicMissile:
@@ -7846,9 +7845,93 @@ def modify_class(cls):
 
             self.range = 0
 
+    if cls is LightningBoltSpell:
+
+        def on_init(self):
+            self.damage = 12
+            self.range = 10
+            self.name = "Lightning Bolt"
+            self.max_charges = 18
+
+            self.tags = [Tags.Lightning, Tags.Sorcery]
+            self.level = 1
+
+            self.upgrades['damage'] = (9, 3)
+            self.upgrades['range'] = (5, 2)
+            self.upgrades['max_charges'] = (12, 2)
+            self.upgrades['channel'] = (1, 3, "Channeling", "Lightning Bolt can be channeled for up to [10_turns:duration].")
+
+            self.upgrades['judgement'] = (1, 6, "Judgement Bolt", "Lightning Bolt also deals [holy] and [dark] damage to enemies.", "bolt")
+            self.upgrades['energy'] = (1, 6, "Energy Bolt", "Lightning Bolt also deals [fire] and [arcane] damage to enemies.", "bolt")
+
+        def cast(self, x, y, channel_cast=False):
+
+            if self.get_stat('channel') and not channel_cast:
+                self.caster.apply_buff(ChannelBuff(self.cast, Point(x, y)), 10)
+                return
+
+            dtypes = []
+            if self.get_stat('judgement'):
+                dtypes = [Tags.Holy, Tags.Dark]
+            if self.get_stat('energy'):
+                dtypes = [Tags.Fire, Tags.Arcane]
+
+            damage = self.get_stat('damage')
+            for point in Bolt(self.caster.level, self.caster, Point(x, y)):
+                self.caster.level.deal_damage(point.x, point.y, damage, Tags.Lightning, self)
+                unit = self.caster.level.get_unit_at(point.x, point.y)
+                if unit and are_hostile(unit, self.caster):
+                    for dtype in dtypes:
+                        unit.deal_damage(damage, dtype, self)
+                else:
+                    for dtype in dtypes:
+                        self.caster.level.show_effect(point.x, point.y, dtype)
+
+            yield
+
+    if cls is Iceball:
+
+        def on_init(self):
+            self.tags = [Tags.Sorcery, Tags.Ice]
+            self.level = 3
+            self.name = "Iceball"
+
+            self.damage = 14
+            self.duration = 3
+            self.radius = 2
+
+            self.range = 7
+
+            self.max_charges = 11
+
+            self.upgrades['radius'] = (1, 2)
+            self.upgrades['duration'] = (2, 2)
+            self.upgrades['damage'] = (10, 2)
+            self.upgrades['icecrush'] = (1, 4, "Ice Crush", "Enemies inside of the area of effect which are already [frozen] take [physical] damage before being subjected to the normal effects of this spell.")
+
+        def cast(self, x, y):
+
+            damage = self.get_stat('damage')
+            crush = self.get_stat('icecrush')
+            duration = self.get_stat('duration')
+
+            for stage in Burst(self.caster.level, Point(x, y), self.get_stat('radius')):
+                for point in stage:
+                    unit = self.caster.level.get_unit_at(point.x, point.y)
+                    
+                    if crush:
+                        if unit and are_hostile(unit, self.caster) and unit.has_buff(FrozenBuff):
+                            unit.deal_damage(damage, Tags.Physical, self)
+
+                    self.caster.level.deal_damage(point.x, point.y, damage, Tags.Ice, self)
+
+                    if unit:
+                        unit.apply_buff(FrozenBuff(), duration)
+                yield
+
     for func_name, func in [(key, value) for key, value in locals().items() if callable(value)]:
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, FaestoneBuff, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord, SummonSpiderQueen, DeathChill, DeathChillDebuff, ThornyPrisonSpell, SummonBlueLion, FlameGateBuff, FlameGateSpell, ArcaneShield, MarchOfTheRighteous, MagnetizeBuff, PlagueOfFilth, IgnitePoison]:
+for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, FaestoneBuff, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord, SummonSpiderQueen, DeathChill, DeathChillDebuff, ThornyPrisonSpell, SummonBlueLion, FlameGateBuff, FlameGateSpell, ArcaneShield, MarchOfTheRighteous, MagnetizeBuff, PlagueOfFilth, IgnitePoison, LightningBoltSpell, Iceball]:
     modify_class(cls)
