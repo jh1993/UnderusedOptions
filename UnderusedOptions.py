@@ -7740,14 +7740,14 @@ def modify_class(cls):
     if cls is MarchOfTheRighteous:
 
         def get_description(self):
-            return "Whenever an enemy dies to [holy] damage, allies witnessing it gain [1_SH:shields] if they are not already shielded, and enemies witnessing it take [1_holy:holy] damage.\nThis damage is fixed, and cannot be increased using shrines, skills, or buffs."
+            return "Whenever an enemy dies to [holy] damage, allies witnessing it gain [1_SH:shields] if they are not already shielded, and each enemy witnessing it has a 50% chance to take [1_holy:holy] damage.\nThis damage is fixed, and cannot be increased using shrines, skills, or buffs."
 
         def trigger(self, target):
             for u in self.owner.level.get_units_in_los(target):
                 if not are_hostile(u, self.owner):
                     if u.shields < 1:
                         u.add_shields(1)
-                else:
+                elif random.random() < 0.5:
                     u.deal_damage(1, Tags.Holy, self)
             yield
 

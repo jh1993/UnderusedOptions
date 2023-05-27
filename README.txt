@@ -585,7 +585,7 @@ Purestrike:
 - Cost increased to 6 SP.
 
 Righteous March:
-- Now also deals 1 fixed holy damage to all enemies in LoS of the target.
+- Each enemy in LoS of the target now also has a 50% chance to take 1 fixed holy damage.
 
 Storm Caller:
 - Thunderstorm clouds now benefit doubly from damage bonuses.
