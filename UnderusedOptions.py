@@ -20,7 +20,7 @@ class SpontaneousCombustion(Upgrade):
     def on_init(self):
         self.name = "Spontaneous Combustion"
         self.level = 6
-        self.description = "Whenever a [poisoned] enemy dies from any reason other than Combust Poison, it will now explode as if you cast Combust Poison.\nThis has a chance to consume 1 charge from Combust Poison, equal to 100% divided by 1 plus the number of other [poisoned] enemies in the realm, and counts as casting Combust Poison once.\nIf this upgrade tries but fails to consume a charge, the explosion will not occur."
+        self.description = "Whenever a [poisoned] enemy dies from any reason other than Combust Poison, it will now explode as if you cast Combust Poison.\nThis has a percentage chance to consume 1 charge from Combust Poison, equal to half of the enemy's [poison] duration (up to 100%), and counts as casting Combust Poison once.\nIf this upgrade tries but fails to consume a charge, the explosion will not occur."
         self.global_triggers[EventOnDeath] = self.on_death
     
     def on_death(self, evt):
@@ -31,7 +31,7 @@ class SpontaneousCombustion(Upgrade):
         buff = evt.unit.get_buff(Poison)
         if not buff:
             return
-        if random.random() < 1/(1 + len([u for u in self.owner.level.units if are_hostile(u, self.owner) and u is not evt.unit and u.has_buff(Poison)])):
+        if random.random() < buff.turns_left/200:
             if not self.prereq.cur_charges:
                 return
             self.prereq.cur_charges -= 1
