@@ -269,7 +269,7 @@ class MeteorRecycle(Upgrade):
     def on_init(self):
         self.name = "Meteor Recycle"
         self.level = 3
-        self.description = "Whenever you stop channeling this spell, it has a 10% chance to regain a charge per turn of channeling it had remaining.\nIf you are channeling multiple instances of the spell, only the first instance can trigger this effect."
+        self.description = "Whenever you stop channeling this spell, it has a chance to regain a charge equal to its remaining duration divided by max channel.\nIf you are channeling multiple instances of the spell, only the first instance can trigger this effect."
         self.tried = False
         self.owner_triggers[EventOnBuffRemove] = self.on_buff_remove
     
@@ -280,7 +280,7 @@ class MeteorRecycle(Upgrade):
         if not isinstance(evt.buff, ChannelBuff) or evt.buff.spell.__self__ is not self.prereq or self.tried:
             return
         self.tried = True
-        if random.random() < evt.buff.turns_left/10:
+        if random.random() < evt.buff.turns_left/self.prereq.get_stat("max_channel"):
             self.prereq.cur_charges = min(self.prereq.cur_charges + 1, self.prereq.get_stat("max_charges"))
 
 # Avoid exceeding maximum recursion depth when saving by avoiding long chains of spell duplication.
@@ -6420,6 +6420,7 @@ def modify_class(cls):
             self.upgrades['num_targets'] = (3, 4)
             self.upgrades["radius"] = (1, 4)
             self.upgrades['large'] = (1, 4, "Large Meteors", "The [physical] damage and [stun] radius of each meteor now gains a radius equal to half of this spell's [radius] stat, with a 50% chance to round up or down per meteor.")
+            self.upgrades['max_channel'] = (5, 2)
             self.add_upgrade(MeteorRecycle())
 
         def cast(self, x, y, channel_cast=False):
