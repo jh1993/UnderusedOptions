@@ -479,6 +479,7 @@ class SpiritBindingBuff(Buff):
         spirit.resists[Tags.Holy] = 100
         spirit.resists[Tags.Dark] = -100
         spirit.resists[Tags.Physical] = 100
+        spirit.flying = True
         self.spell.summon(spirit, target=self.owner)
 
 class FrostfireHydraDragonMage(Upgrade):
