@@ -7758,24 +7758,31 @@ def modify_class(cls):
 
             self.tags = [Tags.Nature, Tags.Dark, Tags.Conjuration]
             self.name = "Plague of Filth"
-            self.minion_health = 12
+            self.minion_health = 18
             self.minion_damage = 2
             self.minion_range = 4
 
             self.minion_duration = 7
             self.num_summons = 2
 
-            self.max_channel = 15
+            self.max_channel = 40
 
-            self.level = 3
+            self.level = 4
             self.max_charges = 5
 
             self.upgrades['num_summons'] = (2, 4)
             self.upgrades['minion_duration'] = (4, 3)
             self.upgrades['minion_damage'] = (3, 3)
-            self.upgrades['max_channel'] = (25, 1)
             self.upgrades["fire"] = (1, 7, "Fiery Vermin", "Instead summon flame toads and fire fly swarms, which are [fire] minions.\nFlame toads have more HP, damage, and range, and can no longer pull enemies, but instead shoot fireballs that deal [fire] damage in a [1_tile:radius] burst.\nFire fly swarms have their melee attacks replaced by ranged attacks dealing [fire] damage.", "vermin")
             self.upgrades["arcane"] = (1, 7, "Void Vermin", "Instead summon void toads and brain fly swarms, which are [arcane] minions.\nVoid toads have more HP, damage, and range, and their pull attacks are now beams that deal [arcane] damage and melt through walls.\nBrain flies' melee attacks deal [arcane] damage and increase the cooldown of a random one of the target's abilities by [1_turn:cooldown] if possible (does not work on units that can gain clarity); otherwise the target takes the same damage again.", "vermin")
+            self.upgrades["giant"] = (1, 7, "Giant Vermin", "Each toad now has a 50% chance to be a towering toadbeast, and each fly swarm a bag of bugs.\nTowering toadbeasts have significantly more HP, damage, and range, and regenerate HP each turn.\nBags of bugs are [construct] minions that spawn fly swarms on death and have a chance to spawn fly swarms each turn.", "vermin")
+
+        def get_description(self):
+            return ("Summon a group of [{num_summons}:num_summons] toads and fly swarms.\n"
+                    "Toads have [{minion_health}_HP:minion_health], and a ranged tongue attack which deals [{minion_damage}_physical:physical] damage and pulls enemies towards it. They can hop up to [{minion_range}_tiles:range] away.\n"
+                    "Fly swarms have [{fly_health}_HP:minion_health], [75_dark:dark] resist, [75_physical:physical] resist, [-50_ice:ice] resist, and can fly. They have a melee attack which deals [{fly_damage}_physical:physical] damage.\n"
+                    "The summons vanish after [{minion_duration}_turns:minion_duration].\n"
+                    "This spell can be channeled for up to [{max_channel}_turns:duration].").format(**self.fmt_dict())
 
         def cast(self, x, y, channel_cast=False):
 
@@ -7789,6 +7796,7 @@ def modify_class(cls):
             duration = self.get_stat('minion_duration')
             fire = self.get_stat("fire")
             arcane = self.get_stat("arcane")
+            giant = self.get_stat("giant")
 
             for _ in range(self.get_stat('num_summons')):
 
@@ -7798,15 +7806,23 @@ def modify_class(cls):
                     elif arcane:
                         unit = VoidToad()
                     else:
-                        unit = HornedToad()
-                    unit.max_hp += health_bonus
-                    for s in unit.spells:
-                        if hasattr(s, 'damage'):
-                            s.damage += damage_bonus
-                        if s.range >= 2:
-                            s.range += range_bonus
+                        if giant and random.random() < 0.5:
+                            unit = GiantToad()
+                        else:
+                            unit = HornedToad()
+                    apply_minion_bonuses(self, unit)
                 
                 else:
+                    def buff_fly(unit):
+                        unit.turns_to_death = duration
+                        unit.source = self
+                        unit.max_hp += health_bonus//2
+                        for s in unit.spells:
+                            if hasattr(s, 'damage'):
+                                s.damage += damage_bonus//2
+                            if s.range >= 2:
+                                s.range += range_bonus
+                        return unit
                     if fire:
                         unit = FireFlies()
                     elif arcane:
@@ -7815,13 +7831,12 @@ def modify_class(cls):
                         melee.onhit = lambda caster, target: increase_cooldown(caster, target, melee)
                         melee.description = "On hit, increase a random ability cooldown by 1 turn if possible; otherwise deal damage again."
                     else:
-                        unit = FlyCloud()
-                    unit.max_hp += health_bonus//2
-                    for s in unit.spells:
-                        if hasattr(s, 'damage'):
-                            s.damage += damage_bonus//2
-                        if s.range >= 2:
-                            s.range += range_bonus
+                        if giant and random.random() < 0.5:
+                            unit = BagOfBugs(lambda: buff_fly(FlyCloud()))
+                            unit.buffs[1].apply_bonuses = False
+                        else:
+                            unit = FlyCloud()
+                    buff_fly(unit)
                 
                 unit.turns_to_death = duration
                 self.summon(unit, Point(x, y), radius=5)
