@@ -87,7 +87,7 @@ Hollow Flesh:
 
 Hungry Maw:
 - Range upgrade folded into base spell (from 7 to 11).
-- Maw now has a melee bite attack that deals 3x damage.
+- Maw now has a melee bite that attacks 3 times.
 - Pull Strength (3 SP): +2 tiles pulled.
 - Shield Eater (3 SP): The maw gains 1 SH on kill and when attacking a shielded target, up to its original SH amount.
 

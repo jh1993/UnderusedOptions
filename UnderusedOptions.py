@@ -2316,7 +2316,7 @@ def modify_class(cls):
             return ("Summons a hungry maw.\n"
                     "The maw has [{minion_health}_HP:minion_health], [{shields}_SH:shields], floats, and is stationary.\n"
                     "The maw has a [{minion_damage}_physical:physical] damage tongue attack, which pulls the target [{pull_strength}_tiles:range] towards it, with a range of [{minion_range}_tiles:minion_range].\n"
-                    "The maw has a melee bite attack that deals [3_times:minion_damage] the damage of its pull attack.\n"
+                    "The maw has a melee bite that deals the same damage but attacks 3 times.\n"
                     "The maw vanishes after [{minion_duration}_turns:minion_duration].").format(**self.fmt_dict())
         
         def cast_instant(self, x, y):
@@ -2330,7 +2330,7 @@ def modify_class(cls):
 
             damage = self.get_stat("minion_damage")
             pull = PullAttack(damage=damage, range=self.get_stat('minion_range'), pull_squares=self.get_stat("pull_strength"), color=Tags.Tongue.color)
-            melee = SimpleMeleeAttack(damage=damage*3)
+            melee = SimpleMeleeAttack(damage=damage, attacks=3)
             melee.name = "Bite"
             u.spells = [melee, pull]
             if self.get_stat("shield_eater"):
