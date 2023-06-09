@@ -7859,7 +7859,7 @@ def modify_class(cls):
             self.upgrades['damage'] = (9, 3)
             self.upgrades['range'] = (5, 2)
             self.upgrades['max_charges'] = (12, 2)
-            self.upgrades['channel'] = (1, 3, "Channeling", "Lightning Bolt can be channeled for up to [10_turns:duration].")
+            self.upgrades['channel'] = (1, 3, "Channeling", "Lightning bolt can be channeled for up to [{max_channel}_turns:duration].")
 
             self.upgrades['judgement'] = (1, 6, "Judgement Bolt", "Lightning Bolt also deals [holy] and [dark] damage to enemies.", "bolt")
             self.upgrades['energy'] = (1, 6, "Energy Bolt", "Lightning Bolt also deals [fire] and [arcane] damage to enemies.", "bolt")
@@ -7867,7 +7867,7 @@ def modify_class(cls):
         def cast(self, x, y, channel_cast=False):
 
             if self.get_stat('channel') and not channel_cast:
-                self.caster.apply_buff(ChannelBuff(self.cast, Point(x, y)), 10)
+                self.caster.apply_buff(ChannelBuff(self.cast, Point(x, y)), self.get_stat("max_channel", base=10))
                 return
 
             dtypes = []
