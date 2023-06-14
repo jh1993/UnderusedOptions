@@ -1474,9 +1474,9 @@ def modify_class(cls):
             self.upgrades['max_charges'] = (8, 2)
             self.upgrades['range'] = (3, 1)
 
-            self.upgrades['chaos'] = (1, 5, "Chaos Ball", "Fireball redeals a percentage of its [fire] damage to enemies as [lightning] and [physical] damage.\nThe percentage is equal to 50% plus half of each enemy's [fire] resistance.", "damage type")
-            self.upgrades['energy'] = (1, 5, "Energy Ball", "Fireball redeals a percentage of its [fire] damage to enemies as [arcane] and [holy] damage.\nThe percentage is equal to 50% plus half of each enemy's [fire] resistance.", "damage type")
-            self.upgrades['ash'] = (1, 6, "Ash Ball", "Fireball redeals a percentage of its [fire] damage to enemies as [dark] and [poison] damage.\nThe percentage is equal to 50% plus half of each enemy's [fire] resistance.\nEnemies are also [blinded] for [1_turn:duration].", "damage type")
+            self.upgrades['chaos'] = (1, 5, "Chaos Ball", "Fireball redeals a percentage of its [fire] damage to enemies as [lightning] and [physical] damage.\nThe percentage is 50%, plus half of each enemy's [fire] resistance if positive.", "damage type")
+            self.upgrades['energy'] = (1, 5, "Energy Ball", "Fireball redeals a percentage of its [fire] damage to enemies as [arcane] and [holy] damage.\nThe percentage is 50%, plus half of each enemy's [fire] resistance if positive.", "damage type")
+            self.upgrades['ash'] = (1, 6, "Ash Ball", "Fireball redeals a percentage of its [fire] damage to enemies as [dark] and [poison] damage.\nThe percentage is 50%, plus half of each enemy's [fire] resistance if positive.\nEnemies are also [blinded] for [1_turn:duration].", "damage type")
 
         def cast(self, x, y):
             target = Point(x, y)
@@ -1525,13 +1525,13 @@ def modify_class(cls):
             self.upgrades['damage'] = (10, 3)
             self.upgrades['range'] = (5, 1)
             self.upgrades['shield_burn'] = (3, 1, "Shield Burn", "Magic Missile removes up to [3_SH:shields] from the target before dealing damage.")
-            self.upgrades['slaughter'] = (1, 6, "Slaughter Bolt", "If Magic Missile targets a [living] or [nature] unit, it also deals [poison], [dark], and [physical] damage.")
+            self.upgrades['slaughter'] = (1, 4, "Slaughter Bolt", "If Magic Missile targets a [living] or [nature] unit, 2/3 of its damage is redealt as [poison], [dark], and [physical] damage.")
             self.upgrades['holy'] = (1, 4, "Holy Bolt", "If Magic Missile targets a [demon] or [undead] unit, it also deals [holy] damage.")
             self.upgrades['disruption'] = (1, 6, "Disruption Bolt", "If Magic Missile targets an [arcane] unit, it also deals [dark] and [holy] damage.")
 
         def cast(self, x, y):
-            dtypes = [Tags.Arcane]
             unit = self.caster.level.get_unit_at(x, y)
+            damage = self.get_stat('damage')
                     
             for p in Bolt(self.caster.level, self.caster, Point(x, y)):
                 self.caster.level.show_effect(p.x, p.y, Tags.Arcane, minor=True)
@@ -1541,17 +1541,15 @@ def modify_class(cls):
                 if self.get_stat('shield_burn'):
                     unit.shields -= self.get_stat('shield_burn')
                     unit.shields = max(unit.shields, 0)
-
-                if self.get_stat('slaughter') and (Tags.Living in unit.tags or  Tags.Nature in unit.tags):
-                    dtypes.extend([Tags.Poison, Tags.Dark, Tags.Physical])
-                if self.get_stat('disruption') and Tags.Arcane in unit.tags:
-                    dtypes.extend([Tags.Holy, Tags.Dark])
+                unit.deal_damage(damage, Tags.Arcane, self)
+                if self.get_stat('slaughter') and (Tags.Living in unit.tags or Tags.Nature in unit.tags):
+                    for dtype in [Tags.Poison, Tags.Dark, Tags.Physical]:
+                        unit.deal_damage(2*damage//3, dtype, self)
                 if self.get_stat('holy') and (Tags.Undead in unit.tags or Tags.Demon in unit.tags):
-                    dtypes.append(Tags.Holy)
-
-            damage = self.get_stat('damage')
-            for dtype in dtypes:
-                self.caster.level.deal_damage(x, y, damage, dtype, self)
+                    unit.deal_damage(damage, Tags.Holy, self)
+                if self.get_stat('disruption') and Tags.Arcane in unit.tags:
+                    for dtype in [Tags.Dark, Tags.Holy]:
+                        unit.deal_damage(damage, dtype, self)
 
     if cls is PoisonSting:
 
@@ -3929,7 +3927,7 @@ def modify_class(cls):
             self.upgrades['duration'] = (10, 2)
             self.upgrades["false"] = (1, 6, "False Pain", "Pain Mirror now counts incoming damage twice. The first time counts the raw incoming damage before resistances and [SH:shields], and the second time counts actual damage taken.\nThe first count will trigger even if all of the incoming damage is resisted or blocked.")
             self.upgrades["masochism"] = (1, 3, "Masochism", "Damage inflicted by allies will cause Pain Mirror to deal double damage.")
-            self.upgrades["holy"] = (1, 6, "Holy Martyr", "[Dark] damage dealt by Pain Mirror that is resisted will be redealt as [holy] damage.")
+            self.upgrades["holy"] = (1, 6, "Holy Martyr", "A percentage of [dark] damage dealt by Pain Mirror is redealt as [holy] damage.\nThe percentage is 50%, plus half of each enemy's [dark] resistance if positive.")
 
             self.tags = [Tags.Dark, Tags.Enchantment]
 
@@ -3963,13 +3961,11 @@ def modify_class(cls):
         def reflect(self, damage):
             for u in self.owner.level.get_units_in_los(self.owner):
                 if are_hostile(self.owner, u):
-                    resisted = 0
-                    if self.holy:
-                        resisted = max(0, math.floor(damage*min(100, u.resists[Tags.Dark])/100))
                     u.deal_damage(damage, Tags.Dark, self.source or self)
-                    if resisted:
-                        u.deal_damage(resisted, Tags.Holy, self.source or self)
-                    yield
+                    if self.holy:
+                        bonus_damage = math.floor(damage*(50 + (u.resists[Tags.Dark]/2 if u.resists[Tags.Dark] > 0 else 0))/100)
+                        u.deal_damage(bonus_damage, Tags.Holy, self.source or self)
+            yield
 
     if cls is SealFate:
 
@@ -3985,20 +3981,13 @@ def modify_class(cls):
             self.upgrades['range'] = 7
             self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "Seal Fate can be cast without line of sight.")
             self.upgrades['damage'] = (80, 2)
-            self.upgrades['spreads'] = (1, 4, "Spreading Curse", "When the curse is removed, it jumps to a random enemy in line of sight.\nIf its timer has reached 0, the timer of the new curse starts at 4 again; otherwise it retains its current timer.")
+            self.upgrades['spreads'] = (1, 4, "Spreading Curse", "When the curse is removed, it jumps to a random enemy in line of sight, prioritizing targets without Sealed Fate.\nIf its timer has reached 0, the timer of the new curse starts at 4 again; otherwise it retains its current timer.")
+            self.upgrades["haste"] = (1, 2, "Hasten Doom", "When applying the curse to a target that already has Sealed Fate, the existing curse's timer is reduced by 1 turn.")
 
         def get_description(self):
             return ("Permanently curse the target with Sealed Fate.\n"
-                    "The curse has a timer that starts at 4 and ticks down by 1 per turn. When it reaches 0, the buff removes itself to deal [{damage}_dark:dark] damage to the target.\n"
+                    "The curse has a timer that starts at 4 and ticks down by 1 per turn. When it reaches 0, the debuff removes itself to deal [{damage}_dark:dark] damage to the target.\n"
                     "The timer is treated as a per-turn effect rather than the curse's remaining duration, and cannot be refreshed.\n").format(**self.fmt_dict())
-
-        def can_cast(self, x, y):
-            if not Spell.can_cast(self, x, y):
-                return False
-            unit = self.caster.level.get_unit_at(x, y)
-            if not unit or unit.has_buff(SealedFateBuff):
-                return False
-            return True
 
         def cast_instant(self, x, y):
             unit = self.caster.level.get_unit_at(x, y)
@@ -4014,26 +4003,32 @@ def modify_class(cls):
             self.name = "Sealed Fate (%i)" % self.timer
             self.buff_type = BUFF_TYPE_CURSE
             self.asset = ['status', 'sealed_fate']
-            self.spreads = self.spell.get_stat("spreads")
-            self.damage = self.spell.get_stat("damage")
 
         def on_attempt_apply(self, owner):
-            return not owner.has_buff(SealedFateBuff)
+            existing = owner.get_buff(SealedFateBuff)
+            if existing and self.spell.get_stat("haste"):
+                existing.on_advance()
+            return not existing
 
         def on_advance(self):
             self.timer -= 1
             if self.timer <= 0:
                 self.timer = 4
-                self.owner.deal_damage(self.damage, Tags.Dark, self.spell)
+                self.owner.deal_damage(self.spell.get_stat("damage"), Tags.Dark, self.spell)
                 self.owner.remove_buff(self)
             self.name = "Sealed Fate (%i)" % self.timer
 
         def on_unapplied(self):
-            if not self.spreads:
+            if not self.spell.get_stat("spreads"):
                 return
-            possible_targets = [u for u in self.owner.level.get_units_in_los(self.owner) if u is not self.owner and are_hostile(u, self.spell.owner) and not u.has_buff(SealedFateBuff)]
-            if possible_targets:
-                target = random.choice(possible_targets)
+            possible_targets = [u for u in self.owner.level.get_units_in_los(self.owner) if u is not self.owner and are_hostile(u, self.spell.owner)]
+            uncursed_targets = [u for u in possible_targets if not u.has_buff(SealedFateBuff)]
+            if uncursed_targets:
+                targets = uncursed_targets
+            else:
+                targets = possible_targets
+            if targets:
+                target = random.choice(targets)
                 target.apply_buff(SealedFateBuff(self.spell, self.timer))
 
     if cls is ShrapnelBlast:

@@ -23,7 +23,7 @@ Lightning Bolt:
 
 Magic Missile:
 - The bolt upgrades are no longer mutually exclusive. All of them will apply simultaneously if the target has the appropriate tags.
-- Slaughter Bolt cost increased to 6 SP, but now also works on nature units, and still deals arcane damage in addition to the new damage types.
+- Slaughter Bolt now also works on nature units, and now deals full arcane damage plus 2/3 dark, poison, and physical damage.
 - Disruption Bolt now still deals arcane damage in addition to the new damage types.
 
 Poison Sting:
@@ -250,7 +250,7 @@ Pain Mirror:
 - Max Charges upgrade removed.
 - False Pain (6 SP): Pain Mirror now counts incoming damage twice. The first time counts the raw incoming damage before resistances and SH, and the second time counts actual damage taken. The first count will trigger even if all of the incoming damage is resisted or blocked.
 - Masochism (3 SP): Damage inflicted by allies will cause Pain Mirror to deal double damage.
-- Holy Martyr (6 SP): Dark damage dealt by Pain Mirror that is resisted will be redealt as holy damage.
+- Holy Martyr (6 SP): A percentage of dark damage dealt by Pain Mirror is redealt as holy damage. The percentage is 50%, plus half of each enemy's dark resistance if positive.
 
 Plague of Filth:
 - Is now a level 4 spell.
@@ -264,6 +264,7 @@ Prison of Thorns:
 Seal Fate:
 - The curse now uses a timer that ticks down as a per-turn effect instead of remaining duration, to interact better with reworked Permanence and Time Dilation from my Missing Synergies mod.
 - Spreading Curse upgrade cost increased to 4 SP, but now if a cursed enemy dies to anything else, the curse jumps to a new enemy with its remaining duration.
+- Hasten Doom (2 SP): When applying the curse to a target that already has Sealed Fate, the existing curse's timer is reduced by 1 turn.
 
 Shrapnel Blast:
 - The initial fire explosion now hits all units in the radius.
