@@ -27,6 +27,7 @@ Magic Missile:
 - Disruption Bolt now still deals arcane damage in addition to the new damage types.
 
 Poison Sting:
+- Now applies poison before dealing damage.
 - Torment (5 SP): Deal 1 extra damage per 10 turns of poison on the target, and 1 extra damage per turn of every other debuff on the target. Deal 1 extra damage per debuff on the target. Multiple stacks of the same type of debuff are counted as different debuffs.
 
 Wolf:
@@ -125,6 +126,9 @@ Touch of Death:
 
 Toxic Spores:
 - Grey Mushbooms upgrade replaced by Toxic Mushbooms (4 SP), which is mutually exclusive with other mushboom type upgrades and gives 3-radiu 1-damage poison auras to mushbooms; the aura instantly activates 3 times on death. Stunning is redundant with Paralyzing Venom anyways, not to mention losing poison synergy.
+
+Toxin Burst:
+- Now applies poison before dealing damage.
 
 Aether Swap:
 - Restriction of not working on arcane-immune targets removed.
