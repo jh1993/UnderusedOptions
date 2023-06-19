@@ -6631,7 +6631,7 @@ def modify_class(cls):
             return ("Whenever you enter a new level, summon a Fae Stone nearby.\n"
                     "The Fae Stone has [{minion_health}_HP:minion_health], and is flying and stationary. It has a melee attack that deals [{minion_damage}_physical:physical] damage.\n"
                     "Whenever you cast a [nature] or [arcane] spell, the Fae Stone heals for [10_HP:heal], gains [1_SH:shields], teleports near the target, and immediately acts once.\n"
-                    "The Fae Stone will always teleport next to the target if possible, and can swap places with your other minions.\n"
+                    "The Fae Stone will always teleport next to the target if possible, and can swap places with your other minions if the triggering spell is not a [conjuration] spell.\n"
                     "If the Fae Stone is dead, using a mana potion will resurrect it.").format(**self.fmt_dict())
 
         def on_unit_added(self, evt):
@@ -6682,9 +6682,9 @@ def modify_class(cls):
             if evt.caster is not self.master:
                 return
             if Tags.Arcane in evt.spell.tags or Tags.Nature in evt.spell.tags:
-                self.owner.level.queue_spell(self.teleport(evt))
+                self.owner.level.queue_spell(self.teleport(evt, Tags.Conjuration not in evt.spell.tags))
 
-        def teleport(self, target):
+        def teleport(self, target, should_swap):
             dest = None
             if distance(self.owner, target) < 2:
                 dest = self.owner
@@ -6694,7 +6694,7 @@ def modify_class(cls):
                     unit = self.owner.level.get_unit_at(point.x, point.y)
                     if not unit or unit is self.owner:
                         return True
-                    return not are_hostile(unit, self.owner) and not unit.is_player_controlled and self.owner.level.can_stand(self.owner.x, self.owner.y, unit, check_unit=False)
+                    return should_swap and not are_hostile(unit, self.owner) and not unit.is_player_controlled and self.owner.level.can_stand(self.owner.x, self.owner.y, unit, check_unit=False)
                 points = [p for p in points if can_swap(p)]
                 if points:
                     random.shuffle(points)

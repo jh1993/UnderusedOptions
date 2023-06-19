@@ -544,7 +544,7 @@ Faestone:
 - Using a mana potion now resurrects the faestone if it's dead.
 - Now has 100% arcane and poison resistance and is flying.
 - The arcane and nature spell effects have been combined into one that triggers for either tag, and now also makes the faestone immediately act once.
-- Can now swap places with your other minions when teleporting.
+- Can now swap places with your other minions when teleporting, if the triggering spell is not a conjuration spell.
 
 Ghostfire:
 - Fire ghosts now have 100% dark resistance, to not anti-synergize with ghostfire tormentors.
