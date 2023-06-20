@@ -1565,7 +1565,7 @@ def modify_class(cls):
             self.upgrades['range'] = (4, 1)
             self.upgrades['max_charges'] = (10, 3)
             self.upgrades['duration'] = (60, 2)
-            self.upgrades['antigen'] = (1, 2, "Acidity", "Damaged targets lose all [poison] resistance.")
+            self.upgrades['antigen'] = (1, 2, "Acidity", "Damaged targets lose [100_poison:poison] resistance.\nIf this removes the target's [poison] immunity, the target will still be [poisoned].")
             self.upgrades["torment"] = (1, 5, "Torment", "Deal 1 extra damage per 10 turns of [poison] on the target, and 1 extra damage per turn of every other debuff on the target.\nDeal 1 extra damage per debuff on the target. Multiple stacks of the same type of debuff are counted as different debuffs.")
 
         def get_description(self):
@@ -1581,7 +1581,11 @@ def modify_class(cls):
             unit = self.caster.level.get_unit_at(x, y)
             if not unit:
                 return
-            unit.apply_buff(Poison(), self.get_stat('duration'))
+            
+            poisoned = False
+            if unit.resists[Tags.Poison] < 100:
+                unit.apply_buff(Poison(), self.get_stat('duration'))
+                poisoned = True
 
             damage = self.get_stat("damage")
             if self.get_stat("torment"):
@@ -1592,8 +1596,11 @@ def modify_class(cls):
                     else:
                         damage += debuff.turns_left
             dealt = unit.deal_damage(damage, Tags.Physical, self)
+            
             if dealt and self.get_stat('antigen'):
                 unit.apply_buff(Acidified())
+                if not poisoned:
+                    unit.apply_buff(Poison(), self.get_stat('duration'))
 
     if cls is SummonWolfSpell:
 
