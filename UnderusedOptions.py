@@ -978,14 +978,22 @@ class FrostbiteBuff(Buff):
         self.asset = ["UnderusedOptions", "Statuses", "frostbite"]
         self.color = Tags.Dark.color
         self.buff_type = BUFF_TYPE_CURSE
+        self.advanced = False
     
     def on_pre_advance(self):
+        self.advanced = False
         freeze = self.owner.get_buff(FrozenBuff)
         if freeze:
             self.turns_left = max(self.turns_left, freeze.turns_left)
 
     def on_advance(self):
+        self.advanced = True
         self.owner.deal_damage(self.upgrade.get_stat("damage"), Tags.Dark, self.upgrade)
+
+    def on_unapplied(self):
+        buff = self.owner.get_buff(FrozenBuff)
+        if buff:
+            self.owner.apply_buff(self, self.turns_left)
 
 class HolyArmorBuff(Buff):
 
@@ -6941,11 +6949,16 @@ def modify_class(cls):
             if freeze:
                 self.turns_left = max(self.turns_left, freeze.turns_left)
 
+        def on_unapplied(self):
+            buff = self.owner.get_buff(FrozenBuff)
+            if buff:
+                self.owner.apply_buff(self, self.turns_left)
+
     if cls is FrozenFragility:
 
         def get_description(self):
             return ("Whenever an enemy is [frozen:freeze], inflict Fragility for the same duration, which reduces [ice] and [physical] resistances by 100.\n"
-                    "Whenever the remaining duration of [freeze] on an enemy is refreshed or extended, the remaining duration of fragility will be lengthened to match if it is shorter.").format(**self.fmt_dict())
+                    "Whenever the remaining duration of [freeze] on an enemy is refreshed or extended, the remaining duration of fragility will be lengthened to match if it is shorter.\nIf fragility is removed prematurely and the enemy is still [frozen], it will automatically reapply itself.").format(**self.fmt_dict())
 
         def on_frozen(self, evt):
             if not isinstance(evt.buff, FrozenBuff):
@@ -7200,7 +7213,7 @@ def modify_class(cls):
 
         def get_description(self):
             return ("Whenever an enemy is [frozen:freeze], inflict Frostbite for the same duration, which deals [{damage}_dark:dark] damage per turn.\n"
-                    "Whenever the remaining duration of [freeze] on an enemy is refreshed or extended, the remaining duration of frostbite will be lengthened to match if it is shorter.").format(**self.fmt_dict())
+                    "Whenever the remaining duration of [freeze] on an enemy is refreshed or extended, the remaining duration of frostbite will be lengthened to match if it is shorter.\nIf frostbite is removed prematurely and the enemy is still [frozen], it will automatically reapply itself.").format(**self.fmt_dict())
 
         def on_buff_apply(self, evt):
             if not isinstance(evt.buff, FrozenBuff):
