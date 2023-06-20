@@ -967,33 +967,59 @@ class PureGraceBuff(Buff):
         self.name = "Pure Grace"
         self.color = Tags.Holy.color
 
-class FrostbiteBuff(Buff):
+class FreezeDependentBuff(Buff):
+
+    def on_pre_advance(self):
+        freeze = self.owner.get_buff(FrozenBuff)
+        if freeze:
+            self.turns_left = max(self.turns_left, freeze.turns_left)
+
+    def on_unapplied(self):
+        if self.turns_left <= 0:
+            return
+        buff = self.owner.get_buff(FrozenBuff)
+        if buff:
+            self.owner.apply_buff(self, self.turns_left)
+
+class FrostbiteBuff(FreezeDependentBuff):
 
     def __init__(self, upgrade):
         self.upgrade = upgrade
-        Buff.__init__(self)
+        FreezeDependentBuff.__init__(self)
     
     def on_init(self):
         self.name = "Frostbite"
         self.asset = ["UnderusedOptions", "Statuses", "frostbite"]
         self.color = Tags.Dark.color
         self.buff_type = BUFF_TYPE_CURSE
-        self.advanced = False
-    
-    def on_pre_advance(self):
-        self.advanced = False
-        freeze = self.owner.get_buff(FrozenBuff)
-        if freeze:
-            self.turns_left = max(self.turns_left, freeze.turns_left)
 
     def on_advance(self):
-        self.advanced = True
         self.owner.deal_damage(self.upgrade.get_stat("damage"), Tags.Dark, self.upgrade)
 
-    def on_unapplied(self):
-        buff = self.owner.get_buff(FrozenBuff)
-        if buff:
-            self.owner.apply_buff(self, self.turns_left)
+class FragilityBuff(FreezeDependentBuff):
+
+    def on_init(self):
+        self.name = "Fragile"
+        self.buff_type = BUFF_TYPE_CURSE
+        self.color = Tags.Ice.color
+        self.resists[Tags.Ice] = -100
+        self.resists[Tags.Physical] = -100
+        self.asset = ["UnderusedOptions", "Statuses", "fragility"]
+
+class IceTapBuff(FreezeDependentBuff):
+
+    def on_init(self):
+        self.name = "Ice Tap"
+        self.buff_type = BUFF_TYPE_CURSE
+        self.color = Tags.Arcane.color
+        self.asset = ["UnderusedOptions", "Statuses", "ice_tap"]
+
+class IceResonanceBuff(FreezeDependentBuff):
+
+    def on_init(self):
+        self.name = "Ice Resonance"
+        self.buff_type = BUFF_TYPE_CURSE
+        self.color = Tags.Ice.color
 
 class HolyArmorBuff(Buff):
 
@@ -6934,30 +6960,10 @@ def modify_class(cls):
                 self.owner.level.queue_spell(self.do_damage(target, 2*self.charges))
             self.charges = 0
 
-    if cls is FragilityBuff:
-
-        def on_init(self):
-            self.name = "Fragile"
-            self.buff_type = BUFF_TYPE_CURSE
-            self.color = Tags.Ice.color
-            self.resists[Tags.Ice] = -100
-            self.resists[Tags.Physical] = -100
-            self.asset = ["UnderusedOptions", "Statuses", "fragility"]
-
-        def on_pre_advance(self):
-            freeze = self.owner.get_buff(FrozenBuff)
-            if freeze:
-                self.turns_left = max(self.turns_left, freeze.turns_left)
-
-        def on_unapplied(self):
-            buff = self.owner.get_buff(FrozenBuff)
-            if buff:
-                self.owner.apply_buff(self, self.turns_left)
-
     if cls is FrozenFragility:
 
         def get_description(self):
-            return ("Whenever an enemy is [frozen:freeze], inflict Fragility for the same duration, which reduces [ice] and [physical] resistances by 100.\n"
+            return ("Whenever an enemy is [frozen:freeze], inflict fragility for the same duration, which reduces [ice] and [physical] resistances by 100.\n"
                     "Whenever the remaining duration of [freeze] on an enemy is refreshed or extended, the remaining duration of fragility will be lengthened to match if it is shorter.\nIf fragility is removed prematurely and the enemy is still [frozen], it will automatically reapply itself.").format(**self.fmt_dict())
 
         def on_frozen(self, evt):
@@ -6965,7 +6971,7 @@ def modify_class(cls):
                 return
             if not are_hostile(self.owner, evt.unit):
                 return
-            evt.unit.apply_buff(FragilityBuff(), evt.buff.turns_left)
+            evt.unit.apply_buff(curr_module.FragilityBuff(), evt.buff.turns_left)
 
     if cls is Teleblink:
 
@@ -7212,7 +7218,7 @@ def modify_class(cls):
             self.global_triggers[EventOnBuffApply] = lambda evt: on_buff_apply(self, evt)
 
         def get_description(self):
-            return ("Whenever an enemy is [frozen:freeze], inflict Frostbite for the same duration, which deals [{damage}_dark:dark] damage per turn.\n"
+            return ("Whenever an enemy is [frozen:freeze], inflict frostbite for the same duration, which deals [{damage}_dark:dark] damage per turn.\n"
                     "Whenever the remaining duration of [freeze] on an enemy is refreshed or extended, the remaining duration of frostbite will be lengthened to match if it is shorter.\nIf frostbite is removed prematurely and the enemy is still [frozen], it will automatically reapply itself.").format(**self.fmt_dict())
 
         def on_buff_apply(self, evt):
@@ -7986,9 +7992,106 @@ def modify_class(cls):
             return ("Apply [{duration}_turns:duration] of [poison] and deal [{damage}_poison:poison] damage to all units in a [{radius}_tile:radius] radius.\n"
                     + text.poison_desc).format(**self.fmt_dict())
 
+    if cls is IceTap:
+
+        def on_init(self):
+            self.name = "Ice Tap"
+            self.tags = [Tags.Ice, Tags.Arcane]
+            self.level = 6
+            self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
+            self.global_triggers[EventOnBuffApply] = lambda evt: on_buff_apply(self, evt)
+            self.copying = False
+
+        def get_description(self):
+            return ("Whenever a unit other than you is [frozen], inflict ice tap for the same duration.\n"
+                    "The first [arcane] spell you cast each turn that targets an ice tapped unit will be copied onto every ice tapped enemy in line of sight if possible. Remove [freeze] and ice tap from all affected units.\n"
+                    "Whenever the remaining duration of [freeze] on a unit is refreshed or extended, the remaining duration of ice tap will be lengthened to match if it is shorter.\nIf ice tap is removed prematurely and the unit is still [frozen], it will automatically reapply itself.").format(**self.fmt_dict())
+
+        def on_buff_apply(self, evt):
+            if not isinstance(evt.buff, FrozenBuff):
+                return
+            if evt.unit is self.owner:
+                return
+            buff = IceTapBuff()
+            if not are_hostile(evt.unit, self.owner):
+                buff.buff_type = BUFF_TYPE_BLESS
+            evt.unit.apply_buff(buff, evt.buff.turns_left)
+
+        def on_pre_advance(self):
+            self.copying = False
+
+        def on_spell_cast(self, evt):
+            if self.copying or Tags.Arcane not in evt.spell.tags:
+                return False
+
+            unit = self.owner.level.get_unit_at(evt.x, evt.y)
+            if not unit:
+                return
+
+            buff = unit.get_buff(IceTapBuff)
+            if not buff:
+                return
+            unit.remove_buffs(FrozenBuff)
+            unit.remove_buff(buff)
+
+            spell = type(evt.spell)()
+            spell.max_charges = 0
+            spell.cur_charges = 0
+            spell.caster = self.owner
+            spell.owner = self.owner
+            spell.range = RANGE_GLOBAL
+            spell.requires_los = False
+
+            self.copying = True
+
+            for u in [u for u in self.owner.level.get_units_in_los(unit) if are_hostile(self.owner, u) and u != unit]:
+                if spell.can_cast(u.x, u.y):
+                    b = u.get_buff(IceTapBuff)
+                    if not b:
+                        continue
+                    self.owner.level.act_cast(self.owner, spell, u.x, u.y, pay_costs=False)
+                    u.remove_buffs(FrozenBuff)
+                    u.remove_buff(b)
+
+    if cls is Crystallographer:
+
+        def on_init(self):
+            self.name = "Crystal Power"
+            self.tags = [Tags.Ice, Tags.Arcane, Tags.Sorcery]
+            self.level = 4
+            self.global_triggers[EventOnBuffApply] = lambda evt: on_buff_apply(self, evt)
+
+        def get_description(self):
+            return ("Whenever a unit is [frozen], inflict ice resonance for the same duration.\n"
+                    "Your [sorcery] spells gain [2_damage:damage] for each [glassified] enemy and each enemy with ice resonance.\n"
+                    "Whenever the remaining duration of [freeze] on a unit is refreshed or extended, the remaining duration of ice resonance will be lengthened to match if it is shorter.\nIf ice resonance is removed prematurely and the unit is still [frozen], it will automatically reapply itself.").format(**self.fmt_dict())
+
+        def on_buff_apply(self, evt):
+            if not isinstance(evt.buff, FrozenBuff):
+                return
+            buff = IceResonanceBuff()
+            if not are_hostile(evt.unit, self.owner):
+                buff.buff_type = BUFF_TYPE_BLESS
+            evt.unit.apply_buff(buff, evt.buff.turns_left)
+
+        def buff(self):
+            amt = 0
+            for u in self.owner.level.units:
+                if u.has_buff(IceResonanceBuff) or u.has_buff(GlassPetrifyBuff):
+                    amt += 2
+            if amt:
+                self.owner.apply_buff(CrystallographerActiveBuff(amt))
+            yield
+
+        def on_pre_advance(self):
+            self.owner.remove_buffs(CrystallographerActiveBuff)
+            if all([u.team == TEAM_PLAYER for u in self.owner.level.units]):
+                return
+            self.owner.level.queue_spell(buff(self))
+
     for func_name, func in [(key, value) for key, value in locals().items() if callable(value)]:
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, FaestoneBuff, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FragilityBuff, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord, SummonSpiderQueen, DeathChill, DeathChillDebuff, ThornyPrisonSpell, SummonBlueLion, FlameGateBuff, FlameGateSpell, ArcaneShield, MarchOfTheRighteous, MagnetizeBuff, PlagueOfFilth, IgnitePoison, LightningBoltSpell, Iceball, ToxinBurst]:
+for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, FaestoneBuff, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, AcidFumes, CollectedAgony, FrozenFragility, Teleblink, Houndlord, Purestrike, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord, SummonSpiderQueen, DeathChill, DeathChillDebuff, ThornyPrisonSpell, SummonBlueLion, FlameGateBuff, FlameGateSpell, ArcaneShield, MarchOfTheRighteous, MagnetizeBuff, PlagueOfFilth, IgnitePoison, LightningBoltSpell, Iceball, ToxinBurst, IceTap, Crystallographer]:
     modify_class(cls)

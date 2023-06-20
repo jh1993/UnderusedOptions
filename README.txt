@@ -543,6 +543,9 @@ Arcane Accounting:
 Arcane Shield:
 - SH limit increased to 2.
 
+Crystal Power:
+- Now instead inflicts an ice resonance debuff equal to the duration of the freeze inflicted, which persists after unfreezing. Damage buff is based on the number of units with glassify and ice resonance. If freeze duration is refreshed or extended, ice resonance duration will be adjusted to match if shorter. If ice resonance is removed prematurely and the enemy is still frozen, it will automatically reapply itself.
+
 Faestone:
 - Now counts as a unique minion for the purpose of Conjure Memories.
 - Using a mana potion now resurrects the faestone if it's dead.
@@ -575,7 +578,7 @@ Collected Agony:
 - The dark damage will no longer target dark-immune enemies.
 
 Frozen Fragility:
-- Now instead inflicts a Fragility debuff equal to the duration of the freeze inflicted, which persists after unfreezing. If freeze duration is refreshed or extended, fragility duration will be adjusted to match if shorter. If fragility is removed prematurely and the enemy is still [frozen], it will automatically reapply itself.
+- Now instead inflicts a fragility debuff equal to the duration of the freeze inflicted, which persists after unfreezing. If freeze duration is refreshed or extended, fragility duration will be adjusted to match if shorter. If fragility is removed prematurely and the enemy is still frozen, it will automatically reapply itself.
 
 Glittering Dance:
 - Now has the nature tag.
@@ -604,8 +607,11 @@ Bone Guard:
 - Now drain max HP from all enemies, and instantly kill enemies with less max HP than the drained amount.
 
 Frostbite:
-- Now instead inflicts a Frostbite debuff equal to the duration of the freeze inflicted, which persists after unfreezing. If freeze duration is refreshed or extended, frostbite duration will be adjusted to match if shorter. If frostbite is removed prematurely and the enemy is still [frozen], it will automatically reapply itself.
+- Now instead inflicts a frostbite debuff equal to the duration of the freeze inflicted, which persists after unfreezing. If freeze duration is refreshed or extended, frostbite duration will be adjusted to match if shorter. If frostbite is removed prematurely and the enemy is still frozen, it will automatically reapply itself.
 - SP cost reduced to 5.
+
+Ice Tap: 
+- Now instead inflicts an ice tap debuff equal to the duration of the freeze inflicted, which persists after unfreezing. Spell copying is based on ice tap, but will remove both freeze and ice tap; it will also only copy the first arcane spell you cast each turn, for consistency. If freeze duration is refreshed or extended, ice tap duration will be adjusted to match if shorter. If frostbite is removed prematurely and the enemy is still [frozen], it will automatically reapply itself.
 
 Inferno Engines:
 - Level increased to 7, but the effect is now fully retroactive, automatically applying to all newly summoned metallic minions and minions that become metallic.
