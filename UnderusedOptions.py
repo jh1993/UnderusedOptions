@@ -8004,7 +8004,7 @@ def modify_class(cls):
 
         def get_description(self):
             return ("Whenever a unit other than you is [frozen], inflict ice tap for the same duration.\n"
-                    "The first [arcane] spell you cast each turn that targets an ice tapped unit will be copied onto every ice tapped enemy in line of sight if possible. Remove [freeze] and ice tap from all affected units.\n"
+                    "The first [arcane] spell you cast each turn that targets an ice tapped unit will also be cast onto every valid ice tapped enemy target. Remove [freeze] and ice tap from all affected units.\n"
                     "Whenever the remaining duration of [freeze] on a unit is refreshed or extended, the remaining duration of ice tap will be lengthened to match if it is shorter.\nIf ice tap is removed prematurely and the unit is still [frozen], it will automatically reapply itself.").format(**self.fmt_dict())
 
         def on_buff_apply(self, evt):
@@ -8034,24 +8034,17 @@ def modify_class(cls):
             unit.remove_buffs(FrozenBuff)
             unit.remove_buff(buff)
 
-            spell = type(evt.spell)()
-            spell.max_charges = 0
-            spell.cur_charges = 0
-            spell.caster = self.owner
-            spell.owner = self.owner
-            spell.range = RANGE_GLOBAL
-            spell.requires_los = False
-
             self.copying = True
 
-            for u in [u for u in self.owner.level.get_units_in_los(unit) if are_hostile(self.owner, u) and u != unit]:
-                if spell.can_cast(u.x, u.y):
-                    b = u.get_buff(IceTapBuff)
-                    if not b:
-                        continue
-                    self.owner.level.act_cast(self.owner, spell, u.x, u.y, pay_costs=False)
-                    u.remove_buffs(FrozenBuff)
-                    u.remove_buff(b)
+            for u in [u for u in self.owner.level.get_units_in_ball(self.owner, evt.spell.get_stat("range")) if are_hostile(self.owner, u) and u != unit]:
+                b = u.get_buff(IceTapBuff)
+                if not b:
+                    continue
+                if not evt.spell.can_cast(u.x, u.y):
+                    continue
+                self.owner.level.act_cast(self.owner, evt.spell, u.x, u.y, pay_costs=False)
+                u.remove_buffs(FrozenBuff)
+                u.remove_buff(b)
 
     if cls is Crystallographer:
 
@@ -8063,7 +8056,7 @@ def modify_class(cls):
 
         def get_description(self):
             return ("Whenever a unit is [frozen], inflict ice resonance for the same duration.\n"
-                    "Your [sorcery] spells gain [2_damage:damage] for each [glassified] enemy and each enemy with ice resonance.\n"
+                    "Your [sorcery] spells gain [2_damage:damage] for each [glassified] unit and each unit with ice resonance.\n"
                     "Whenever the remaining duration of [freeze] on a unit is refreshed or extended, the remaining duration of ice resonance will be lengthened to match if it is shorter.\nIf ice resonance is removed prematurely and the unit is still [frozen], it will automatically reapply itself.").format(**self.fmt_dict())
 
         def on_buff_apply(self, evt):

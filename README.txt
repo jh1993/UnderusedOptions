@@ -611,7 +611,9 @@ Frostbite:
 - SP cost reduced to 5.
 
 Ice Tap: 
-- Now instead inflicts an ice tap debuff equal to the duration of the freeze inflicted, which persists after unfreezing. Spell copying is based on ice tap, but will remove both freeze and ice tap; it will also only copy the first arcane spell you cast each turn, for consistency. If freeze duration is refreshed or extended, ice tap duration will be adjusted to match if shorter. If frostbite is removed prematurely and the enemy is still [frozen], it will automatically reapply itself.
+- Now instead inflicts an ice tap debuff equal to the duration of the freeze inflicted, which persists after unfreezing. If freeze duration is refreshed or extended, ice tap duration will be adjusted to match if shorter. If frostbite is removed prematurely and the enemy is still [frozen], it will automatically reapply itself.
+- Now casts the triggering spell on every valid enemy target with ice tap (based on the spell's own range, and can ignore line of sight if the spell can), removing ice tap and freeze in the process.
+- Now only copies the first arcane spell you cast each turn, for consistency.
 
 Inferno Engines:
 - Level increased to 7, but the effect is now fully retroactive, automatically applying to all newly summoned metallic minions and minions that become metallic.
