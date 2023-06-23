@@ -66,8 +66,8 @@ Fan of Flames:
 - Previously, if you're somehow moved into the target square while channeling, you'll hit all tiles in range except yourself. Now, if this happens, you'll only hit all tiles in a radius of 5 plus bonuses, but there's now a Wheel of Flames upgrade (4 SP) that lets you simply target yourself with the spell to reproduce the effect.
 
 Freeze:
-- Absolute Zero (6 SP): The target now permanently loses 100 ice resistance before being frozen.
-- Permafrost (5 SP): When targeting an already frozen unit, increase the duration of freeze on it by one third of this spell's duration if the result is greater than this spell's duration. Then deal ice damage equal to twice the target's freeze duration.
+- Absolute Zero (6 SP): When targeting an enemy, the target now permanently loses 100 ice resistance before being frozen.
+- Permafrost (5 SP): When targeting an already frozen enemy, increase the duration of freeze on it by one third of this spell's duration if the result is greater than this spell's duration. Then deal ice damage equal to twice the target's freeze duration.
 
 Healing Light:
 - Cleansing Light (3 SP): Healing Light will now remove all debuffs from affected allies before healing them.
@@ -112,7 +112,8 @@ Melt:
 
 Petrify:
 - Max charges increased to 20. Max charges upgrade changed to +10 charges for 2 SP.
-- Stone Curse (6 SP): Whenever an enemy is inflicted with petrify or glassify, permanently inflict Stone Curse to it, which reduces holy, dark, arcane, and poison resistances by 50 as long as the target is petrified or glassified. This consumes a charge of Petrify and counts as casting Petrify on that enemy; it will not be triggered if Petrify has no more charges remaining.
+- Duration (3 SP): +10 duration.
+- Stone Mirror (4 SP): When targeting an enemy, the target is also permanently inflicted with Stone Mirror. When a petrified or glassified enemy with Stone Mirror dies, one of that enemy's allies in its line of sight will also be inflicted with Stone Mirror and the dead enemy's remaining duration of petrify and glassify. Targets without Stone Mirror are prioritized.
 
 Soul Swap:
 - Infernal Swap (3 SP): Soul Swap can target demon units as well.

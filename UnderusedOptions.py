@@ -330,40 +330,37 @@ class ShieldEaterBuff(Buff):
             if self.owner.shields < self.max:
                 self.owner.add_shields(1)
 
-class StoneCurseBuff(Buff):
+class StoneMirrorBuff(Buff):
 
     def on_init(self):
-        self.name = "Stone Curse"
+        self.name = "Stone Mirror"
         self.buff_type = BUFF_TYPE_CURSE
         self.color = PetrifyBuff().color
-        self.owner_triggers[EventOnBuffApply] = self.on_buff_apply
+        self.owner_triggers[EventOnDeath] = self.on_death
     
-    def on_buff_apply(self, evt):
-        if not isinstance(evt.buff, PetrifyBuff) and not isinstance(evt.buff, GlassPetrifyBuff):
+    def on_death(self, evt):
+        petrify = None
+        glassify = None
+        for buff in self.owner.buffs:
+            if type(buff) == PetrifyBuff:
+                petrify = buff
+            elif type(buff) == GlassPetrifyBuff:
+                glassify = buff
+        if not petrify and not glassify:
             return
-        for tag in [Tags.Holy, Tags.Dark, Tags.Arcane, Tags.Poison]:
-            self.owner.resists[tag] = -50
-            evt.buff.resists[tag] -= 50
-
-class StoneCurseUpgrade(Upgrade):
-
-    def on_init(self):
-        self.name = "Stone Curse"
-        self.level = 6
-        self.description = "Whenever an enemy is inflicted with [petrify] or [glassify], permanently inflict Stone Curse to it, which reduces [holy], [dark], [arcane], and [poison] resistances by 50 as long as the target is [petrified] or [glassified].\nThis consumes a charge of Petrify and counts as casting Petrify on that enemy; it will not be triggered if Petrify has no more charges remaining."
-        self.global_triggers[EventOnBuffApply] = self.on_buff_apply
-    
-    def on_buff_apply(self, evt):
-        if not are_hostile(self.owner, evt.unit) or (not isinstance(evt.buff, PetrifyBuff) and not isinstance(evt.buff, GlassPetrifyBuff)):
+        targets = [u for u in self.owner.level.get_units_in_los(self.owner) if u is not self.owner and not are_hostile(u, self.owner)]
+        if not targets:
             return
-        if evt.unit.has_buff(StoneCurseBuff) or self.prereq.cur_charges <= 0:
-            return
-        self.prereq.cur_charges -= 1
-        evt.unit.apply_buff(StoneCurseBuff())
-        for tag in [Tags.Holy, Tags.Dark, Tags.Arcane, Tags.Poison]:
-            evt.unit.resists[tag] = -50
-            evt.buff.resists[tag] -= 50
-        self.owner.level.event_manager.raise_event(EventOnSpellCast(self.prereq, self.prereq.caster, evt.unit.x, evt.unit.y), self.prereq.caster)
+        good_targets = [u for u in targets if not u.has_buff(StoneMirrorBuff)]
+        if good_targets:
+            target = random.choice(good_targets)
+        else:
+            target = random.choice(targets)
+        target.apply_buff(StoneMirrorBuff())
+        if petrify:
+            target.apply_buff(PetrifyBuff(), petrify.turns_left)
+        if glassify:
+            target.apply_buff(GlassPetrifyBuff(), glassify.turns_left)
 
 class ToxicMushboomAura(DamageAuraBuff):
     def __init__(self, radius):
@@ -2085,13 +2082,16 @@ def modify_class(cls):
             self.range = 8
 
             self.upgrades['duration'] = (4, 3)
-            self.upgrades["absolute_zero"] = (1, 6, "Absolute Zero", "The target now permanently loses [100_ice:ice] resistance before being frozen.")
-            self.upgrades["permafrost"] = (1, 5, "Permafrost", "When targeting an already [frozen] unit, increase the duration of [freeze] on it by one third of this spell's duration if the result is greater than this spell's duration.\nThen deal [ice] damage equal to twice the target's [freeze] duration.\nThis upgrade cannot extend [freeze] duration on targets that can gain clarity.")
+            self.upgrades["absolute_zero"] = (1, 6, "Absolute Zero", "When targeting an enemy, the target now permanently loses [100_ice:ice] resistance before being [frozen].")
+            self.upgrades["permafrost"] = (1, 5, "Permafrost", "When targeting an already [frozen] enemy, increase the duration of [freeze] on it by one third of this spell's duration if the result is greater than this spell's duration.\nThen deal [ice] damage equal to twice the target's [freeze] duration.\nThis upgrade cannot extend [freeze] duration on targets that can gain clarity.")
 
         def cast_instant(self, x, y):
             duration = self.get_stat("duration")
             target = self.caster.level.get_unit_at(x, y)
             if not target:
+                return
+            if not are_hostile(target, self.caster):
+                target.apply_buff(FrozenBuff(), duration)
                 return
             if self.get_stat("absolute_zero"):
                 target.apply_buff(AbsoluteZeroBuff())
@@ -2560,9 +2560,23 @@ def modify_class(cls):
             self.duration = 10
 
             self.upgrades['max_charges'] = (10, 2)
+            self.upgrades["duration"] = (10, 3)
             self.upgrades['glassify'] = (1, 3, 'Glassify', 'Turn the target to [glass] instead of stone.\n[Glassified] targets have [-100_physical:physical] resistance.')
-            self.add_upgrade(StoneCurseUpgrade())
+            self.upgrades["mirror"] = (1, 4, "Stone Mirror", "When targeting an enemy, the target is also permanently inflicted with Stone Mirror.\nWhen a [petrified] or [glassified] enemy with Stone Mirror dies, one of that enemy's allies in its line of sight will also be inflicted with Stone Mirror and the dead enemy's remaining duration of [petrify] and [glassify].\nTargets without Stone Mirror are prioritized.")
             self.level = 2
+
+        def cast(self, x, y):
+
+            target = self.caster.level.get_unit_at(x, y)
+            if not target:
+                return
+
+            self.caster.level.deal_damage(x, y, 0, Tags.Physical, self)
+            buff = PetrifyBuff() if not self.get_stat('glassify') else GlassPetrifyBuff()
+            target.apply_buff(buff, self.get_stat('duration'))
+            if self.get_stat("mirror") and are_hostile(target, self.caster):
+                target.apply_buff(StoneMirrorBuff())
+            yield
 
     if cls is SoulSwap:
 
@@ -8054,18 +8068,35 @@ def modify_class(cls):
             self.level = 4
             self.global_triggers[EventOnBuffApply] = lambda evt: on_buff_apply(self, evt)
 
+        def on_applied(self, owner):
+            for unit in self.owner.level.units:
+                if not are_hostile(unit, self.owner):
+                    continue
+                for buff in unit.buffs:
+                    if not isinstance(buff, GlassPetrifyBuff):
+                        continue
+                    change_buff(buff)
+
+        def change_buff(buff):
+            buff.owner.resists[Tags.Ice] -= 100
+            buff.resists[Tags.Ice] = 0
+
         def get_description(self):
-            return ("Whenever a unit is [frozen], inflict ice resonance for the same duration.\n"
+            return ("[Glassify] no longer increases enemies' [ice] resistance.\n"
+                    "Whenever a unit is [frozen], inflict ice resonance for the same duration.\n"
                     "Your [sorcery] spells gain [2_damage:damage] for each [glassified] unit and each unit with ice resonance.\n"
                     "Whenever the remaining duration of [freeze] on a unit is refreshed or extended, the remaining duration of ice resonance will be lengthened to match if it is shorter.\nIf ice resonance is removed prematurely and the unit is still [frozen], it will automatically reapply itself.").format(**self.fmt_dict())
 
         def on_buff_apply(self, evt):
-            if not isinstance(evt.buff, FrozenBuff):
-                return
-            buff = IceResonanceBuff()
-            if not are_hostile(evt.unit, self.owner):
-                buff.buff_type = BUFF_TYPE_BLESS
-            evt.unit.apply_buff(buff, evt.buff.turns_left)
+            if isinstance(evt.buff, GlassPetrifyBuff):
+                if not are_hostile(evt.unit, self.owner):
+                    return
+                change_buff(evt.buff)
+            elif isinstance(evt.buff, FrozenBuff):
+                buff = IceResonanceBuff()
+                if not are_hostile(evt.unit, self.owner):
+                    buff.buff_type = BUFF_TYPE_BLESS
+                evt.unit.apply_buff(buff, evt.buff.turns_left)
 
         def buff(self):
             amt = 0
