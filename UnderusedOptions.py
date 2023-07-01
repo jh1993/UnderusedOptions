@@ -532,15 +532,22 @@ class FrostfireHydraBeam(HydraBeam):
     def per_square_effect(self, x, y):
         self.caster.level.deal_damage(x, y, self.get_stat("damage"), self.damage_type, self)
 
-    def cast(self, x, y):
-        yield from HydraBeam.cast(self, x, y)
-        self.change_element()
-
     def can_redeal(self, target, already_checked):
         if self.damage_type == Tags.Fire:
             return self.dragon_mage_spell.get_stat("fire_resist") and not target.has_buff(MeltBuff) and target.resists[Tags.Fire] < 200
         else:
             return self.dragon_mage_spell.get_stat("absolute_zero") and not target.has_buff(AbsoluteZeroBuff) and target.resists[Tags.Ice] < 200
+
+class FrostfireHydraBuff(Buff):
+
+    def __init__(self, beam):
+        self.beam = beam
+        Buff.__init__(self)
+        self.color = Tags.Dragon.color
+        self.description = "Beam alternates between fire and ice each turn."
+
+    def on_advance(self):
+        self.beam.change_element()
 
 class SpellConduitBuff(Buff):
 
@@ -3414,7 +3421,7 @@ def modify_class(cls):
         def get_description(self):
             return ("Summon a frostfire hydra.\n"
                     "The hydra has [{minion_health}_HP:minion_health], and is stationary.\n"
-                    "The hydra has a beam attack which deals [{breath_damage}_damage:damage] damage with a [{minion_range}_tile:minion_range] range. Its damage type alternates between [fire] and [ice].\n"
+                    "The hydra has a beam attack which deals [{breath_damage}_damage:damage] damage with a [{minion_range}_tile:minion_range] range. Its damage type alternates between [fire] and [ice] each turn.\n"
                     "The hydra's beam is considered a breath weapon.").format(**self.fmt_dict())
 
         def get_frost_hydra(self):
@@ -3459,9 +3466,11 @@ def modify_class(cls):
         def cast_instant(self, x, y):
             unit = Unit()
             set_hydra_stats(self, unit)
-            unit.spells = [FrostfireHydraBeam(self, unit)]
+            beam = FrostfireHydraBeam(self, unit)
+            unit.spells = [beam]
+            unit.buffs = [FrostfireHydraBuff(beam)]
             if self.get_stat("splitting"):
-                unit.buffs = [RespawnAs(lambda: get_frost_hydra(self)), RespawnAs(lambda: get_fire_hydra(self))]
+                unit.buffs.extend([RespawnAs(lambda: get_frost_hydra(self)), RespawnAs(lambda: get_fire_hydra(self))])
             self.summon(unit, Point(x, y))
 
     if cls is CallSpirits:

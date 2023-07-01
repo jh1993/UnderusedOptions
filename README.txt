@@ -199,7 +199,7 @@ Flame Gate:
 - Gate Remnant (3 SP): When Flame Gate expires, or if you cast this spell again when it's active, you summon a fire elemental gate next to yourself, which automatically summons a fire elemental from this spell every 7 to 10 turns.
 
 Frostfire Hydra:
-- Now only has a single beam that alternates between fire and ice. It counts as a breath weapon.
+- Now only has a single beam that alternates between fire and ice each turn. It counts as a breath weapon.
 - Is now a permanent minion; minion duration upgrade removed.
 - Dragon Mage (6 SP): The hydra will cast Melt on the target of its fire beam, and Freeze on the target of its ice beam. These spells gains all of your upgrades and bonuses.
 - Splitting (4 SP): Upon reaching 0 HP, the hydra splits into a frost hydra and a fire hydra. Each hydra inherits one of the frostfire hydra's elements and resistances. Its beam only deals damage of that element, and has a 2 turns cooldown.
