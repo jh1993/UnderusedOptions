@@ -9,7 +9,7 @@ from Consumables import *
 import mods.Bugfixes.Bugfixes
 import mods.NoMoreScams.NoMoreScams
 from mods.NoMoreScams.NoMoreScams import is_immune, FloatingEyeBuff, is_conj_skill_summon
-from mods.Bugfixes.Bugfixes import RemoveBuffOnPreAdvance, MinionBuffAura, drain_max_hp_kill, increase_cooldown
+from mods.Bugfixes.Bugfixes import RemoveBuffOnPreAdvance, MinionBuffAura, drain_max_hp_kill, increase_cooldown, HydraBeam
 
 import sys, math, random
 
@@ -479,58 +479,68 @@ class SpiritBindingBuff(Buff):
         spirit.flying = True
         self.spell.summon(spirit, target=self.owner)
 
-class FrostfireHydraDragonMage(Upgrade):
+class FireHydraBeam(HydraBeam):
 
-    def on_init(self):
-        self.name = "Dragon Mage"
-        self.level = 6
-        self.description = "The hydra will cast Melt on the target of its fire beam, and Freeze on the target of its ice beam.\nThese spells gains all of your upgrades and bonuses."
-        self.global_triggers[EventOnSpellCast] = self.on_spell_cast
+    def __init__(self, spell, caster):
+        HydraBeam.__init__(self, spell, caster, "Fire Beam", Tags.Fire, MeltSpell)
+        self.cool_down = 2
 
-    def on_spell_cast(self, evt):
-        if evt.caster.source is not self.prereq:
-            return
-        if evt.spell.name != "Hydra Beam":
-            return
-        spell = None
-        if evt.spell.damage_type == Tags.Ice:
-            spell = Freeze()
-        elif evt.spell.damage_type == Tags.Fire:
-            spell = MeltSpell()
-        if not spell:
-            return
-        spell.caster = evt.caster
-        spell.owner = evt.caster
-        spell.range = RANGE_GLOBAL
-        spell.max_charges = 0
-        spell.cur_charges = 0
-        spell.statholder = self.owner
-        if not spell.can_cast(evt.x, evt.y):
-            return
-        self.owner.level.act_cast(evt.caster, spell, evt.x, evt.y, pay_costs=False)
-    
-    # For my No More Scams mod
-    def can_redeal(self, target, source, damage_type, already_checked):
-        if source.owner and source.owner.source is not self.prereq:
-            return False
-        if source.name != "Hydra Beam":
-            return False
-        spell = None
-        if damage_type == Tags.Ice:
-            for s in self.owner.spells:
-                if type(s) == Freeze:
-                    spell = s
-                    break
-            if spell and spell.get_stat("absolute_zero") and not target.has_buff(AbsoluteZeroBuff) and target.resists[Tags.Ice] < 200:
-                return True
-        if damage_type == Tags.Fire:
-            for s in self.owner.spells:
-                if type(s) == MeltSpell:
-                    spell = s
-                    break
-            if spell and spell.get_stat("fire_resist") and not target.has_buff(MeltBuff) and target.resists[Tags.Fire] < 200:
-                return True
-        return False
+    def can_redeal(self, target, already_checked):
+        return self.dragon_mage_spell.get_stat("fire_resist") and not target.has_buff(MeltBuff) and target.resists[Tags.Fire] < 200
+
+    def per_square_effect(self, x, y):
+        self.caster.level.deal_damage(x, y, self.get_stat("damage"), self.damage_type, self)
+
+class IceHydraBeam(HydraBeam):
+
+    def __init__(self, spell, caster):
+        HydraBeam.__init__(self, spell, caster, "Ice Beam", Tags.Ice, Freeze)
+        self.cool_down = 2
+
+    def can_redeal(self, target, already_checked):
+        return self.dragon_mage_spell.get_stat("absolute_zero") and not target.has_buff(AbsoluteZeroBuff) and target.resists[Tags.Ice] < 200
+
+    def per_square_effect(self, x, y):
+        self.caster.level.deal_damage(x, y, self.get_stat("damage"), self.damage_type, self)
+
+class FrostfireHydraBeam(HydraBeam):
+
+    def __init__(self, spell, caster):
+        HydraBeam.__init__(self, spell, caster, "Fire Beam", Tags.Fire, MeltSpell)
+        self.other_dragon_mage_spell = Freeze()
+        self.other_dragon_mage_spell.caster = caster
+        self.other_dragon_mage_spell.owner = caster
+        self.other_dragon_mage_spell.max_charges = 0
+        self.other_dragon_mage_spell.cur_charges = 0
+        self.other_dragon_mage_spell.range = RANGE_GLOBAL
+        self.other_dragon_mage_spell.requires_los = False
+        self.other_dragon_mage_spell.statholder = spell.caster
+        self.cool_down = 0
+        if random.choice([True, False]):
+            self.change_element()
+
+    def change_element(self):
+        if self.damage_type == Tags.Fire:
+            self.damage_type = Tags.Ice
+        else:
+            self.damage_type = Tags.Fire
+        self.name = "%s Beam" % self.damage_type.name
+        old = self.dragon_mage_spell
+        self.dragon_mage_spell = self.other_dragon_mage_spell
+        self.other_dragon_mage_spell = old
+
+    def per_square_effect(self, x, y):
+        self.caster.level.deal_damage(x, y, self.get_stat("damage"), self.damage_type, self)
+
+    def cast(self, x, y):
+        yield from HydraBeam.cast(self, x, y)
+        self.change_element()
+
+    def can_redeal(self, target, already_checked):
+        if self.damage_type == Tags.Fire:
+            return self.dragon_mage_spell.get_stat("fire_resist") and not target.has_buff(MeltBuff) and target.resists[Tags.Fire] < 200
+        else:
+            return self.dragon_mage_spell.get_stat("absolute_zero") and not target.has_buff(AbsoluteZeroBuff) and target.resists[Tags.Ice] < 200
 
 class SpellConduitBuff(Buff):
 
@@ -2295,7 +2305,18 @@ def modify_class(cls):
             self.hp = 0
 
         def on_applied(self, owner):
-            self.owner.level.queue_spell(self.modify_unit())
+            self.hp = math.floor(self.owner.max_hp*self.spell.get_stat('max_health_loss')/100)
+
+            if self.friendly and self.buff_type == BUFF_TYPE_BLESS:
+                self.owner.max_hp += self.hp
+                self.owner.deal_damage(-self.hp, Tags.Heal, self.spell)
+            else:
+                drain_max_hp(self.owner, self.hp)
+            if Tags.Undead in self.owner.tags:
+                self.originally_undead = True
+            else:
+                self.owner.tags.append(Tags.Undead)
+            
             self.resists[Tags.Dark] = 100
             self.resists[Tags.Holy] = -100
             if self.friendly and self.buff_type == BUFF_TYPE_BLESS:
@@ -2309,28 +2330,13 @@ def modify_class(cls):
                 self.resists[Tags.Fire] = -self.spell.get_stat('fire_vulnerability')
                 self.resists[Tags.Heal] = 100
 
-        def modify_unit(self):
-            self.hp = math.floor(self.owner.max_hp*self.spell.get_stat('max_health_loss')/100)
-
-            if self.friendly and self.buff_type == BUFF_TYPE_BLESS:
-                self.owner.max_hp += self.hp
-                self.owner.deal_damage(-self.hp, Tags.Heal, self.spell)
-            else:
-                drain_max_hp(self.owner, self.hp)
-            if Tags.Undead in self.owner.tags:
-                self.originally_undead = True
-            else:
-                self.owner.tags.append(Tags.Undead)
-            yield
-
-        def unmodify_unit(self):
+        def on_unapplied(self):
             if self.buff_type == BUFF_TYPE_CURSE:
                 self.owner.max_hp += self.hp
             else:
                 drain_max_hp(self.owner, self.hp)
             if not self.originally_undead and Tags.Undead in self.owner.tags:
                 self.owner.tags.remove(Tags.Undead)
-            yield
 
     if cls is VoidMaw:
 
@@ -3389,13 +3395,13 @@ def modify_class(cls):
             self.max_charges = 7
 
             self.minion_range = 9
-            self.minion_damage = 7
+            self.breath_damage = 7
             self.minion_health = 16
 
             self.upgrades['minion_range'] = (6, 3)
-            self.upgrades['minion_damage'] = (7, 4)
-            self.upgrades["splitting"] = (1, 4, "Splitting", "Upon reaching 0 HP, the hydra splits into a frost hydra and a fire hydra.\nEach hydra inherits one of the frostfire hydra's beams and resistances.")
-            self.add_upgrade(FrostfireHydraDragonMage())
+            self.upgrades['breath_damage'] = (7, 4)
+            self.upgrades["splitting"] = (1, 4, "Splitting", "Upon reaching 0 HP, the hydra splits into a frost hydra and a fire hydra.\nEach hydra inherits one of the frostfire hydra's elements and resistances. Its beam only deals damage of that element, and has a [2_turns:duration] cooldown.")
+            self.upgrades["dragon_mage"] = (1, 6, "Dragon Mage", "The hydra will cast Melt on the target of its fire beam, and Freeze on the target of its ice beam.\nThese spells gains all of your upgrades and bonuses.")
 
             self.must_target_walkable = True
             self.must_target_empty = True
@@ -3408,25 +3414,26 @@ def modify_class(cls):
         def get_description(self):
             return ("Summon a frostfire hydra.\n"
                     "The hydra has [{minion_health}_HP:minion_health], and is stationary.\n"
-                    "The hydra has a beam attack which deals [{beam_damage}_fire:fire] damage with a [{minion_range}_tile:minion_range] range.\n"
-                    "The hydra has a beam attack which deals [{beam_damage}_ice:ice] damage with a [{minion_range}_tile:minion_range] range.\n"
-                    "The hydra's beams are not considered breath weapons, but they benefit from bonuses to both [minion_damage:minion_damage] and [breath_damage:dragon].").format(**self.fmt_dict())
+                    "The hydra has a beam attack which deals [{breath_damage}_damage:damage] damage with a [{minion_range}_tile:minion_range] range. Its damage type alternates between [fire] and [ice].\n"
+                    "The hydra's beam is considered a breath weapon.").format(**self.fmt_dict())
 
         def get_frost_hydra(self):
             unit = Unit()
             unit.source = self
             set_hydra_stats(self, unit, hydra_type=HYDRA_FROST)
+            unit.spells = [IceHydraBeam(self, unit)]
             return unit
 
         def get_fire_hydra(self):
             unit = Unit()
             unit.source = self
             set_hydra_stats(self, unit, hydra_type=HYDRA_FIRE)
+            unit.spells = [FireHydraBeam(self, unit)]
             return unit
 
         def set_hydra_stats(self, unit, hydra_type=HYDRA_FROSTFIRE):
 
-            unit.max_hp = self.minion_health
+            unit.max_hp = self.get_stat("minion_health")
 
             if hydra_type == HYDRA_FROST:
                 unit.name = "Frost Hydra"
@@ -3438,31 +3445,21 @@ def modify_class(cls):
                 unit.name = "Frostfire Hydra"
                 unit.asset_name = 'fire_and_ice_hydra'
 
-            fire = SimpleRangedAttack(damage=self.minion_damage + self.get_stat("breath_damage", base=0), range=self.minion_range, damage_type=Tags.Fire, beam=True)
-            fire.name = "Hydra Beam"
-            fire.cool_down = 2
-
-            ice = SimpleRangedAttack(damage=self.minion_damage + self.get_stat("breath_damage", base=0), range=self.minion_range, damage_type=Tags.Ice, beam=True)
-            ice.name = "Hydra Beam"
-            ice.cool_down = 2
-
             unit.stationary = True
             unit.tags = [Tags.Dragon]
             
             if hydra_type == HYDRA_FROSTFIRE or hydra_type == HYDRA_FROST:
-                unit.spells.append(ice)
                 unit.tags.append(Tags.Ice)
                 unit.resists[Tags.Ice] = 100
             
             if hydra_type == HYDRA_FROSTFIRE or hydra_type == HYDRA_FIRE:
-                unit.spells.append(fire)
                 unit.tags.append(Tags.Fire)
                 unit.resists[Tags.Fire] = 100
 
         def cast_instant(self, x, y):
             unit = Unit()
             set_hydra_stats(self, unit)
-            apply_minion_bonuses(self, unit)
+            unit.spells = [FrostfireHydraBeam(self, unit)]
             if self.get_stat("splitting"):
                 unit.buffs = [RespawnAs(lambda: get_frost_hydra(self)), RespawnAs(lambda: get_fire_hydra(self))]
             self.summon(unit, Point(x, y))

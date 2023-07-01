@@ -199,10 +199,10 @@ Flame Gate:
 - Gate Remnant (3 SP): When Flame Gate expires, or if you cast this spell again when it's active, you summon a fire elemental gate next to yourself, which automatically summons a fire elemental from this spell every 7 to 10 turns.
 
 Frostfire Hydra:
-- Beams now benefit from both minion damage and breath damage bonuses.
+- Now only has a single beam that alternates between fire and ice. It counts as a breath weapon.
 - Is now a permanent minion; minion duration upgrade removed.
 - Dragon Mage (6 SP): The hydra will cast Melt on the target of its fire beam, and Freeze on the target of its ice beam. These spells gains all of your upgrades and bonuses.
-- Splitting (4 SP): Upon reaching 0 HP, the hydra splits into a frost hydra and a fire hydra. Each hydra inherits one of the frostfire hydra's beams and resistances.
+- Splitting (4 SP): Upon reaching 0 HP, the hydra splits into a frost hydra and a fire hydra. Each hydra inherits one of the frostfire hydra's elements and resistances. Its beam only deals damage of that element, and has a 2 turns cooldown.
 
 Ghostball:
 - Possession (6 SP): Units in the area of Ghostball are now possessed for a duration equal to this spell's minion duration, which can stack. If a possessed unit dies, summon a ghost near it with duration equal to the remaining duration of possession. A possessed enemy takes dark damage each turn equal to this spell's minion damage. A possessed ally instead has melee retaliation dealing the same amount of dark damage to enemies.
