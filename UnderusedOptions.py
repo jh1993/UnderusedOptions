@@ -1522,9 +1522,9 @@ def modify_class(cls):
             self.upgrades['max_charges'] = (8, 2)
             self.upgrades['range'] = (3, 1)
 
-            self.upgrades['chaos'] = (1, 5, "Chaos Ball", "Fireball redeals a percentage of its [fire] damage to enemies as [lightning] and [physical] damage.\nThe percentage is 50%, plus half of each enemy's [fire] resistance if positive.", "damage type")
-            self.upgrades['energy'] = (1, 5, "Energy Ball", "Fireball redeals a percentage of its [fire] damage to enemies as [arcane] and [holy] damage.\nThe percentage is 50%, plus half of each enemy's [fire] resistance if positive.", "damage type")
-            self.upgrades['ash'] = (1, 6, "Ash Ball", "Fireball redeals a percentage of its [fire] damage to enemies as [dark] and [poison] damage.\nThe percentage is 50%, plus half of each enemy's [fire] resistance if positive.\nEnemies are also [blinded] for [1_turn:duration].", "damage type")
+            self.upgrades['chaos'] = (1, 3, "Chaos Ball", "Fireball redeals a percentage of its [fire] damage to enemies as [lightning] and [physical] damage.\nThe percentage is 25%, plus 1/4 of each enemy's [fire] resistance if positive.", "damage type")
+            self.upgrades['energy'] = (1, 4, "Energy Ball", "Fireball redeals a percentage of its [fire] damage to enemies as [arcane] and [holy] damage.\nThe percentage is 25%, plus 1/4 of each enemy's [fire] resistance if positive.", "damage type")
+            self.upgrades['ash'] = (1, 5, "Ash Ball", "Fireball redeals a percentage of its [fire] damage to enemies as [dark] and [poison] damage.\nThe percentage is 25%, plus 1/4 of each enemy's [fire] resistance if positive.\nEnemies are also [blinded] for [1_turn:duration].", "damage type")
 
         def cast(self, x, y):
             target = Point(x, y)
@@ -1545,7 +1545,7 @@ def modify_class(cls):
                         continue
                     unit = self.caster.level.get_unit_at(point.x, point.y)
                     if unit and are_hostile(unit, self.caster):
-                        bonus_damage = math.floor(damage*(50 + (unit.resists[Tags.Fire]/2 if unit.resists[Tags.Fire] > 0 else 0))/100)
+                        bonus_damage = math.floor(damage*(25 + (unit.resists[Tags.Fire]/4 if unit.resists[Tags.Fire] > 0 else 0))/100)
                         for tag in redeals:
                             unit.deal_damage(bonus_damage, tag, self)
                         if blind:
@@ -3993,7 +3993,7 @@ def modify_class(cls):
             self.upgrades['duration'] = (10, 2)
             self.upgrades["false"] = (1, 6, "False Pain", "Pain Mirror now counts incoming damage twice. The first time counts the raw incoming damage before resistances and [SH:shields], and the second time counts actual damage taken.\nThe first count will trigger even if all of the incoming damage is resisted or blocked.")
             self.upgrades["masochism"] = (1, 3, "Masochism", "Damage inflicted by allies will cause Pain Mirror to deal double damage.")
-            self.upgrades["holy"] = (1, 6, "Holy Martyr", "A percentage of [dark] damage dealt by Pain Mirror is redealt as [holy] damage.\nThe percentage is 50%, plus half of each enemy's [dark] resistance if positive.")
+            self.upgrades["holy"] = (1, 4, "Holy Martyr", "A percentage of [dark] damage dealt by Pain Mirror is redealt as [holy] damage.\nThe percentage is 25%, plus 1/4 of each enemy's [dark] resistance if positive.")
 
             self.tags = [Tags.Dark, Tags.Enchantment]
 
@@ -4029,7 +4029,7 @@ def modify_class(cls):
                 if are_hostile(self.owner, u):
                     u.deal_damage(damage, Tags.Dark, self.source or self)
                     if self.holy:
-                        bonus_damage = math.floor(damage*(50 + (u.resists[Tags.Dark]/2 if u.resists[Tags.Dark] > 0 else 0))/100)
+                        bonus_damage = math.floor(damage*(25 + (u.resists[Tags.Dark]/4 if u.resists[Tags.Dark] > 0 else 0))/100)
                         u.deal_damage(bonus_damage, Tags.Holy, self.source or self)
             yield
 

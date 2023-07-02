@@ -15,7 +15,7 @@ Death Bolt:
 - Withering upgrade replaced by Soul Feedback (5 SP): Death Bolt deals additional damage equal to 4 times the number of undead, demon, holy, and arcane minions you have. Mutually exclusive with Soul Battery.
 
 Fireball:
-- Damage type upgrades are more expensive, but now only affect enemies, and have been changed to redeal a percentage of fire damage as both of their respective damage types. The percentage is 50% plus half of each enemy's fire resistance, so overall this always deals double the original damage, if the enemy has no resistance to the two new damage types.
+- Damage type upgrades now only affect enemies, and have been changed to redeal a percentage of fire damage as both of their respective damage types. The percentage is 25% plus 1/4 of each enemy's fire resistance, so overall this always deals double the original damage, if the enemy has no resistance to the two new damage types.
 - Ash Ball now only blinds enemies.
 
 Lightning Bolt:
@@ -255,7 +255,7 @@ Pain Mirror:
 - Max Charges upgrade removed.
 - False Pain (6 SP): Pain Mirror now counts incoming damage twice. The first time counts the raw incoming damage before resistances and SH, and the second time counts actual damage taken. The first count will trigger even if all of the incoming damage is resisted or blocked.
 - Masochism (3 SP): Damage inflicted by allies will cause Pain Mirror to deal double damage.
-- Holy Martyr (6 SP): A percentage of dark damage dealt by Pain Mirror is redealt as holy damage. The percentage is 50%, plus half of each enemy's dark resistance if positive.
+- Holy Martyr (4 SP): A percentage of dark damage dealt by Pain Mirror is redealt as holy damage. The percentage is 25%, plus 1/4 of each enemy's dark resistance if positive.
 
 Plague of Filth:
 - Is now a level 4 spell.
