@@ -15,7 +15,7 @@ Death Bolt:
 - Withering upgrade replaced by Soul Feedback (5 SP): Death Bolt deals additional damage equal to 4 times the number of undead, demon, holy, and arcane minions you have. Mutually exclusive with Soul Battery.
 
 Fireball:
-- Damage type upgrades now only affect enemies, and have been changed to redeal a percentage of fire damage as both of their respective damage types. The percentage is 25% plus 1/4 of each enemy's fire resistance, so overall this always deals double the original damage, if the enemy has no resistance to the two new damage types.
+- Damage type upgrades now only affect enemies, and have been changed to redeal a percentage of fire damage as both of their respective damage types. The percentage is 25% plus 1/4 of each enemy's fire resistance.
 - Ash Ball now only blinds enemies.
 
 Lightning Bolt:
