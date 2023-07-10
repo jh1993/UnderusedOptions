@@ -172,6 +172,10 @@ class PossessedAlly(Thorns):
         self.spell.summon(unit, target=self.owner)
         yield
 
+    def do_thorns(self, unit):
+        unit.deal_damage(self.damage, self.dtype, self.spell)
+        yield
+
 class PossessedEnemy(Buff):
 
     def __init__(self, spell):
