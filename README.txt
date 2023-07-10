@@ -593,7 +593,7 @@ Hypocrisy:
 
 Purestrike:
 - As per my No More Scams mod, no longer harms allies, and is based on damage pre-resistances.
-- Now has a grace period of 1 turn where a unit can be unshielded but still benefit. The grace period is fixed.
+- Now has a grace period between the end of your turn and the start of your next turn where a unit can be unshielded but still benefit.
 - Cost increased to 6 SP.
 
 Righteous March:

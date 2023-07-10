@@ -7117,6 +7117,10 @@ def modify_class(cls):
                 return
             self.owner.level.queue_spell(self.do_conversion(evt))
         
+        def on_pre_advance(self):
+            for u in self.owner.level.units:
+                u.remove_buffs(PureGraceBuff)
+
         def on_advance(self):
             for unit in self.owner.level.units:
                 if unit.shields > 0:
@@ -7124,11 +7128,11 @@ def modify_class(cls):
                     if are_hostile(unit, self.owner):
                         buff.buff_type = BUFF_TYPE_CURSE
                         buff.name = "Pure Penance"
-                    unit.apply_buff(PureGraceBuff(), 1)
+                    unit.apply_buff(PureGraceBuff())
         
         def get_description(self):
-            return ("At the end of your turn, all [shielded:shields] allies gain Pure Grace for [1_turn:duration]. This duration is fixed and unaffected by bonuses.\n"
-                    "Whenever [physical] damage is dealt to an enemy, if the source of that damage is [shielded:shields] or has Pure Grace, redeal half of that damage as [arcane] and half of that damage as [holy].\n"
+            return ("At the end of your turn, all shielded allies gain Pure Grace until the start of your next turn.\n"
+                    "Whenever [physical] damage is dealt to an enemy, if the source of that damage is shielded or has Pure Grace, redeal half of that damage as [arcane] and half of that damage as [holy].\n"
                     "Enemies will instead gain Pure Penance, which has the same effect when they deal [physical] damage to other enemies.")
 
         def can_redeal(self, u, source, damage_type, already_checked):
