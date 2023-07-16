@@ -5648,7 +5648,11 @@ def modify_class(cls):
         def cast_instant(self, x, y):
             units = [self.caster.level.get_unit_at(p.x, p.y) for p in self.get_impacted_tiles(x, y)]
             enemies = [u for u in units if u and are_hostile(u, self.caster)]
+            if not enemies:
+                return
             spells = [s for s in self.caster.spells if s.level == 1 and Tags.Sorcery in s.tags]
+            if not spells:
+                return
 
             chance = 1/len(enemies) if self.get_stat("focus") else 0
 
