@@ -15,6 +15,35 @@ import sys, math, random
 
 curr_module = sys.modules[__name__]
 
+class CantripCleanup(Upgrade):
+
+    def on_init(self):
+        self.name = "Cantrip Cleanup"
+        self.level = 4
+        self.description = "When Cantrip Cascade is out of charges, the first cantrip you cast each turn will cast all of your other cantrips at the same target, consuming charges as normal, if possible.\nIf you have the Focused Cascade upgrade, all of your cantrips will be cast a second time, if possible."
+        self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
+        self.triggered = False
+    
+    def on_pre_advance(self):
+        self.triggered = False
+    
+    def on_spell_cast(self, evt):
+        if self.prereq.cur_charges > 0 or self.triggered or evt.spell.level != 1 or Tags.Sorcery not in evt.spell.tags:
+            return
+        self.triggered = True
+        focus = self.prereq.get_stat("focus")
+        if focus and evt.spell.can_pay_costs() and evt.spell.can_cast(evt.x, evt.y):
+            self.owner.level.act_cast(self.owner, evt.spell, evt.x, evt.y)
+        spells = [s for s in self.owner.spells if s.level == 1 and Tags.Sorcery in s.tags and type(s) != type(evt.spell)]
+        if not spells:
+            return
+        random.shuffle(spells)
+        for spell in spells:
+            for _ in range(2 if focus else 1):
+                if not spell.can_pay_costs() or not spell.can_cast(evt.x, evt.y):
+                    continue
+                self.owner.level.act_cast(self.owner, spell, evt.x, evt.y)
+
 class SpontaneousCombustion(Upgrade):
 
     def on_init(self):
@@ -1482,6 +1511,7 @@ def modify_class(cls):
             self.element = Tags.Dark
             self.range = 8
             self.max_charges = 18
+            self.minion_damage = 5
 
             self.upgrades['damage'] = (12, 1)
             self.upgrades['max_charges'] = (10, 2)
@@ -1489,10 +1519,10 @@ def modify_class(cls):
             self.upgrades["soulfeedback"] = (1, 5, "Soul Feedback", "Death Bolt deals additional damage equal to 4 times the number of [undead], [demon], [holy], and [arcane] minions you have.", "soul")
             self.upgrades['soulbattery'] = (1, 7, "Soul Battery", "Death Bolt permenantly gains [1_damage:damage] whenever it slays a [living] target.", "soul")
 
-            self.can_target_empty = False
-            self.minion_damage = 5
-
-        def cast_instant(self, x, y):		
+        def cast(self, x, y):
+            for p in Bolt(self.caster.level, self.caster, Point(x, y)):
+                self.caster.level.show_effect(p.x, p.y, Tags.Dark, minor=True)
+                yield
             unit = self.caster.level.get_unit_at(x, y)
             if not unit:
                 return
@@ -1542,6 +1572,11 @@ def modify_class(cls):
             elif self.get_stat("ash"):
                 redeals = [Tags.Dark, Tags.Poison]
                 blind = True
+            for p in Bolt(self.caster.level, self.caster, target):
+                self.caster.level.show_effect(p.x, p.y, Tags.Fire, minor=True)
+                for tag in redeals:
+                    self.caster.level.show_effect(p.x, p.y, tag, minor=True)
+                yield
             for stage in Burst(self.caster.level, target, self.get_stat('radius')):
                 for point in stage:
                     self.caster.level.deal_damage(point.x, point.y, damage, Tags.Fire, self)
@@ -5644,6 +5679,7 @@ def modify_class(cls):
             self.upgrades['max_charges'] = (3, 2)
             self.upgrades['range'] = (3, 3)
             self.upgrades["focus"] = (1, 4, "Focused Cascade", "Each cantrip has a chance to be cast an additional time.\nThis chance is equal to 1 divided by the number of enemies in the affected area at the time of casting this spell.")
+            self.add_upgrade(CantripCleanup())
 
         def cast_instant(self, x, y):
             units = [self.caster.level.get_unit_at(p.x, p.y) for p in self.get_impacted_tiles(x, y)]

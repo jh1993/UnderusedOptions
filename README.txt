@@ -11,6 +11,7 @@ This mod makes changes to a number of spells and skills that I believe to be und
 Changelog:
 
 Death Bolt:
+- Can now target empty tiles.
 - Damage upgrade cost reduced to 1 SP. This should make it more attractive as a quick power boost in early game, and useful for Cantrip Cascade builds.
 - Withering upgrade replaced by Soul Feedback (5 SP): Death Bolt deals additional damage equal to 4 times the number of undead, demon, holy, and arcane minions you have. Mutually exclusive with Soul Battery.
 
@@ -438,6 +439,7 @@ Blue Lion:
 
 Cantrip Cascade:
 - Focused Cascade (4 SP): Each cantrip has a chance to be cast an additional time. This chance is equal to 1 divided by the number of units in the affected area at the time of casting this spell.
+- Cantrip Cleanup (4 SP): When Cantrip Cascade is out of charges, the first cantrip you cast each turn will cast all of your other cantrips at the same target, consuming charges as normal, if possible. If you have the Focused Cascade upgrade, all of your cantrips will be cast a second time, if possible.
 
 Chill Wind:
 - Chill Vortex (4 SP): Each tile containing a thunderstorm or blizzard cloud that is affected by the wind current has a 50% chance to create a 2 tile burst that deals the same damage and applies the same duration of freeze.
