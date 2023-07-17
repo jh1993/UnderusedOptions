@@ -2728,7 +2728,6 @@ def modify_class(cls):
                     reaper.turns_to_death = self.get_stat('minion_duration', base=6)
                     reaper.spells[0] = ReaperMinionTouch(self)
                     self.summon(reaper, Point(unit.x, unit.y))
-                    unit.has_been_raised = True
                 if self.get_stat("fear"):
                     duration = self.get_stat("duration", base=6)
                     for u in self.caster.level.get_units_in_los(unit):
