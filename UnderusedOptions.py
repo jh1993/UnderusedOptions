@@ -1517,7 +1517,13 @@ def modify_class(cls):
             self.upgrades['max_charges'] = (10, 2)
             self.upgrades['minion_damage'] = (9, 3)
             self.upgrades["soulfeedback"] = (1, 5, "Soul Feedback", "Death Bolt deals additional damage equal to 4 times the number of [undead], [demon], [holy], and [arcane] minions you have.", "soul")
-            self.upgrades['soulbattery'] = (1, 7, "Soul Battery", "Death Bolt permenantly gains [1_damage:damage] whenever it slays a [living] target.", "soul")
+            self.upgrades['soulbattery'] = (1, 7, "Soul Battery", "Death Bolt permenantly gains [1_damage:damage] whenever it slays a [living] target.\nUnits killed before you gain this upgrade are also counted.", "soul")
+            self.kills = 0
+
+        def get_stat(self, attr, base=None):
+            if attr != "damage" or not self.get_stat("soulbattery"):
+                return Spell.get_stat(self, attr, base)
+            return Spell.get_stat(self, attr, base) + self.kills
 
         def cast(self, x, y):
             for p in Bolt(self.caster.level, self.caster, Point(x, y)):
@@ -1538,6 +1544,16 @@ def modify_class(cls):
                         continue
                     damage += 4
             unit.deal_damage(damage, Tags.Dark, self)
+
+        def try_raise(self, caster, unit):
+            if unit and not unit.is_alive():
+                self.kills += 1
+                skeleton = mods.Bugfixes.Bugfixes.raise_skeleton(caster, unit, source=self, summon=False)
+                if not skeleton:
+                    return
+                skeleton.spells[0].damage = self.get_stat('minion_damage')
+                self.summon(skeleton, target=unit, radius=0)
+                yield
 
     if cls is FireballSpell:
 
