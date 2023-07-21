@@ -62,7 +62,7 @@ Eye of Lightning:
 - Eye of Arcing (3 SP): On hit, Eye of Lightning also deals damage to a random enemy in line of sight of the target.
 
 Eye of Rage:
-- Lycanthropy upgrade replaced by Curse of Rage (5 SP): When an already berserk enemy is targeted by Eye of Rage, it now chooses a random valid target for one of its abilities. If the new target is another enemy, the first enemy is forced to use that ability on the new target. Otherwise the first enemy is stunned for 1 turn.
+- Lycanthropy upgrade replaced by Psychosis (5 SP): When an already berserk enemy is targeted by Eye of Rage, it now chooses a random valid target for one of its abilities. If the new target is another enemy, the first enemy is forced to use that ability on the new target. Otherwise the first enemy is stunned for 1 turn.
 
 Fan of Flames:
 - Previously, if you're somehow moved into the target square while channeling, you'll hit all tiles in range except yourself. Now, if this happens, you'll only hit all tiles in a radius of 5 plus bonuses, but there's now a Wheel of Flames upgrade (4 SP) that lets you simply target yourself with the spell to reproduce the effect.
@@ -440,7 +440,7 @@ Blue Lion:
 
 Cantrip Cascade:
 - Focused Cascade (4 SP): Each cantrip has a chance to be cast an additional time. This chance is equal to 1 divided by the number of units in the affected area at the time of casting this spell.
-- Cantrip Cleanup (4 SP): When Cantrip Cascade is out of charges, the first cantrip you cast each turn will cast all of your other cantrips at the same target, consuming charges as normal, if possible. If you have the Focused Cascade upgrade, all of your cantrips will be cast a second time, if possible.
+- Cantrip Cleanup (4 SP): If Cantrip Cascade is out of charges at the beginning of your turn, the first cantrip you cast each turn will cast all of your other cantrips at the same target, consuming charges as normal, if possible. If you have the Focused Cascade upgrade, all of your cantrips will be cast a second time, if possible.
 
 Chill Wind:
 - Chill Vortex (4 SP): Each tile containing a thunderstorm or blizzard cloud that is affected by the wind current has a 50% chance to create a 2 tile burst that deals the same damage and applies the same duration of freeze.

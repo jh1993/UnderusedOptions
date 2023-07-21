@@ -20,17 +20,19 @@ class CantripCleanup(Upgrade):
     def on_init(self):
         self.name = "Cantrip Cleanup"
         self.level = 4
-        self.description = "When Cantrip Cascade is out of charges, the first cantrip you cast each turn will cast all of your other cantrips at the same target, consuming charges as normal, if possible.\nIf you have the Focused Cascade upgrade, all of your cantrips will be cast a second time, if possible."
+        self.description = "If Cantrip Cascade is out of charges at the beginning of your turn, the first cantrip you cast each turn will cast all of your other cantrips at the same target, consuming charges as normal, if possible.\nIf you have the Focused Cascade upgrade, all of your cantrips will be cast a second time, if possible."
         self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
-        self.triggered = False
+    
+    def on_applied(self, owner):
+        self.on_pre_advance()
     
     def on_pre_advance(self):
-        self.triggered = False
+        self.can_copy = self.prereq.cur_charges <= 0
     
     def on_spell_cast(self, evt):
-        if self.prereq.cur_charges > 0 or self.triggered or evt.spell.level != 1 or Tags.Sorcery not in evt.spell.tags:
+        if not self.can_copy or evt.spell.level != 1 or Tags.Sorcery not in evt.spell.tags:
             return
-        self.triggered = True
+        self.can_copy = False
         focus = self.prereq.get_stat("focus")
         if focus and evt.spell.can_pay_costs() and evt.spell.can_cast(evt.x, evt.y):
             self.owner.level.act_cast(self.owner, evt.spell, evt.x, evt.y)
