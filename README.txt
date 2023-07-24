@@ -526,7 +526,6 @@ Meteor Shower:
 - Stun Duration upgrade folded into the base spell.
 - Radius (4 SP): +1 radius.
 - Rock Size upgrade replaced by Large Meteors (4 SP): The physical damage and stun radius of each meteor now gains a radius equal to half of this spell's radius stat, with a 50% chance to round up or down per meteor.
-- Meteor Recycle (3 SP): Whenever you stop channeling this spell, it has a chance to regain a charge equal to its remaining duration divided by max channel. If you are channeling multiple instances of the spell, only the first instance can trigger this effect.
 
 Multicast:
 - Now only copies the first sorcery spell you cast per turn, to make it interact more intuitively with other spell-copying mechanics and less abusive with a few things in my other mods. Resets before the beginning of your turn.
