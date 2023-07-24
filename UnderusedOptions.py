@@ -9,7 +9,7 @@ from Consumables import *
 import mods.Bugfixes.Bugfixes
 import mods.NoMoreScams.NoMoreScams
 from mods.NoMoreScams.NoMoreScams import is_immune, FloatingEyeBuff, is_conj_skill_summon
-from mods.Bugfixes.Bugfixes import RemoveBuffOnPreAdvance, MinionBuffAura, drain_max_hp_kill, increase_cooldown, HydraBeam
+from mods.Bugfixes.Bugfixes import RemoveBuffOnPreAdvance, MinionBuffAura, drain_max_hp_kill, increase_cooldown, HydraBeam, FreezeDependentBuff
 
 import sys, math, random
 
@@ -983,20 +983,6 @@ class PureGraceBuff(Buff):
         self.show_effect = False
         self.name = "Pure Grace"
         self.color = Tags.Holy.color
-
-class FreezeDependentBuff(Buff):
-
-    def on_pre_advance(self):
-        freeze = self.owner.get_buff(FrozenBuff)
-        if freeze:
-            self.turns_left = max(self.turns_left, freeze.turns_left)
-
-    def on_unapplied(self):
-        if self.turns_left <= 0:
-            return
-        buff = self.owner.get_buff(FrozenBuff)
-        if buff:
-            self.owner.apply_buff(self, self.turns_left)
 
 class FrostbiteBuff(FreezeDependentBuff):
 
