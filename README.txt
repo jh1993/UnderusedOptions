@@ -513,7 +513,7 @@ Mystic Memory:
 Searing Orb:
 - Damage is now fixed instead of benefitting from minion damage bonuses, since it was balanced around the assumption that the only minion damage bonuses it could get are Arch Conjurer and Claw shrine, which may no longer be true with mods.
 - Safety (2 SP): Searing Orb no longer damages your minions.
-- Solar Orb (6 SP): Searing Orb also deals holy damage.
+- Radioactive Orb (6 SP): Searing Orb also deals poison damage.
 
 Knightly Oath:
 - Instead of damaging the caster on death, a knight now deals 40 damage to the caster when about to take fatal damage to fully heal self, restore SH, and remove all debuffs.

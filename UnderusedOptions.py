@@ -6404,7 +6404,7 @@ def modify_class(cls):
             self.upgrades['range'] = (5, 2)
             self.upgrades['melt_walls'] = (1, 4, "Matter Melting", "Searing Orb can melt and be cast through walls")
             self.upgrades["safety"] = (1, 2, "Safety", "Searing Orb no longer damages your minions.")
-            self.upgrades["holy"] = (3, 6, "Solar Orb", "Searing Orb also deals [holy] damage.")
+            self.upgrades["poison"] = (3, 6, "Radioactive Orb", "Searing Orb also deals [poison] damage.")
 
         def get_description(self):
             return ("Summon a searing orb next to the caster.\n"
@@ -6415,8 +6415,8 @@ def modify_class(cls):
 
         def on_orb_move(self, orb, next_point):
             dtypes = [Tags.Fire]
-            if self.get_stat("holy"):
-                dtypes.append(Tags.Holy)
+            if self.get_stat("poison"):
+                dtypes.append(Tags.Poison)
             safety = self.get_stat("safety")
             for u in orb.level.get_units_in_los(next_point):
                 if u is self.caster or u is orb:
