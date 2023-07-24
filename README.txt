@@ -541,7 +541,7 @@ Word of Ice:
 Arcane Accounting:
 - Level increased to 5.
 - Now has a chance to trigger on every arcane spell cast, equal to the spell's percentage of missing charges. Cannot be triggered by spells with no max charges.
-- Arcane Credit now instead lasts 2 turns (starting from the next turn) with only 50% chance to refund 1 spell charge. Duration can be extended by Permanence, and gaining it again while you already have it extends its duration by 1 turn.
+- Arcane Credit now instead lasts 2 turns (starting from the next turn) with only 50% chance to refund 1 spell charge. Duration can be extended by Permanence.
 
 Arcane Shield:
 - SH limit increased to 2.

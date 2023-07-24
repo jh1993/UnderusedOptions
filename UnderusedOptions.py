@@ -6699,14 +6699,6 @@ def modify_class(cls):
             self.color = Tags.Arcane.color
             self.description = "Every non [arcane] spell has a 50% chance to refund 1 charge on cast."
 
-        def on_attempt_apply(self, owner):
-            existing = owner.get_buff(ArcaneCredit)
-            if not existing:
-                return True
-            else:
-                existing.turns_left += 1
-                return False
-
         def on_cast(self, evt):
             if Tags.Arcane not in evt.spell.tags and random.random() < 0.5:
                 evt.spell.cur_charges = min(evt.spell.cur_charges + 1, evt.spell.get_stat('max_charges'))
@@ -6721,7 +6713,7 @@ def modify_class(cls):
             self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
 
         def get_description(self):
-            return "Whenever you cast an [arcane] spell, you have a chance to gain Arcane Credit for [%i_turns:duration] or increase its existing duration by [1_turn:duration] if you already have it, equal to the spell's percentage of missing charges.\nWhile you have Arcane Credit, all non-arcane spells have a 50%% chance to refund a charge on cast.\nCannot be triggered by spells that have no max charges." % self.get_stat("duration")
+            return "Whenever you cast an [arcane] spell, you have a chance to gain Arcane Credit for [%i_turns:duration], equal to the spell's percentage of missing charges.\nWhile you have Arcane Credit, all non-arcane spells have a 50%% chance to refund a charge on cast.\nCannot be triggered by spells that have no max charges." % self.get_stat("duration")
 
         def on_spell_cast(self, evt):
             if Tags.Arcane in evt.spell.tags:
