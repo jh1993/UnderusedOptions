@@ -361,8 +361,8 @@ Ice Drake:
 
 Lightning Form:
 - Is now also a translocation spell.
-- Cloud Form (3 SP): When inside a thunderstorm cloud, Lightning Form will not run out, and you will automatically generate a thunderstorm cloud on your own tile after teleporting when you cast a lightning spell. If you have Ice Infusion, this upgrade also works with blizzard clouds.
-- Ice Infusion (4 SP): Now also gives 100 ice resistance and functions with ice spells.
+- Lightning Swap (3 SP): Lightning Form will now cause you to swap places with the target unit if possible, when targeting an occupied tile.
+- Lightning Rod (4 SP): While Lightning Form is active and your lightning resistance is at least 100, any attempt to deal lightning damage to you will cause this spell to deal the same damage to a random enemy in line of sight. This upgrade cannot trigger itself.
 
 Lightning Storm:
 - Strike Twice (5 SP): If an affected tile already has a blizzard or thunderstorm cloud, the unit on that tile is dealt lightning damage equal to the damage of this spell. If you have the Strikechance upgrade, there is a 50% chance to deal damage again.

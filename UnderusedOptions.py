@@ -705,69 +705,56 @@ class LightningFormBuff(Buff):
 
     def __init__(self, spell):
         self.spell = spell
-        self.ice = spell.get_stat("ice")
-        self.cloud = spell.get_stat("cloud")
         Buff.__init__(self)
         self.transform_asset_name = "player_lightning_form"
         self.name = "Lightning Form"
         self.buff_type = BUFF_TYPE_BLESS
         self.asset = ['status', 'lightning_form']
         self.color = Tags.Lightning.color
-        self.description = "Whenever you cast a lightning%s spell, if the target square is empty, teleport to the target square.\n\nThis enchantment ends if you do not cast a lightning%s spell%s." % (" or ice" if self.ice else "", " or ice" if self.ice else "", (" on a tile without a storm%s cloud" % (" or blizzard" if self.ice else "")) if self.cloud else "")
         self.cast = True
         self.stack_type = STACK_TYPE_TRANSFORM
 
     def on_advance(self):
-        remove = not self.cast
-        if self.cloud:
-            cloud = self.owner.level.tiles[self.owner.x][self.owner.y].cloud
-            if isinstance(cloud, StormCloud):
-                remove = False
-            elif self.ice and isinstance(cloud, BlizzardCloud):
-                remove = False
-        if remove:
+        if not self.cast:
             self.owner.remove_buff(self)
         self.cast = False
 
     def on_init(self):
         self.resists[Tags.Lightning] = 100
         self.resists[Tags.Physical] = 100
-        if self.ice:
-            self.resists[Tags.Ice] = 100
         self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
         self.owner_triggers[EventOnPass] = self.on_pass
+        self.owner_triggers[EventOnPreDamaged] = self.on_pre_damaged
 
-    def on_spell_cast(self, spell_cast_event):
-        tags = []
-        if Tags.Lightning in spell_cast_event.spell.tags:
-            self.cast = True
-            tags.append(Tags.Lightning)
-        if self.ice and Tags.Ice in spell_cast_event.spell.tags:
-            self.cast = True
-            tags.append(Tags.Ice)
-        if self.cast and tags:
-            tag = random.choice(tags)
-            if self.owner.level.can_move(self.owner, spell_cast_event.x, spell_cast_event.y, teleport=True):
-                self.owner.level.queue_spell(self.do_teleport(spell_cast_event.x, spell_cast_event.y, tag))
+    def on_pre_damaged(self, evt):
+        if evt.damage <= 0 or isinstance(evt.source, LightningFormSpell) or evt.damage_type != Tags.Lightning or self.owner.resists[Tags.Lightning] < 100 or not self.spell.get_stat("rod"):
+            return
+        targets = [u for u in self.owner.level.get_units_in_los(self.owner) if are_hostile(u, self.owner)]
+        if not targets:
+            return
+        self.owner.level.queue_spell(self.bolt(random.choice(targets), evt))
+
+    def bolt(self, target, evt):
+        for p in Bolt(self.owner.level, self.owner, target):
+            self.owner.level.show_effect(p.x, p.y, Tags.Lightning, minor=True)
+        target.deal_damage(evt.damage, Tags.Lightning, self.spell)
+        yield
+
+    def on_spell_cast(self, evt):
+        if Tags.Lightning not in evt.spell.tags:
+            return
+        self.cast = True
+        swap = self.spell.get_stat("swap")
+        if self.owner.level.can_move(self.owner, evt.x, evt.y, teleport=True, force_swap=swap):
+            self.owner.level.queue_spell(self.do_teleport(evt.x, evt.y, swap))
                     
     def on_pass(self, evt):
         if self.owner.has_buff(ChannelBuff):
             self.cast = True
 
-    def do_teleport(self, x, y, tag):
-        if self.owner.level.can_move(self.owner, x, y, teleport=True):
-            self.owner.level.act_move(self.owner, x, y, teleport=True)
-        if not self.cloud:
-            return
-        if tag == Tags.Lightning:
-            cloud = StormCloud(self.owner)
-            cloud.damage += self.spell.get_stat("damage")*2
-        else:
-            cloud = BlizzardCloud(self.owner)
-            cloud.damage += self.spell.get_stat("damage")
-        cloud.source = self.spell
-        cloud.duration = self.spell.get_stat("duration", base=5)
-        self.owner.level.add_obj(cloud, self.owner.x, self.owner.y)
+    def do_teleport(self, x, y, swap):
+        if self.owner.level.can_move(self.owner, x, y, teleport=True, force_swap=swap):
+            self.owner.level.act_move(self.owner, x, y, teleport=True, force_swap=swap)
         yield
 
 class SightOfBloodBuff(Buff):
@@ -4918,8 +4905,8 @@ def modify_class(cls):
             self.level = 4
 
             self.upgrades['max_charges'] = (3, 2)
-            self.upgrades["ice"] = (1, 4, "Ice Infusion", "Now also gives [100_ice:ice] resistance and functions with [ice] spells.")
-            self.upgrades["cloud"] = (1, 3, "Cloud Form", "When inside a thunderstorm cloud, Lightning Form will not run out, and you will automatically generate a thunderstorm cloud on your own tile after teleporting when you cast a [lightning] spell.\nIf you have Ice Infusion, this upgrade also works with blizzard clouds.")
+            self.upgrades["swap"] = (1, 3, "Lightning Swap", "Lightning Form will now cause you to swap places with the target unit if possible, when targeting an occupied tile.")
+            self.upgrades["rod"] = (1, 4, "Lightning Rod", "While Lightning Form is active and your [lightning] resistance is at least 100, any attempt to deal [lightning] damage to you will cause this spell to deal the same damage to a random enemy in line of sight.\nThis upgrade cannot trigger itself.")
 
         def cast(self, x, y):
             self.caster.apply_buff(curr_module.LightningFormBuff(self))
