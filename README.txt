@@ -251,7 +251,7 @@ Mystic Vision:
 
 Nightmare Aura:
 - The dream upgrades are changed to only summon old witches, aelves, and flame rifts. Each dream upgrade summons a minion for 9 turns for every 25 damage dealt, which should result in roughly the same amount as before.
-- Dream Master (4 SP): Nightmare Aura now begins with 200 damage already stored in its damage pool, for the purpose of its Dream upgrades. This amount benefits 10 times from the damage bonuses of this spell.
+- Dream Master (4 SP): Nightmare Aura now begins with 100 damage already stored in its damage pool, for the purpose of its Dream upgrades. This amount benefits 10 times from the damage bonuses of this spell.
 
 Pain Mirror:
 - Max Charges upgrade removed.

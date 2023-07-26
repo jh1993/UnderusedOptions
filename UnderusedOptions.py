@@ -3960,7 +3960,7 @@ def modify_class(cls):
         def fmt_dict(self):
             stats = Spell.fmt_dict(self)
             stats["minion_duration"] = self.get_stat("minion_duration", base=9)
-            stats["dream_bonus"] = self.get_stat("damage", base=20)*10
+            stats["dream_bonus"] = self.get_stat("damage", base=10)*10
             return stats
 
     if cls is NightmareBuff:
@@ -3969,7 +3969,7 @@ def modify_class(cls):
             self.spell = spell
             DamageAuraBuff.__init__(self, damage=self.spell.aura_damage, radius=self.spell.get_stat('radius'), damage_type=[Tags.Arcane, Tags.Dark], friendly_fire=False)
             if spell.get_stat("master"):
-                self.damage_dealt += spell.get_stat("damage", base=20)*10
+                self.damage_dealt += spell.get_stat("damage", base=10)*10
 
         def on_unapplied(self):
             spawner = None
