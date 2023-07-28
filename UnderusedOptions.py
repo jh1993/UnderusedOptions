@@ -5647,7 +5647,8 @@ def modify_class(cls):
             self.range = 7
             self.upgrades['max_charges'] = (3, 2)
             self.upgrades['range'] = (3, 3)
-            self.upgrades["focus"] = (1, 4, "Focused Cascade", "Each cantrip has a chance to be cast an additional time.\nThis chance is equal to 1 divided by the number of enemies in the affected area at the time of casting this spell.")
+            self.upgrades["focus"] = (1, 4, "Focused Cascade", "Each cantrip has a chance to be cast an additional time, equal to 1 divided by the number of enemies in the affected area at the time of casting this spell.")
+            self.upgrades["specialize"] = (1, 4, "Cantrip Specialization", "Each cantrip has a chance to be cast an additional time, equal to 1 divided by your number of cantrips.")
             self.add_upgrade(CantripCleanup())
 
         def cast_instant(self, x, y):
@@ -5659,15 +5660,20 @@ def modify_class(cls):
             if not spells:
                 return
 
-            chance = 1/len(enemies) if self.get_stat("focus") else 0
+            focus_chance = 1/len(enemies) if self.get_stat("focus") else 0
+            specialize_chance = 1/len(spells) if self.get_stat("specialize") else 0
 
             pairs = list(itertools.product(enemies, spells))
 
             random.shuffle(pairs)
 
             for enemy, spell in pairs:
-                self.caster.level.act_cast(self.caster, spell, enemy.x, enemy.y, pay_costs=False)
-                if random.random() < chance:
+                num = 1
+                if random.random() < focus_chance:
+                    num += 1
+                if random.random() < specialize_chance:
+                    num += 1
+                for _ in range(num):
                     self.caster.level.act_cast(self.caster, spell, enemy.x, enemy.y, pay_costs=False)
 
     if cls is IceWind:

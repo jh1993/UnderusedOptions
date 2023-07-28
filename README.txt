@@ -439,7 +439,8 @@ Blue Lion:
 - Holy bolt upgrade is now given in addition to the lion's melee attack, instead of replacing the latter.
 
 Cantrip Cascade:
-- Focused Cascade (4 SP): Each cantrip has a chance to be cast an additional time. This chance is equal to 1 divided by the number of units in the affected area at the time of casting this spell.
+- Focused Cascade (4 SP): Each cantrip has a chance to be cast an additional time, equal to 1 divided by the number of units in the affected area at the time of casting this spell.
+- Cantrip Specialization (4 SP): Each cantrip has a chance to be cast an additional time, equal to 1 divided by your number of cantrips.
 - Cantrip Cleanup (4 SP): If Cantrip Cascade is out of charges at the beginning of your turn, the first cantrip you cast each turn will cast all of your other cantrips at the same target, consuming charges as normal, if possible. If you have the Focused Cascade upgrade, all of your cantrips will be cast a second time, if possible.
 
 Chill Wind:
