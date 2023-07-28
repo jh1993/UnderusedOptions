@@ -4003,7 +4003,7 @@ def modify_class(cls):
             self.upgrades['duration'] = (10, 2)
             self.upgrades["false"] = (1, 6, "False Pain", "Pain Mirror now counts incoming damage twice. The first time counts the raw incoming damage before resistances and [SH:shields], and the second time counts actual damage taken.\nThe first count will trigger even if all of the incoming damage is resisted or blocked.")
             self.upgrades["masochism"] = (1, 3, "Masochism", "Damage inflicted by allies will cause Pain Mirror to deal double damage.")
-            self.upgrades["holy"] = (1, 4, "Holy Martyr", "A percentage of [dark] damage dealt by Pain Mirror is redealt as [holy] damage.\nThe percentage is 25%, plus 1/4 of each enemy's [dark] resistance if positive.")
+            self.upgrades["deep"] = (1, 5, "Deep Pain", "Pain Mirror penetrates enemy [dark] resistances by a percentage equal to your percentage of missing HP.")
 
             self.tags = [Tags.Dark, Tags.Enchantment]
 
@@ -4021,7 +4021,7 @@ def modify_class(cls):
                 if self.source.get_stat("false"):
                     self.owner_triggers[EventOnPreDamaged] = self.on_damage
                 self.masochism = self.source.get_stat("masochism")
-                self.holy = self.source.get_stat("holy")
+                self.deep = self.source.get_stat("deep")
             self.owner_triggers[EventOnDamaged] = self.on_damage
             self.color = Tags.Dark.color
             self.stack_type = STACK_REPLACE
@@ -4035,12 +4035,10 @@ def modify_class(cls):
             self.owner.level.queue_spell(self.reflect(damage))
 
         def reflect(self, damage):
+            penetration = math.ceil((self.owner.max_hp - self.owner.cur_hp)/self.owner.max_hp*100) if self.deep else 0
             for u in self.owner.level.get_units_in_los(self.owner):
                 if are_hostile(self.owner, u):
-                    u.deal_damage(damage, Tags.Dark, self.source or self)
-                    if self.holy:
-                        bonus_damage = math.floor(damage*(25 + (u.resists[Tags.Dark]/4 if u.resists[Tags.Dark] > 0 else 0))/100)
-                        u.deal_damage(bonus_damage, Tags.Holy, self.source or self)
+                    u.deal_damage(damage, Tags.Dark, self.source or self, penetration=penetration)
             yield
 
     if cls is SealFate:

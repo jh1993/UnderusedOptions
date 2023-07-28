@@ -257,7 +257,7 @@ Pain Mirror:
 - Max Charges upgrade removed.
 - False Pain (6 SP): Pain Mirror now counts incoming damage twice. The first time counts the raw incoming damage before resistances and SH, and the second time counts actual damage taken. The first count will trigger even if all of the incoming damage is resisted or blocked.
 - Masochism (3 SP): Damage inflicted by allies will cause Pain Mirror to deal double damage.
-- Holy Martyr (4 SP): A percentage of dark damage dealt by Pain Mirror is redealt as holy damage. The percentage is 25%, plus 1/4 of each enemy's dark resistance if positive.
+- Deep Pain (5 SP): Pain Mirror penetrates enemy dark resistances by a percentage equal to your percentage of missing HP.
 
 Plague of Filth:
 - Is now a level 4 spell.
