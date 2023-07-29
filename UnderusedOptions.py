@@ -5467,7 +5467,10 @@ def modify_class(cls):
 
     if cls is WatcherFormBuff:
 
-        def on_applied(self, owner):
+        def __init__(self, spell):
+            self.spell = spell
+            Stun.__init__(self)
+            self.buff_type = BUFF_TYPE_BLESS
             self.arcane = self.spell.get_stat("arcane")
             self.transform_asset_name = "watcher" if not self.arcane else "void_watcher"
             self.stack_type = STACK_TYPE_TRANSFORM
@@ -5480,9 +5483,11 @@ def modify_class(cls):
             self.color = Tags.Lightning.color
             self.name = "Watcher Form"
             self.damage = self.spell.get_stat("damage")
+            self.instinct = self.spell.get_stat("instinct")
+
+        def on_applied(self, owner):
             if not self.owner.is_player_controlled:
                 self.damage = self.damage//5
-            self.instinct = self.spell.get_stat("instinct")
 
         def on_advance(self):
 
