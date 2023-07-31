@@ -1508,7 +1508,7 @@ def modify_class(cls):
                 if not skeleton:
                     return
                 skeleton.spells[0].damage = self.get_stat('minion_damage')
-                self.summon(skeleton, target=unit, radius=0)
+                self.summon(skeleton, target=unit)
                 yield
 
     if cls is FireballSpell:
