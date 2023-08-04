@@ -4386,10 +4386,10 @@ def modify_class(cls):
             dtypes = [Tags.Arcane]
             if self.get_stat("fire"):
                 dtypes.append(Tags.Fire)
-                radius += 1
             if self.get_stat("dark"):
                 dtypes.append(Tags.Dark)
-                units = [unit for unit in level.get_units_in_ball(next_point, radius*3, diag=True) if are_hostile(self.caster, unit)]
+                units = [self.caster.level.get_unit_at(p.x, p.y) for stage in Burst(self.caster.level, next_point, radius*3, ignore_walls=True) for p in stage]
+                units = [u for u in units if u and are_hostile(u, self.caster)]
                 random.shuffle(units)
                 for unit in units:
                     pull(unit, next_point, 1)
