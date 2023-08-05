@@ -207,7 +207,8 @@ Frostfire Hydra:
 - Splitting (4 SP): Upon reaching 0 HP, the hydra splits into a frost hydra and a fire hydra. Each hydra inherits one of the frostfire hydra's elements and resistances. Its beam only deals damage of that element, and has a 2 turns cooldown.
 
 Ghostball:
-- Possession (6 SP): Units in the area of Ghostball are now possessed for a duration equal to this spell's minion duration, which can stack. If the effect is removed prematurely, such as when the possessed unit dies, summon a ghost near it with duration equal to the remaining duration of possession. A possessed enemy takes dark damage each turn equal to this spell's minion damage. A possessed ally instead has melee retaliation dealing the same amount of dark damage to enemies. If you have the Ghost King upgrade, the central possessed unit will summon 2 ghost gates every 10 turns, and summon a ghost king if possession wears off prematurely. If you have the Ghost Mass upgrade, the central possessed unit will summon a ghostly mass if possession wears off prematurely, and 8 ghosts if it wears off naturally.
+- Possession (6 SP): Units in the area of Ghostball are now possessed for a duration equal to this spell's minion duration, which can stack. If the effect is removed prematurely, such as when the possessed unit dies, summon a ghost near it with duration equal to the remaining duration of possession. A possessed enemy takes dark damage each turn equal to this spell's minion damage. A possessed ally instead has melee retaliation dealing the same amount of dark damage to enemies.
+- If you have the Ghost King or Mass upgrade, Possession has special passive effects that mimic their abilities. Details are in the Ghost King/Mass upgrade descriptions.
 
 Giant Bear:
 - Max charges upgrade removed and its benefits folded into the base spell.
