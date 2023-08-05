@@ -182,35 +182,71 @@ class TempScalespinnerRemoval(Buff):
         self.buff.owner.remove_buff(self.buff)
         self.owner.remove_buff(self)
 
+def possession_summon_ghost(self):
+
+    if not self.turns_left:
+        if self.mass:
+            for _ in range(8):
+                unit = Ghost()
+                apply_minion_bonuses(self.spell, unit)
+                self.spell.summon(unit, target=self.owner)
+        return
+    
+    unit = Ghost()
+    if self.king:
+        unit = GhostKing()
+    elif self.mass:
+        unit = GhostMass()
+    apply_minion_bonuses(self.spell, unit)
+    unit.turns_to_death = self.turns_left
+    self.spell.summon(unit, target=self.owner)
+    yield
+
+def possession_try_summon_gates(self):
+
+    if not self.king:
+        return
+    self.timer -= 1
+    if self.timer > 0:
+        return
+    self.timer = 10
+
+    for _ in range(2):
+        lair = MonsterSpawner(Ghost)
+        apply_minion_bonuses(self.spell, lair)
+        self.spell.summon(lair, target=self.owner, radius=5, sort_dist=False)
+
 class PossessedAlly(Thorns):
 
-    def __init__(self, spell):
+    def __init__(self, spell, king=False, mass=False):
         self.spell = spell
+        self.king = king
+        self.mass = mass
+        self.timer = 1
         Thorns.__init__(self, damage=spell.get_stat("minion_damage"), dtype=Tags.Dark)
         self.name = "Possessed"
         self.asset = ["UnderusedOptions", "Statuses", "possessed_ally"]
         self.color = Tags.Dark.color
         self.stack_type = STACK_INTENSITY
-        self.owner_triggers[EventOnDeath] = lambda evt: self.owner.level.queue_spell(self.summon_ghost())
         self.show_effect = False
     
-    def summon_ghost(self):
-        if not self.turns_left:
-            return
-        unit = Ghost()
-        apply_minion_bonuses(self.spell, unit)
-        unit.turns_to_death = self.turns_left
-        self.spell.summon(unit, target=self.owner)
-        yield
+    def on_unapplied(self):
+        self.owner.level.queue_spell(possession_summon_ghost(self))
 
     def do_thorns(self, unit):
         unit.deal_damage(self.damage, self.dtype, self.spell)
         yield
 
+    def on_advance(self):
+        possession_try_summon_gates(self)
+
 class PossessedEnemy(Buff):
 
-    def __init__(self, spell):
+    def __init__(self, spell, king=False, mass=False):
         self.spell = spell
+        self.king = king
+        self.mass = mass
+        self.timer = 1
         Buff.__init__(self)
     
     def on_init(self):
@@ -220,20 +256,14 @@ class PossessedEnemy(Buff):
         self.buff_type = BUFF_TYPE_CURSE
         self.stack_type = STACK_INTENSITY
         self.damage = self.spell.get_stat("minion_damage")
-        self.owner_triggers[EventOnDeath] = lambda evt: self.owner.level.queue_spell(self.summon_ghost())
         self.show_effect = False
     
-    def on_advance(self):
-        self.owner.deal_damage(self.damage, Tags.Dark, self.spell)
+    def on_unapplied(self):
+        self.owner.level.queue_spell(possession_summon_ghost(self))
 
-    def summon_ghost(self):
-        if not self.turns_left:
-            return
-        unit = Ghost()
-        apply_minion_bonuses(self.spell, unit)
-        unit.turns_to_death = self.turns_left
-        self.spell.summon(unit, target=self.owner)
-        yield
+    def on_advance(self):
+        possession_try_summon_gates(self)
+        self.owner.deal_damage(self.damage, Tags.Dark, self.spell)
 
 class LivingScrollIcicle(Icicle):
 
@@ -3499,7 +3529,7 @@ def modify_class(cls):
             self.upgrades['radius'] = (1, 3)
             self.upgrades['minion_duration'] = (15, 2)
             self.upgrades['minion_damage'] = (3, 3)
-            self.upgrades["possession"] = (1, 6, "Possession", "Units in the area of Ghostball are now possessed for a duration equal to this spell's [minion_duration:minion_duration], which can stack. If a possessed unit dies, summon a ghost near it with duration equal to the remaining duration of possession.\nA possessed enemy takes [dark] damage each turn equal to this spell's [minion_damage:minion_damage].\nA possessed ally instead has melee retaliation dealing the same amount of [dark] damage to enemies.")
+            self.upgrades["possession"] = (1, 6, "Possession", "Units in the area of Ghostball are now possessed for a duration equal to this spell's [minion_duration:minion_duration], which can stack.\nIf the effect is removed prematurely, such as when the possessed unit dies, summon a ghost near it with duration equal to the remaining duration of possession.\nA possessed enemy takes [dark] damage each turn equal to this spell's [minion_damage:minion_damage].\nA possessed ally instead has melee retaliation dealing the same amount of [dark] damage to enemies.\nIf you have the Ghost King upgrade, the central possessed unit will summon 2 ghost gates every [10_turns:cooldown], and summon a ghost king if possession wears off prematurely.\nIf you have the Ghost Mass upgrade, the central possessed unit will summon a ghostly mass if possession wears off prematurely, and 8 ghosts if it wears off naturally.")
             self.upgrades['king'] = (1, 5, "Ghost King", "A Ghost King is summoned at the center of the ghost ball.", "center summon")
             self.upgrades['mass'] = (1, 4, "Ghost Mass", "A Ghostly Mass is summoned at the center of the ghost ball.", "center summon")
 
@@ -3517,10 +3547,11 @@ def modify_class(cls):
                 if not self.caster.level.tiles[point.x][point.y].can_see:
                     continue
                 unit = self.caster.level.get_unit_at(point.x, point.y)
+                center = point.x == x and point.y == y
                 
                 if not unit:
                     ghost = Ghost()
-                    if point.x == x and point.y == y:
+                    if center:
                         if king:
                             ghost = GhostKing()
                         elif mass:
@@ -3532,11 +3563,11 @@ def modify_class(cls):
                 else:
                     if are_hostile(self.caster, unit):
                         if possession:
-                            unit.apply_buff(PossessedEnemy(self), duration)
+                            unit.apply_buff(PossessedEnemy(self, king=center and king, mass=center and mass), duration)
                         unit.deal_damage(damage, Tags.Dark, self)
                     else:
                         if possession:
-                            unit.apply_buff(PossessedAlly(self), duration)
+                            unit.apply_buff(PossessedAlly(self, king=center and king, mass=center and mass), duration)
                         self.caster.level.show_effect(point.x, point.y, Tags.Dark)
 
     if cls is SummonGiantBear:
