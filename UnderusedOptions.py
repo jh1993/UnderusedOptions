@@ -15,6 +15,55 @@ import sys, math, random
 
 curr_module = sys.modules[__name__]
 
+class HibernationRegen(RegenBuff):
+
+    def __init__(self, upgrade):
+        self.upgrade = upgrade
+        RegenBuff.__init__(self, 15)
+        self.name = "Hibernation"
+        self.color = Tags.Ice.color
+        self.asset = ["UnderusedOptions", "Statuses", "hibernation"]
+        self.stack_type = STACK_NONE
+        self.break_dtype = None
+        self.freeze = FrozenBuff()
+    
+    def on_init(self):
+        self.owner_triggers[EventOnPreDamaged] = self.on_pre_damaged
+    
+    def on_pre_damaged(self, evt):
+        if evt.damage <= 0 or evt.damage_type not in [Tags.Fire, Tags.Physical]:
+            return
+        self.break_dtype = evt.damage_type
+        self.owner.remove_buff(self)
+    
+    def on_applied(self, owner):
+        self.freeze.owner = self.owner
+        self.freeze.turns_left = self.turns_left
+        if self.owner.resists[Tags.Ice] < 100 or self.owner.has_buff(FrozenBuff):
+            return
+        self.owner.level.event_manager.raise_event(EventOnBuffApply(self.freeze, self.owner), self.owner)
+    
+    def on_unapplied(self):
+        self.freeze.break_dtype = self.break_dtype
+        self.freeze.turns_left = self.turns_left
+        if self.owner.resists[Tags.Ice] < 100 or self.owner.has_buff(FrozenBuff):
+            return
+        self.owner.level.event_manager.raise_event(EventOnUnfrozen(self.owner, self.break_dtype), self.owner)
+        self.owner.level.event_manager.raise_event(EventOnBuffRemove(self.freeze, self.owner), self.owner)
+
+class IceMirrorBuff(Buff):
+
+    def on_init(self):
+        self.description = "When damaged by an enemy, that enemy has a chance to be frozen for 1 turn, equal to this unit's percentage of missing HP."
+        self.color = Tags.Ice.color
+        self.owner_triggers[EventOnDamaged] = self.on_damaged
+
+    def on_damaged(self, evt):
+        if not evt.source.owner or not are_hostile(evt.source.owner, self.owner):
+            return
+        if random.random() < (self.owner.max_hp - self.owner.cur_hp)/self.owner.max_hp:
+            evt.source.owner.apply_buff(FrozenBuff(), 1)
+
 class CantripCleanup(Upgrade):
 
     def on_init(self):
@@ -1188,18 +1237,6 @@ class IceWallForcefulConstruction(Upgrade):
 
     def get_description(self):
         return "Wall of Ice no longer requires line of sight to cast.\nWall and chasm tiles in the affected area are converted to floor tiles before summoning the ice elementals.\nUnits in the affected area take [%i_ice:ice] damage and are [frozen] for [%i_turns:duration]. If a unit is killed then an ice elemental is summoned in its tile." % (self.prereq.get_stat("damage", base=22), self.prereq.get_stat("duration", base=3))
-
-class ThawingRemnantBuff(Buff):
-
-    def on_init(self):
-        self.owner_triggers[EventOnDeath] = self.on_death
-    
-    def on_death(self, evt):
-        freeze = FrozenBuff()
-        freeze.turns_left = 0
-        freeze.break_dtype = Tags.Fire
-        self.owner.level.event_manager.raise_event(EventOnUnfrozen(self.owner, Tags.Fire), self.owner)
-        self.owner.level.event_manager.raise_event(EventOnBuffRemove(freeze, self.owner), self.owner)
 
 class InfernoCannonBlast(SimpleRangedAttack):
 
@@ -5447,7 +5484,7 @@ def modify_class(cls):
             self.upgrades['radius'] = (1, 2)
             self.upgrades['minion_range'] = (3, 3)
             self.upgrades['minion_damage'] = (5, 3)
-            self.upgrades["thaw"] = (1, 4, "Thawing Remnant", "When an ice elemental dies, it behaves as if it is unfrozen by [fire] damage, triggering all effects that are normally triggered by such events.")
+            self.upgrades["mirror"] = (1, 4, "Ice Mirror", "When an ice elemental is damaged by an enemy, that enemy has a chance to be [frozen] for [1_turn:duration], equal to the ice elemental's percentage of missing HP.")
             self.add_upgrade(IceWallForcefulConstruction())
 
         def get_impacted_tiles(self, x, y): 
@@ -5465,7 +5502,7 @@ def modify_class(cls):
             forceful = self.get_stat("forceful")
             damage = self.get_stat("damage", base=22)
             duration = self.get_stat("duration", base=3)
-            thaw = self.get_stat("thaw")
+            mirror = self.get_stat("mirror")
 
             for p in self.get_impacted_tiles(x, y):
                 elemental = Unit()
@@ -5483,8 +5520,8 @@ def modify_class(cls):
                 elemental.resists[Tags.Ice] = 100
                 
                 elemental.turns_to_death = minion_duration
-                if thaw:
-                    elemental.buffs = [ThawingRemnantBuff()]
+                if mirror:
+                    elemental.buffs = [IceMirrorBuff()]
 
                 if forceful:
                     self.caster.level.make_floor(p.x, p.y)
@@ -6855,30 +6892,43 @@ def modify_class(cls):
 
     if cls is Hibernation:
 
+        def on_unit_add(self, evt):
+            if are_hostile(self.owner, evt.unit):
+                return
+            if self.owner is evt.unit:
+                return
+            if not(Tags.Living in evt.unit.tags or Tags.Nature in evt.unit.tags or Tags.Ice in evt.unit.tags):
+                return
+            evt.unit.apply_buff(HibernationBuff(self))
+
         def on_advance(self):
             for unit in [unit for unit in self.owner.level.units if unit is not self.owner and not are_hostile(self.owner, unit)]:
                 if Tags.Living in unit.tags or Tags.Nature in unit.tags or Tags.Ice in unit.tags:
-                    unit.apply_buff(HibernationBuff())
+                    unit.apply_buff(HibernationBuff(self))
 
         def get_description(self):
-            return ("Your [living], [nature], and [ice] minions gain [75_ice:ice] resistance, [freeze] for [3_turns:duration] upon taking [ice] damage, and heal for [15_HP:heal] each turn while [frozen].\n"
-                    "For every [100_ice:ice] resistance a minion has above 100, it will be healed each turn for the same amount. An excess of less than 100 instead has a chance to heal the minion.").format(**self.fmt_dict())
+            return ("Your [living], [nature], and [ice] minions gain [75_ice:ice] resistance.\n"
+                    "Whenever [ice] damage is attempted to be dealt to one of those minions, that minion is [frozen] for [{duration}_turns:duration] and gains hibernation for the same duration, during which it heals for [15_HP:heal] per turn.\n"
+                    "Hibernation is removed if [fire] or [physical] damage is attempted to be dealt to the minion.\n"
+                    "If the minion is immune to [ice] and is not [frozen], then gaining or losing hibernation will trigger the same effects as gaining or losing [freeze].").format(**self.fmt_dict())
 
     if cls is HibernationBuff:
 
+        def on_init(self):
+            self.buff_type = BUFF_TYPE_PASSIVE
+            self.resists[Tags.Ice] = 75
+            self.owner_triggers[EventOnPreDamaged] = self.on_damaged
+
         def on_pre_advance(self):
-            if Tags.Living not in self.owner.tags and Tags.Nature not in self.owner.tags and Tags.Ice not in self.owner.tags:
+            if not [tag for tag in self.owner.tags if tag in [Tags.Living, Tags.Nature, Tags.Ice]]:
                 self.owner.remove_buff(self)
+
+        def on_damaged(self, evt):
+            if evt.damage_type != Tags.Ice:
                 return
-            if self.owner.has_buff(FrozenBuff):
-                self.owner.deal_damage(-15, Tags.Heal, self)
-            elif self.owner.resists[Tags.Ice] > 100:
-                amount = self.owner.resists[Tags.Ice] - 100
-                while amount > 100:
-                    self.owner.deal_damage(-15, Tags.Heal, self)
-                    amount -= 100
-                if random.random() < amount/100:
-                    self.owner.deal_damage(-15, Tags.Heal, self)
+            duration = self.upgrade.get_stat("duration")
+            self.owner.apply_buff(FrozenBuff(), duration)
+            self.owner.apply_buff(HibernationRegen(self.upgrade), duration)
 
     if cls is HolyWater:
 

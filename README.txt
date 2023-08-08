@@ -420,7 +420,7 @@ Void Drake:
 - Essence Drake upgrade replaced by Essence Breath (4 SP): The Void Drake's breath no longer damages allies, and instead increases temporary allies' remaining durations by 1 turn.
 
 Wall of Ice:
-- Thawing Remnant (4 SP): When an ice elemental dies, it behaves as if it is unfrozen by fire damage, triggering all effects that are normally triggered by such events.
+- Ice Mirror (4 SP): When an ice elemental is damaged by an enemy, that enemy has a chance to be [frozen] for [1_turn:duration], equal to the ice elemental's percentage of missing HP.
 - Forceful Construction (4 SP): "Wall of Ice no longer requires line of sight to cast. Wall and chasm tiles in the affected area are converted to floor tiles before summoning the ice elementals. Units in the affected area take 22 ice damage and are frozen for 3 turns. If a unit is killed then an ice elemental is summoned in its tile.
 
 Watcher Form:
@@ -563,7 +563,9 @@ Ghostfire:
 
 Hibernation:
 - Now also works on nature and ice minions.
-- For every 100 ice resistance a minion has above 100, it will be healed each turn for the same amount. An excess of less than 100 instead has a chance to heal the minion.
+- Now works even if a minion is immune or shielded.
+- Now instead a separate regen buff for the same duration as freeze. This regen is removed on dealing fire or physical damage to the unit.
+- If the unit is immune to ice and is not frozen, applying and removing the regen counts as applying and removing freeze.
 
 Holy Water:
 - Affected allies also deal 2 holy or ice damage once to all enemies in a radius equal to the number of SH they have, even if their SH are maxed out. Holy damage from this skill cannot trigger itself. Cost increased to 5 SP.
