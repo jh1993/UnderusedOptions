@@ -581,9 +581,6 @@ White Flame:
 Acid Fumes:
 - Now prioritizes the closest unacidified enemy.
 
-Collected Agony:
-- The dark damage will no longer target dark-immune enemies.
-
 Frozen Fragility:
 - Now instead inflicts a fragility debuff equal to the duration of the freeze inflicted, which persists after unfreezing. If freeze duration is refreshed or extended, fragility duration will be adjusted to match if shorter. If fragility is removed prematurely and the enemy is still frozen, it will automatically reapply itself.
 
