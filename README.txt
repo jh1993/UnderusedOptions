@@ -595,8 +595,8 @@ Hypocrisy:
 - Holy Hypocrisy now gives a damage bonus to holy spells and skills equal to twice its level, while you have it. But it is still consumed when you cast a holy spell of lower level, which cannot benefit from this damage bonus, meaning that only spells of equal or higher level benefit from the damage bonus. Dark Hypocrisy behaves similarly.
 
 Purestrike:
-- As per my No More Scams mod, no longer harms allies, and is based on damage pre-resistances.
-- Now has a grace period between the end of your turn and the start of your next turn where a unit can be unshielded but still benefit.
+- No longer works with enemies.
+- Now has a grace period for 1 turn where a unit can be unshielded but still benefit.
 - Cost increased to 6 SP.
 
 Righteous March:

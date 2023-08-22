@@ -1061,7 +1061,9 @@ class PureGraceBuff(Buff):
     def on_init(self):
         self.show_effect = False
         self.name = "Pure Grace"
-        self.color = Tags.Holy.color
+        self.color = Tags.Shield.color
+        # Make sure it refreshes duration properly on the player.
+        self.stack_type = STACK_REPLACE
 
 class FrostbiteBuff(FreezeDependentBuff):
 
@@ -7191,24 +7193,15 @@ def modify_class(cls):
             if not are_hostile(evt.unit, self.owner):
                 return
             self.owner.level.queue_spell(self.do_conversion(evt))
-        
-        def on_pre_advance(self):
-            for u in self.owner.level.units:
-                u.remove_buffs(PureGraceBuff)
 
         def on_advance(self):
             for unit in self.owner.level.units:
-                if unit.shields > 0:
-                    buff = PureGraceBuff()
-                    if are_hostile(unit, self.owner):
-                        buff.buff_type = BUFF_TYPE_CURSE
-                        buff.name = "Pure Penance"
-                    unit.apply_buff(PureGraceBuff())
+                if unit.shields > 0 and not are_hostile(unit, self.owner):
+                    unit.apply_buff(PureGraceBuff(), 1)
         
         def get_description(self):
-            return ("At the end of your turn, all shielded allies gain Pure Grace until the start of your next turn.\n"
-                    "Whenever [physical] damage is dealt to an enemy, if the source of that damage is shielded or has Pure Grace, redeal half of that damage as [arcane] and half of that damage as [holy].\n"
-                    "Enemies will instead gain Pure Penance, which has the same effect when they deal [physical] damage to other enemies.")
+            return ("At the end of your turn, all shielded allies gain Pure Grace for [1_turn:duration]. This duration is fixed, and cannot be increased using shrines, skills, or buffs.\n"
+                    "Whenever [physical] damage is dealt to an enemy, if the source of that damage is shielded or has Pure Grace, redeal half of that damage as [arcane] and half of that damage as [holy].")
 
         def can_redeal(self, u, source, damage_type, already_checked):
             return damage_type == Tags.Physical and source.owner and (source.owner.shields > 0 or source.owner.has_buff(PureGraceBuff)) and (not is_immune(u, self, Tags.Holy, already_checked) or not is_immune(u, self, Tags.Arcane, already_checked))
