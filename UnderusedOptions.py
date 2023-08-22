@@ -378,24 +378,6 @@ class WriteCeruleanScrolls(Spell):
             self.summon(unit, sort_dist=False)
             yield
 
-# Avoid exceeding maximum recursion depth when saving by avoiding long chains of spell duplication.
-class ReaperMinionTouch(TouchOfDeath):
-
-    def __init__(self, spell):
-        self.spell = spell
-        TouchOfDeath.__init__(self)
-        self.max_charges = 0
-        self.cur_charges = 0
-    
-    def get_stat(self, attr, base=None):
-        return self.spell.get_stat(attr, base)
-
-    def get_description(self):
-        return "Casts this unit's summoner's Touch of Death."
-    
-    def cast(self, x, y):
-        yield from self.spell.cast(x, y)
-
 class AbsoluteZeroBuff(Buff):
     def on_init(self):
         self.name = "Absolute Zero"
@@ -1385,32 +1367,6 @@ class WarpLightningBuff(Buff):
         self.name = "Warp Lightning"
         self.buff_type = BUFF_TYPE_CURSE
         self.color = Tags.Lightning.color
-
-class SpiderPoisonResistance(Buff):
-    def on_init(self):
-        self.buff_type = BUFF_TYPE_PASSIVE
-        self.resists[Tags.Poison] = 100
-
-class FearOfDeathBuff(Buff):
-
-    def __init__(self, source):
-        self.source = source
-        Buff.__init__(self)
-    
-    def on_init(self):
-        self.name = "Fear of Death"
-        self.asset = ["UnderusedOptions", "Statuses", "death_fear"]
-        self.color = Tags.Dark.color
-        self.stack_type = STACK_INTENSITY
-        self.buff_type = BUFF_TYPE_CURSE
-
-    def on_advance(self):
-        if not self.source.is_alive():
-            self.owner.remove_buff(self)
-        if not self.owner.level.can_see(self.owner.x, self.owner.y, self.source.x, self.source.y):
-            return
-        if random.random() < 1/max(1, distance(self.owner, self.source)):
-            self.owner.apply_buff(Stun(), 1)
 
 class SwappersSchemeBuff(Buff):
 
@@ -2740,17 +2696,19 @@ def modify_class(cls):
             self.upgrades['fire'] = (1, 2, "Flametouch", "Touch of Death also deals [fire] damage.")
             self.upgrades["lightning"] = (1, 2, "Thundertouch", "Touch of Death also deals [lightning] damage.")
             self.upgrades['physical'] = (1, 2, "Wrathtouch", "Touch of Death also deals [physical] damage.")
-            self.upgrades['raise']= (1, 6, 'Touch of the Reaper', 'When a target dies to Touch of Death, it is raise as a friendly Reaper for [{minion_duration}_turns:minion_duration].\nThe Reaper can cast your Touch of Death through itself. You are considered the caster, but it does not consume charges and does not count as you casting the spell.')
-            self.upgrades["fear"] = (1, 5, "Fear of Death", "If Touch of Death kills its target, all enemies in line of sight of the target are inflicted with a stack of the fear of death for [{duration}_turns:duration].\nEach turn, each stack of fear has a chance to [stun] its victim for [1_turn:duration], equal to 100% divided by the distance between the victim and the source of its fear, if the source is visible to the victim.\nA stack of fear is automatically removed if its source is no longer alive.")
+            self.upgrades['raise']= (1, 6, 'Touch of the Reaper', 'When a target dies to Touch of Death, it is raise as a friendly Reaper for [{minion_duration}_turns:minion_duration].\nThe Reaper can cast Touch of Death, which gains all of your upgrades and bonuses, but dies automatically after raising another Reaper.')
+
+            self.source = self
 
         def fmt_dict(self):
             stats = Spell.fmt_dict(self)
-            stats["duration"] = self.get_stat('duration', base=6)
             stats["minion_duration"] = self.get_stat('minion_duration', base=6)
             return stats
 
         def cast_instant(self, x, y):
             unit = self.caster.level.get_unit_at(x, y)
+            if unit and self.get_stat("raise"):
+                self.caster.level.queue_spell(try_raise(self, unit))
             dtypes = [Tags.Dark]
             if self.get_stat("arcane"):
                 dtypes.append(Tags.Arcane)
@@ -2763,18 +2721,25 @@ def modify_class(cls):
             for dtype in dtypes:
                 self.caster.level.deal_damage(x, y, self.get_stat('damage'), dtype, self)
 
-            if unit and not unit.is_alive():
-                if self.get_stat("raise"):
-                    reaper = Reaper()
-                    reaper.turns_to_death = self.get_stat('minion_duration', base=6)
-                    reaper.spells[0] = ReaperMinionTouch(self)
-                    self.summon(reaper, Point(unit.x, unit.y))
-                if self.get_stat("fear"):
-                    duration = self.get_stat("duration", base=6)
-                    for u in self.caster.level.get_units_in_los(unit):
-                        if not are_hostile(u, self.caster):
-                            continue
-                        u.apply_buff(FearOfDeathBuff(self.caster), duration)
+        def try_raise(self, unit):
+            if unit.is_alive():
+                return
+            if self.caster.name == "Reaper":
+                self.caster.kill()
+            reaper = Reaper()
+            reaper.turns_to_death = 6
+            apply_minion_bonuses(self, reaper)
+            spell = TouchOfDeath()
+            spell.source = self.source
+            spell.max_charges = 0
+            spell.cur_charges = 0
+            spell.caster = reaper
+            spell.owner = reaper
+            spell.statholder = self.source.caster
+            reaper.spells[0] = spell
+            reaper.buffs = []
+            self.source.summon(reaper, Point(unit.x, unit.y))
+            yield
 
     if cls is ToxicSpore:
 

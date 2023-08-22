@@ -124,8 +124,7 @@ Soul Swap:
 Touch of Death:
 - All the damage type upgrades now do the same amount of damage as dark damage done, but are increased to 2 SP. Now also has a lightning damage upgrade.
 - Damage (4 SP): +200 damage.
-- Touch of the Raven and Touch of the Vampire removed. Touch of the Reaper now has the reapers use your Touch of Death as well, and it's no longer limited to living units. Raising a unit as reaper no longer prevents it from also being raised as a skeleton.
-- Fear of Death (5 SP): If Touch of Death kills its target, all enemies in line of sight of the target are inflicted with a stack of the fear of death for 6 turns. Each turn, each stack of fear has a chance to stun its victim for 1 turn, equal to 100% divided by the distance between the victim and the source of its fear, if the source is visible to the victim. A stack of fear is automatically removed if its source is no longer alive.
+- Touch of the Raven and Touch of the Vampire removed. Touch of the Reaper now has the reapers use your Touch of Death as well and no longer randomly teleport, and it's no longer limited to living units, but the reaper dies if it raises another reaper. Raising a unit as reaper no longer prevents it from also being raised as a skeleton.
 
 Toxic Spores:
 - Grey Mushbooms upgrade replaced by Toxic Mushbooms (4 SP), which is mutually exclusive with other mushboom type upgrades and gives 3-radiu 1-damage poison auras to mushbooms; the aura instantly activates 3 times on death. Stunning is redundant with Paralyzing Venom anyways, not to mention losing poison synergy.
