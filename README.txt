@@ -376,6 +376,9 @@ Permanence:
 - Minion Permanence (5 SP): Each turn, each of your temporary minions that has only 1 turn remaining has a 25% chance to become permanent. Does not work on orb minions.
 - Max Charges (3 SP): +4 max charges.
 
+Petrification Aura:
+- Can now refresh petrify duration on petrified enemies, but prioritizes unpetrified enemies.
+
 Purity:
 - Pure Aura (2 SP): Each turn, remove a random debuff from a random ally.
 
