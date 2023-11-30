@@ -3449,6 +3449,9 @@ def modify_class(cls):
             self.breath_damage = 7
             self.minion_health = 16
 
+            # Only for the purpose of shrines.
+            self.minion_damage = 7
+
             self.upgrades['minion_range'] = (6, 3)
             self.upgrades['breath_damage'] = (7, 4)
             self.upgrades["splitting"] = (1, 4, "Splitting", "Upon reaching 0 HP, the hydra splits into a frost hydra and a fire hydra.\nEach hydra inherits one of the frostfire hydra's elements and resistances. Its beam only deals damage of that element, and has a [2_turns:duration] cooldown.")
