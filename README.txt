@@ -166,8 +166,9 @@ Combust Poison:
 Darkness:
 - Max Charges upgrade removed.
 - Clinging Darkness (4 SP): When affecting an enemy, this spell now inflicts blind for 2 turns, which stacks in duration with pre-existing blind it has.
-- Holy Night (4 SP): While Darkness is active and you are blind, demon and undead enemies take 2 holy damage each turn. This damage is fixed, and cannot be increased using shrines, skills, or buffs.
-- Concealing Darkness (6 SP): While Darkness is active and you are blind, whenever you or one of your demon or undead minions is about to take damage it is not immune to, and is not shielded, it has a 50% chance to gain 1 SH.
+- Holy Night (4 SP): While Darkness is active and you are blind, demon and undead enemies take 2 holy damage each turn. This damage is fixed, and cannot be increased using shrines, skills, or buffs. Mutually exclusive with other night upgrades.
+- Concealing Night (6 SP): While Darkness is active and you are blind, whenever you or one of your demon or undead minions is about to take damage it is not immune to, and is not shielded, it has a 50% chance to gain 1 SH. Mutually exclusive with other night upgrades.
+- Fractal Night (7 SP): While Darkness is active and you are blind, half of all dark damage dealt to enemies is redealt as dark damage. This uses damage values before resistances, and triggers itself, but rounds down, stopping at 1 damage. Mutually exclusive with other night upgrades.
 
 Death Chill:
 - Now counts as a single-target spell for the purpose of Mass Enchantment from my Missing Synergies mod.

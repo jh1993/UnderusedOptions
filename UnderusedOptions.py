@@ -493,8 +493,9 @@ class DarknessBuff(Spells.DarknessBuff):
         self.stack_type = STACK_REPLACE
         self.holy = spell.get_stat("holy")
         self.clinging = spell.get_stat("clinging")
-        if spell.get_stat("conceal"):
-            self.global_triggers[EventOnPreDamaged] = self.on_pre_damaged
+        self.conceal = spell.get_stat("conceal")
+        self.fractal = spell.get_stat("fractal")
+        self.global_triggers[EventOnPreDamaged] = self.on_pre_damaged
 
     def effect_unit(self, unit):
         hostile = are_hostile(unit, self.owner)
@@ -516,16 +517,27 @@ class DarknessBuff(Spells.DarknessBuff):
     def on_pre_damaged(self, evt):
         if evt.damage <= 0:
             return
-        if are_hostile(evt.unit, self.owner) or not self.owner.is_blind():
-            return
-        if evt.unit is not self.owner and Tags.Undead not in evt.unit.tags and Tags.Demon not in evt.unit.tags:
-            return
-        penetration = evt.penetration if hasattr(evt, "penetration") else 0
-        if evt.unit.resists[evt.damage_type] - penetration >= 100:
-            return
-        if evt.unit.shields or random.random() >= 0.5:
-            return
-        evt.unit.add_shields(1)
+        hostile = are_hostile(evt.unit, self.owner)
+        blind = self.owner.is_blind()
+        if self.conceal:
+            if hostile or not blind:
+                return
+            if evt.unit is not self.owner and Tags.Undead not in evt.unit.tags and Tags.Demon not in evt.unit.tags:
+                return
+            penetration = evt.penetration if hasattr(evt, "penetration") else 0
+            if evt.unit.resists[evt.damage_type] - penetration >= 100:
+                return
+            if evt.unit.shields or random.random() >= 0.5:
+                return
+            evt.unit.add_shields(1)
+        elif self.fractal:
+            if not hostile or not blind or evt.damage <= 1 or evt.damage_type != Tags.Dark:
+                return
+            self.owner.level.queue_spell(self.deal_damage(evt.unit, evt.damage//2))
+
+    def deal_damage(self, unit, damage):
+        unit.deal_damage(damage, Tags.Dark, self.spell)
+        yield
 
 class SpiritBindingBuff(Buff):
 
@@ -3104,8 +3116,9 @@ def modify_class(cls):
 
             self.upgrades['duration'] = (3, 2)
             self.upgrades["clinging"] = (1, 4, "Clinging Darkness", "When affecting an enemy, this spell now inflicts [blind] for [2_turns:duration], which stacks in duration with pre-existing [blind] it has.")
-            self.upgrades["holy"] = (1, 4, "Holy Night", "While Darkness is active and you are [blind], [demon] and [undead] enemies take [2_holy:holy] damage each turn.\nThis damage is fixed, and cannot be increased using shrines, skills, or buffs.")
-            self.upgrades["conceal"] = (1, 6, "Concealing Darkness", "While Darkness is active and you are [blind], whenever you or one of your [demon] or [undead] minions is about to take damage it is not immune to, and is not shielded, it has a 50% chance to gain [1_SH:shields].")
+            self.upgrades["holy"] = (1, 4, "Holy Night", "While Darkness is active and you are [blind], [demon] and [undead] enemies take [2_holy:holy] damage each turn.\nThis damage is fixed, and cannot be increased using shrines, skills, or buffs.", "night")
+            self.upgrades["conceal"] = (1, 6, "Concealing Night", "While Darkness is active and you are [blind], whenever you or one of your [demon] or [undead] minions is about to take damage it is not immune to, and is not shielded, it has a 50% chance to gain [1_SH:shields].", "night")
+            self.upgrades["fractal"] = (1, 7, "Fractal Night", "While Darkness is active and you are [blind], half of all [dark] damage dealt to enemies is redealt as [dark] damage.\nThis uses damage values before resistances, and triggers itself, but rounds down, stopping at 1 damage.", "night")
 
         def cast_instant(self, x, y):
             self.caster.apply_buff(curr_module.DarknessBuff(self), self.get_stat('duration'))
