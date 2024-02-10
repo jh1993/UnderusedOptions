@@ -5908,7 +5908,7 @@ def modify_class(cls):
             self.upgrades['minion_duration'] = (16, 2)
             self.upgrades['max_charges'] = (2, 3)
             self.upgrades["independent"] = (1, 3, "Independent Eye", "The floating eye now has an attack with unlimited range that deals [{minion_damage}_arcane:arcane] damage.")
-            self.upgrades["eternal"] = (1, 2, "Eternal Gaze", "When the floating eye loses an [eye] buff, that buff will be reapplied with unlimited duration.")
+            self.upgrades["eternal"] = (1, 2, "Eternal Gaze", "When the floating eye loses a non-stacking [eye] buff, that buff will be reapplied with unlimited duration.")
 
             self.must_target_empty = True
 
@@ -5933,7 +5933,7 @@ def modify_class(cls):
                 self.owner_triggers[EventOnBuffRemove] = lambda evt: on_buff_remove(self, evt)
 
         def on_buff_remove(self, evt):
-            if not isinstance(evt.buff, Spells.ElementalEyeBuff):
+            if not isinstance(evt.buff, Spells.ElementalEyeBuff) or evt.buff.stack_type == STACK_INTENSITY:
                 return
             self.owner.apply_buff(evt.buff)
 
