@@ -161,7 +161,8 @@ Choir of Angels:
 - The angels now sing passively each turn instead of requiring to act, so the singing won't interfere with the new abilities they can get from Fallen Choir. Even if an angel has no active abilities, its AI will still approach enemies that can be harmed by its song.
 
 Combust Poison:
-- Spontaneous Combustion (6 SP): Whenever a poisoned enemy dies from any reason other than Combust Poison, it will now explode as if you cast Combust Poison. This has a percentage chance to consume 1 charge from Combust Poison, equal to half of the enemy's poison duration (up to 100%), and counts as casting Combust Poison once. If this upgrade tries but fails to consume a charge, the explosion will not occur.
+- Afterburn (4 SP): Instead of removing poison, this spell now sets remaining poison duration to 10 turns.
+- Spontaneous Combustion (3 SP): Each turn, you have a chance to cast Combust Poison automatically if possible, consuming charges as usual. The chance is equal to the average poison duration of all enemies divided by 100, up to 100%.
 
 Darkness:
 - Max Charges upgrade removed.

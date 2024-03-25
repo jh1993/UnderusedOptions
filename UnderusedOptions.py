@@ -99,32 +99,26 @@ class SpontaneousCombustion(Upgrade):
 
     def on_init(self):
         self.name = "Spontaneous Combustion"
-        self.level = 6
-        self.description = "Whenever a [poisoned] enemy dies from any reason other than Combust Poison, it will now explode as if you cast Combust Poison.\nThis has a percentage chance to consume 1 charge from Combust Poison, equal to half of the enemy's [poison] duration (up to 100%), and counts as casting Combust Poison once.\nIf this upgrade tries but fails to consume a charge, the explosion will not occur."
-        self.global_triggers[EventOnDeath] = self.on_death
+        self.level = 3
+        self.description = "Each turn, you have a chance to cast Combust Poison automatically if possible, consuming charges as usual.\nThe chance is equal to the average [poison] duration of all enemies divided by 100, up to 100%."
     
-    def on_death(self, evt):
-        if not are_hostile(evt.unit, self.owner):
+    def on_advance(self):
+        if not self.prereq.can_pay_costs() or not self.prereq.can_cast(self.owner.x, self.owner.y):
             return
-        if evt.damage_event and evt.damage_event.source is self.prereq:
+        total = 0
+        count = 0
+        for unit in self.owner.level.units:
+            if not are_hostile(unit, self.owner):
+                continue
+            count += 1
+            poison = unit.get_buff(Poison)
+            if not poison:
+                continue
+            total += poison.turns_left
+        if not count:
             return
-        buff = evt.unit.get_buff(Poison)
-        if not buff:
-            return
-        if random.random() < buff.turns_left/200:
-            if not self.prereq.cur_charges:
-                return
-            self.prereq.cur_charges -= 1
-        self.owner.level.event_manager.raise_event(EventOnSpellCast(self.prereq, self.owner, self.owner.x, self.owner.y), self.owner)
-        self.owner.level.queue_spell(self.boom(evt.unit, buff))
-
-    def boom(self, unit, buff):
-        damage = buff.turns_left*self.prereq.get_stat('multiplier')
-        for stage in Burst(self.owner.level, unit, self.prereq.get_stat("radius")):
-            for p in stage:
-                self.owner.level.deal_damage(p.x, p.y, damage, Tags.Fire, self.prereq)
-            yield
-        unit.remove_buff(buff)
+        if random.random() < total/count/100:
+            self.owner.level.act_cast(self.owner, self.prereq, self.owner.x, self.owner.y)
 
 class AngelSongBuff(Buff):
 
@@ -7961,9 +7955,40 @@ def modify_class(cls):
             self.upgrades['radius'] = (1, 3)
             self.upgrades['max_charges'] = (9, 2)
             self.upgrades['multiplier'] = (1, 4)
+            self.upgrades["afterburn"] = (1, 4, "Afterburn", "Instead of removing [poison], this spell now sets remaining [poison] duration to [{duration}_turns:duration].")
             self.add_upgrade(SpontaneousCombustion())
 
             self.range = 0
+
+        def fmt_dict(self):
+            stats = Spell.fmt_dict(self)
+            stats["duration"] = self.get_stat("duration", base=10)
+            return stats
+
+        def cast(self, x, y):
+            multiplier = self.get_stat('multiplier')
+            radius = self.get_stat('radius')
+            afterburn = self.get_stat("afterburn")
+            duration = self.get_stat("duration", base=10)
+            
+            for u in list(self.caster.level.units):
+
+                if not are_hostile(u, self.caster):
+                    continue
+                buff = u.get_buff(Poison)
+                if not buff:
+                    continue
+                
+                damage = buff.turns_left*multiplier
+                for stage in Burst(self.caster.level, u, radius):
+                    for point in stage:
+                        self.caster.level.deal_damage(point.x, point.y, damage, Tags.Fire, self)
+                    yield
+
+                if not afterburn:
+                    u.remove_buff(buff)
+                else:
+                    buff.turns_left = duration
 
     if cls is LightningBoltSpell:
 
