@@ -1,7 +1,8 @@
 PLEASE CHECK THE DISCORD THREAD FOR UPDATE NOTICES, AND RE-DOWNLOAD THE MOD WHENEVER THERE'S AN UPDATE.
 
-This mod requires my Bugfixes and No More Scams mods:
+This mod requires the following mods by me:
 https://github.com/jh1993/Bugfixes
+https://github.com/jh1993/BugfixesExtended
 https://github.com/jh1993/NoMoreScams
 
 To install this mod, click on the green "Code" button on this page, then "Download ZIP". Please rename the "UnderusedOptions-main" folder to "UnderusedOptions" before putting it into your mods folder.
@@ -92,7 +93,7 @@ Hungry Maw:
 - Range upgrade folded into base spell (from 7 to 11).
 - Maw now has a melee bite that attacks 3 times.
 - Pull Strength (3 SP): +2 tiles pulled.
-- Shield Eater (3 SP): The maw gains 1 SH on kill and when attacking a shielded target, up to its original SH amount.
+- Shield Eater (3 SP): The maw gains 1 SH on kill and when damaging a shielded target, up to the SH amount of this spell.
 
 Invoke Savagery:
 - As per my No More Scams mod, no longer tries to attack physical-immune targets unless the minion doing the attack has physical redeals.
@@ -168,7 +169,7 @@ Darkness:
 - Max Charges upgrade removed.
 - Clinging Darkness (4 SP): When affecting an enemy, this spell now inflicts blind for 2 turns, which stacks in duration with pre-existing blind it has.
 - Holy Night (4 SP): While Darkness is active and you are blind, demon and undead enemies take 2 holy damage each turn. This damage is fixed, and cannot be increased using shrines, skills, or buffs. Mutually exclusive with other night upgrades.
-- Concealing Night (6 SP): While Darkness is active and you are blind, whenever you or one of your demon or undead minions is about to take damage it is not immune to, and is not shielded, it has a 50% chance to gain 1 SH. Mutually exclusive with other night upgrades.
+- Concealing Night (6 SP): While Darkness is active and you are blind, whenever you or one of your demon or undead minions is about to be dealt damage, it has a 50% chance to negate that damage. Damage negation activates before SH.
 - Fractal Night (7 SP): While Darkness is active and you are blind, half of all dark damage dealt to enemies is redealt as dark damage. This uses damage values before resistances, and triggers itself, but rounds down, stopping at 1 damage. Mutually exclusive with other night upgrades.
 
 Death Chill:
