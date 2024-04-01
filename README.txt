@@ -93,7 +93,7 @@ Hungry Maw:
 - Range upgrade folded into base spell (from 7 to 11).
 - Maw now has a melee bite that attacks 3 times.
 - Pull Strength (3 SP): +2 tiles pulled.
-- Shield Eater (3 SP): The maw gains 1 SH on kill and when damaging a shielded target, up to the SH amount of this spell.
+- Shield Eater (3 SP): The maw gains 1 SH on kill and when removing SH with damage, up to the SH amount of this spell.
 
 Invoke Savagery:
 - As per my No More Scams mod, no longer tries to attack physical-immune targets unless the minion doing the attack has physical redeals.
@@ -598,11 +598,6 @@ Houndlord:
 Hypocrisy:
 - Now only lasts a fixed 1 turn, but is no longer removed when you cast an unqualifying spell. Now applies Hypocrisy of a level equal to the triggering spell, instead of the triggering spell's level minus 1.
 - Holy Hypocrisy now gives a damage bonus to holy spells and skills equal to twice its level, while you have it. But it is still consumed when you cast a holy spell of lower level, which cannot benefit from this damage bonus, meaning that only spells of equal or higher level benefit from the damage bonus. Dark Hypocrisy behaves similarly.
-
-Purestrike:
-- No longer works with enemies.
-- Now has a grace period for 1 turn where a unit can be unshielded but still benefit.
-- Cost increased to 6 SP.
 
 Righteous March:
 - Each enemy in LoS of the target now also has a 50% chance to take 1 fixed holy damage.
