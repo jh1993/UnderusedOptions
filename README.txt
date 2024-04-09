@@ -73,7 +73,7 @@ Freeze:
 - Permafrost (5 SP): When targeting an already frozen enemy, increase the duration of freeze on it by one third of this spell's duration if the result is greater than this spell's duration. Then deal ice damage equal to twice the target's freeze duration.
 
 Healing Light:
-- Cleansing Light (3 SP): Healing Light will now remove all debuffs from affected allies before healing them.
+- Cleansing Light (2 SP): Healing Light will now remove all debuffs from affected allies before healing them.
 - Now considers berserked allies as friendly, due to the above.
 
 Heavenly Blast:
@@ -117,6 +117,10 @@ Petrify:
 - Max charges increased to 20. Max charges upgrade changed to +10 charges for 2 SP.
 - Duration (3 SP): +10 duration.
 - Stone Mirror (4 SP): When targeting an enemy, the target is also permanently inflicted with Stone Mirror. When a petrified or glassified enemy with Stone Mirror dies, one of that enemy's allies in its line of sight will also be inflicted with Stone Mirror and the dead enemy's remaining duration of petrify and glassify. Targets without Stone Mirror are prioritized.
+
+Regeneration Aura:
+- Global upgrade replaced by a +5 radius upgrade for 3 SP.
+- Growth (5 SP): Minions in the radius now gain max and current HP each turn equal to 1/4 of this spell's heal amount. Slime units are instead healed a second time each turn.
 
 Soul Swap:
 - Infernal Swap (3 SP): Soul Swap can target demon units as well.
@@ -378,9 +382,6 @@ Orb Control:
 Permanence:
 - Minion Permanence (5 SP): Each turn, each of your temporary minions that has only 1 turn remaining has a 25% chance to become permanent. Does not work on orb minions.
 - Max Charges (3 SP): +4 max charges.
-
-Petrification Aura:
-- Can now refresh petrify duration on petrified enemies, but prioritizes unpetrified enemies.
 
 Purity:
 - Pure Aura (2 SP): Each turn, remove a random debuff from a random ally.

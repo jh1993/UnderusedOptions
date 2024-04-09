@@ -15,6 +15,37 @@ import sys, math, random
 
 curr_module = sys.modules[__name__]
 
+class RegenAuraBuff(Buff):
+
+    def __init__(self, spell):
+        self.spell = spell
+        Buff.__init__(self)
+    
+    def on_init(self):
+        self.name = "Regeneration Aura"
+        self.color = Tags.Heal.color
+
+    def on_advance(self):
+
+        heal = self.spell.get_stat("heal")
+        growth = heal//4 if self.spell.get_stat("growth") else 0
+
+        for unit in list(self.owner.level.get_units_in_ball(self.owner, self.spell.get_stat("radius"))):
+
+            if unit.is_player_controlled or unit is self.owner:
+                continue
+            if self.owner.level.are_hostile(self.owner, unit):
+                continue
+            unit.deal_damage(-heal, Tags.Heal, self.spell)
+
+            if not growth:
+                continue
+            if Tags.Slime not in unit.tags:
+                unit.max_hp += growth
+                unit.deal_damage(-growth, Tags.Heal, self.spell)
+            else:
+                unit.deal_damage(-heal, Tags.Heal, self.spell)
+
 class HibernationRegen(RegenBuff):
 
     def __init__(self, upgrade):
@@ -2165,7 +2196,7 @@ def modify_class(cls):
             self.upgrades['heal'] = (20, 1)
             self.upgrades['max_charges'] = (8, 2)
             self.upgrades['shields'] = (1, 2, "Shielding Light", "Allies in line of sight gain [1_SH:shields]")
-            self.upgrades["cleanse"] = (1, 3, "Cleansing Light", "Healing Light will now remove all debuffs from affected allies before healing them.")
+            self.upgrades["cleanse"] = (1, 2, "Cleansing Light", "Healing Light will now remove all debuffs from affected allies before healing them.")
 
             self.tags = [Tags.Holy, Tags.Sorcery]
             self.level = 2
@@ -8158,32 +8189,30 @@ def modify_class(cls):
                 return
             self.owner.level.queue_spell(buff(self))
 
-    if cls is StoneAuraBuff:
+    if cls is RegenAuraSpell:
 
-        def on_advance(self):
-            BuffClass = GlassPetrifyBuff if self.spell.get_stat('glassify') else PetrifyBuff
-            units = [u for u in self.owner.level.get_units_in_ball(self.owner, self.spell.get_stat('radius')) if are_hostile(u, self.owner)]
-            stoned = [u for u in units if u.has_buff(BuffClass)]
-            random.shuffle(stoned)
-            targets = [u for u in units if u not in stoned]
-            random.shuffle(targets)
-            targets.extend(stoned)
-            if not targets:
-                return
-            duration = self.spell.get_stat('petrify_duration')
-            for u in targets[:self.spell.get_stat('num_targets')]:
-                u.apply_buff(BuffClass(), duration)
+        def on_init(self):
+            self.name = "Regeneration Aura"
+            self.heal = 4
+            self.duration = 8
+            self.range = 0
+            self.radius = 10
 
-    if cls is StoneAuraSpell:
+            self.max_charges = 4
+            self.level = 2
 
-        def get_description(self):
-            return ("Each turn, inflict [petrify] on up to [{num_targets}:num_targets] enemy units in a [{radius}_tile:radius] radius for [{petrify_duration}_turns:duration].\n" +
-                    text.petrify_desc + '\n'
-                    "Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+            self.tags = [Tags.Enchantment, Tags.Nature]
+            self.upgrades['heal'] = (4, 2)
+            self.upgrades['duration'] = (8, 1)
+            self.upgrades['radius'] = (5, 3)
+            self.upgrades["growth"] = (1, 5, "Growth", "Minions in the radius now gain max and current HP each turn equal to 1/4 of this spell's heal amount.\n[Slime] units are instead healed a second time each turn.")
+
+        def cast_instant(self, x, y):
+            self.caster.apply_buff(RegenAuraBuff(self), self.get_stat('duration'))
 
     for func_name, func in [(key, value) for key, value in locals().items() if callable(value)]:
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, FaestoneBuff, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, AcidFumes, FrozenFragility, Teleblink, Houndlord, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord, SummonSpiderQueen, DeathChill, DeathChillDebuff, ThornyPrisonSpell, SummonBlueLion, FlameGateBuff, FlameGateSpell, ArcaneShield, MarchOfTheRighteous, MagnetizeBuff, PlagueOfFilth, IgnitePoison, LightningBoltSpell, Iceball, ToxinBurst, IceTap, Crystallographer, StoneAuraBuff, StoneAuraSpell]:
+for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, FaestoneBuff, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, AcidFumes, FrozenFragility, Teleblink, Houndlord, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord, SummonSpiderQueen, DeathChill, DeathChillDebuff, ThornyPrisonSpell, SummonBlueLion, FlameGateBuff, FlameGateSpell, ArcaneShield, MarchOfTheRighteous, MagnetizeBuff, PlagueOfFilth, IgnitePoison, LightningBoltSpell, Iceball, ToxinBurst, IceTap, Crystallographer, RegenAuraSpell, MinionRepair]:
     modify_class(cls)
