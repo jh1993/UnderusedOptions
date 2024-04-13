@@ -73,8 +73,7 @@ Freeze:
 - Permafrost (5 SP): When targeting an already frozen enemy, increase the duration of freeze on it by one third of this spell's duration if the result is greater than this spell's duration. Then deal ice damage equal to twice the target's freeze duration.
 
 Healing Light:
-- Cleansing Light (2 SP): Healing Light will now remove all debuffs from affected allies before healing them.
-- Now considers berserked allies as friendly, due to the above.
+- Completely overhauled, because the original is too situational. Now a level 3 spell that channels to heal 3 of your most damaged minions each turn, without requiring line of sight; best used with a small number of strong minions. Now has upgrades to cleanse debuffs, increase affected minions' max HP, and release holy bursts around affected minions.
 
 Heavenly Blast:
 - Spirit Bind cost reduced to 4 SP, and now inflicts a Spirit Binding debuff that raises the target as a spirit on death, which is removed at the beginning of your next turn.
@@ -119,8 +118,9 @@ Petrify:
 - Stone Mirror (4 SP): When targeting an enemy, the target is also permanently inflicted with Stone Mirror. When a petrified or glassified enemy with Stone Mirror dies, one of that enemy's allies in its line of sight will also be inflicted with Stone Mirror and the dead enemy's remaining duration of petrify and glassify. Targets without Stone Mirror are prioritized.
 
 Regeneration Aura:
-- Global upgrade replaced by a +5 radius upgrade for 3 SP.
-- Growth (5 SP): Minions in the radius now gain max and current HP each turn equal to 1/4 of this spell's heal amount. Slime units are instead healed a second time each turn.
+- Now has the holy tag, like Minion Regeneration.
+- Global upgrade replaced by a +3 radius upgrade for 2 SP.
+- Shielding Aura (5 SP): Minions in the radius have a chance to gain 1 SH per turn, to a max of 3 SH. The chance is equal to the minion's current HP percentage.
 
 Soul Swap:
 - Infernal Swap (3 SP): Soul Swap can target demon units as well.
@@ -391,6 +391,7 @@ Pyrostatic Pulse:
 - Annihilation Pulse (7 SP): Pyrostatic Pulse also deals physical, arcane, and dark damage. Each cast of Pyrostatic Pulse consumes an additional charge and counts as casting the spell twice.
 
 Searing Seal:
+- Life Fuel (4 SP): Each turn, Searing Seal now deals fire damage to you equal to 25% of your current HP, then heals you for the damage dealt.
 - Purefire Seal (6 SP): Holy and arcane damage can now also fuel Searing Seal, but with half the efficiency of fire damage.
 
 Siege Golems:
@@ -408,8 +409,8 @@ Sight of Blood:
 - Unending Bloodrage (5 SP): When the target dies, the curse is applied to another random enemy in line of sight for its remaining duration.
 
 Siphon Shields:
-- Shield Burn upgrade cost increased to 4 SP, but it now makes a separate hit for each SH siphoned, meaning it can remove up to twice the SH. Damage of each hit also benefits from damage bonuses.
-- Shield Mirage (4 SP): If you already have 20 SH, then every additional 3 SH stolen will summon a shield mirage near you. Shield mirages are stationary, flying arcane minions with fixed 1 HP, 3 SH:shields, and no resistances.
+- Shield Burn upgrade replaced by Shield Shatter (4 SP), which deals physical damage (to benefit from Purestrike). Cost increased to 4 SP, but it now makes a separate hit for each SH siphoned, meaning it can remove up to twice the SH. Damage of each hit also benefits from damage bonuses.
+- Shield Battery (3 SP): If you already have 20 SH< then every additional SH stolen will instead give you a stack of shield battery. Each stack of shield battery is consumed at the end of your turn to give you 1 SH if you have less than 20 SH.
 
 Storm Burst:
 - Damage is halved but now deals both ice and lightning damage.
@@ -555,6 +556,7 @@ Arcane Shield:
 - SH limit increased to 2.
 
 Crystal Power:
+- Now makes glassify no longer increase ice resistance on enemies.
 - Now instead inflicts an ice resonance debuff equal to the duration of the freeze inflicted, which persists after unfreezing. Damage buff is based on the number of units with glassify and ice resonance. If freeze duration is refreshed or extended, ice resonance duration will be adjusted to match if shorter. If ice resonance is removed prematurely and the enemy is still frozen, it will automatically reapply itself.
 
 Faestone:
@@ -575,6 +577,9 @@ Hibernation:
 
 Holy Water:
 - Affected allies also deal 2 holy or ice damage once to all enemies in a radius equal to the number of SH they have, even if their SH are maxed out. Holy damage from this skill cannot trigger itself. Cost increased to 5 SP.
+
+Minion Regeneration:
+- Now also heals a minion for 2 HP whenever it is about to be healed by any other source.
 
 Unholy Alliance:
 - Now retroactively applies to already summoned minions, including when a minion's tags change.

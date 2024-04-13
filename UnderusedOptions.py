@@ -15,6 +15,20 @@ import sys, math, random
 
 curr_module = sys.modules[__name__]
 
+class ShieldBatteryBuff(Buff):
+
+    def on_init(self):
+        self.name = "Shield Battery"
+        self.color = Tags.Shield.color
+        self.stack_type = STACK_INTENSITY
+        self.show_effect = False
+    
+    def on_advance(self):
+        if self.owner.shields >= 20:
+            return
+        self.owner.add_shields(1)
+        self.owner.remove_buff(self)
+
 class RegenAuraBuff(Buff):
 
     def __init__(self, spell):
@@ -28,7 +42,7 @@ class RegenAuraBuff(Buff):
     def on_advance(self):
 
         heal = self.spell.get_stat("heal")
-        growth = heal//4 if self.spell.get_stat("growth") else 0
+        shielding = self.spell.get_stat("shielding")
 
         for unit in list(self.owner.level.get_units_in_ball(self.owner, self.spell.get_stat("radius"))):
 
@@ -38,13 +52,11 @@ class RegenAuraBuff(Buff):
                 continue
             unit.deal_damage(-heal, Tags.Heal, self.spell)
 
-            if not growth:
+            if not shielding or unit.shields >= 3:
                 continue
-            if Tags.Slime not in unit.tags:
-                unit.max_hp += growth
-                unit.deal_damage(-growth, Tags.Heal, self.spell)
-            else:
-                unit.deal_damage(-heal, Tags.Heal, self.spell)
+            if random.random() >= unit.cur_hp/unit.max_hp:
+                continue
+            unit.add_shields(1)
 
 class HibernationRegen(RegenBuff):
 
@@ -2188,42 +2200,78 @@ def modify_class(cls):
 
         def on_init(self):
             self.name = "Healing Light"
-            self.heal = 25
 
-            self.max_charges = 10
+            self.max_charges = 5
             self.range = 0
+            self.damage = 25
+            self.num_targets = 3
 
-            self.upgrades['heal'] = (20, 1)
-            self.upgrades['max_charges'] = (8, 2)
-            self.upgrades['shields'] = (1, 2, "Shielding Light", "Allies in line of sight gain [1_SH:shields]")
+            self.upgrades['damage'] = (25, 3)
+            self.upgrades['num_targets'] = (2, 3)
             self.upgrades["cleanse"] = (1, 2, "Cleansing Light", "Healing Light will now remove all debuffs from affected allies before healing them.")
+            self.upgrades["fortify"] = (1, 5, "Fortifying Light", "Healing Light now increases the max and current HP of each affected ally by 1/4 of its heal amount.")
+            self.upgrades["rebuke"] = (1, 5, "Rebuking Light", "Healing Light now deals [holy] damage equal to 1/4 of its heal amount to all enemies in a [{radius}_tile:radius] burst around each affected minion, and [blinds:blind] affected enemies for [1_turn:duration].")
 
             self.tags = [Tags.Holy, Tags.Sorcery]
-            self.level = 2
+            self.level = 3
+        
+        def fmt_dict(self):
+            stats = Spell.fmt_dict(self)
+            stats["total_heal"] = self.get_stat("damage") + self.get_stat("minion_health")
+            stats["radius"] = self.get_stat("radius", base=4)
+            return stats
 
-        def cast(self, x, y):
+        def get_description(self):
+            return ("Channel each to call light to descend upon [{num_targets}:num_targets] of your minions with the most missing HP, healing each for [{total_heal}_HP:heal].\n"
+                    "The healing benefits from bonuses to [damage] and [minion_health:minion_health].\n"
+                    "[Berserk] allies are not considered hostile by this spell.").format(**self.fmt_dict())
 
-            heal = self.get_stat("heal")
-            shields = self.get_stat('shields')
+        def cast(self, x, y, channel_cast=False):
+
+            if not channel_cast:
+                self.caster.apply_buff(ChannelBuff(self.cast, self.caster))
+                return
+
+            heal = self.get_stat("damage") + self.get_stat("minion_health")
             cleanse = self.get_stat("cleanse")
+            fortify = self.get_stat("fortify")
+            rebuke = self.get_stat("rebuke")
+            radius = self.get_stat("radius", base=4)
 
-            for unit in self.caster.level.get_units_in_los(self.caster):
-                if unit.team == TEAM_PLAYER and unit is not self.caster:
+            units = [u for u in self.caster.level.units if u.team == TEAM_PLAYER and u is not self.caster and not u.is_player_controlled]
+            if not units:
+                return
+            random.shuffle(units) # Break ties; matters here due to the Fortify upgrade.
+            units.sort(key=lambda u: u.max_hp - u.cur_hp, reverse=True)
 
-                    # Dont heal the player if a gold drake is casting
-                    if unit.is_player_controlled:
-                        continue
+            for unit in units[:self.get_stat("num_targets")]:
 
-                    if cleanse:
-                        for buff in unit.buffs:
-                            if buff.buff_type == BUFF_TYPE_CURSE:
-                                unit.remove_buff(buff)
+                if cleanse:
+                    for buff in list(unit.buffs):
+                        if buff.buff_type != BUFF_TYPE_CURSE:
+                            continue
+                        unit.remove_buff(buff)
 
-                    unit.deal_damage(-heal, Tags.Heal, self)
-                    
-                    if shields:
-                        unit.add_shields(1)
-                    yield
+                unit.deal_damage(-heal, Tags.Heal, self)
+
+                if fortify:
+                    amount = heal//4
+                    unit.max_hp += amount
+                    unit.deal_damage(-amount, Tags.Heal, self)
+                
+                if rebuke:
+                    for stage in Burst(self.caster.level, Point(unit.x, unit.y), radius):
+                        for p in stage:
+                            target = self.caster.level.get_unit_at(p.x, p.y)
+                            if not target or target.team == TEAM_PLAYER:
+                                self.caster.level.show_effect(p.x, p.y, Tags.Holy)
+                            else:
+                                target.deal_damage(heal//4, Tags.Holy, self)
+                                target.apply_buff(BlindBuff(), 1)
+                        yield
+                
+                yield
+
 
     if cls is HolyBlast:
 
@@ -5182,9 +5230,17 @@ def modify_class(cls):
 
             self.upgrades['max_charges'] = (6, 2)
             self.upgrades['duration'] = (6, 1)
+            self.upgrades["life"] = (1, 4, "Life Fuel", "Each turn, Searing Seal now deals [fire] damage to you equal to 25% of your current HP, then heals you for the damage dealt.")
             self.upgrades["purefire"] = (1, 6, "Purefire Seal", "[Holy] and [arcane] damage can now also fuel Searing Seal, but with half the efficiency of [fire] damage.")
 
     if cls is SearingSealBuff:
+
+        def on_advance(self):
+            if not self.spell.get_stat("life"):
+                return
+            damage = self.owner.deal_damage(self.owner.cur_hp//4, Tags.Fire, self.spell)
+            if damage:
+                self.owner.deal_damage(-damage, Tags.Heal, self)
 
         def on_damage(self, evt):
             if evt.damage_type == Tags.Fire:
@@ -5308,9 +5364,9 @@ def modify_class(cls):
 
             self.shield_steal = 1
 
-            self.upgrades['shield_burn'] = (1, 4, "Shield Burn", "Deal [{damage}_fire:fire] damage per shield stolen as a separate hit.")
+            self.upgrades['shield_shatter'] = (1, 4, "Shield Shatter", "Deal [{damage}_physical:physical] damage per [SH:shields] stolen as a separate hit.")
             self.upgrades['shield_steal'] = (4, 1, "Shield Steal", "Up to 4 more [SH:shields] are stolen from each enemy.")
-            self.upgrades["mirage"] = (1, 3, "Shield Mirage", "If you already have [20_SH:shields], then every additional [3_SH:shields] stolen will summon a shield mirage near you.\nShield mirages are stationary, flying [arcane] minions with fixed 1 HP, [3_SH:shields], and no resistances.")
+            self.upgrades["battery"] = (1, 3, "Shield Battery", "If you already have [20_SH:shields], then every additional [SH:shields] stolen will instead give you a stack of shield battery.\nEach stack of shield battery is consumed at the end of your turn to give you [1_SH:shields] if you have less than [20_SH:shields].")
 
         def fmt_dict(self):
             stats = Spell.fmt_dict(self)
@@ -5320,11 +5376,10 @@ def modify_class(cls):
         def cast(self, x, y):
 
             shield_steal = self.get_stat("shield_steal")
-            shield_burn = self.get_stat("shield_burn")
-            mirage = self.get_stat("mirage")
+            shield_shatter = self.get_stat("shield_shatter")
+            battery = self.get_stat("battery")
             damage = self.get_stat("damage", base=5)
 
-            total = 0
             targets = [u for u in self.caster.level.get_units_in_los(self.caster) if are_hostile(u, self.caster)]
             for u in targets:
 
@@ -5336,33 +5391,17 @@ def modify_class(cls):
                 self.caster.level.show_effect(u.x, u.y, Tags.Shield_Expire)			
                 u.shields -= stolen
 
-                if shield_burn:
-                    for _ in range(stolen):
-                        u.deal_damage(damage, Tags.Fire, self)
+                extra = self.caster.shields + stolen - 20
+                self.caster.add_shields(stolen)
+                if battery:
+                    for _ in range(extra):
+                        self.caster.apply_buff(ShieldBatteryBuff())
 
-                total += stolen
+                if shield_shatter:
+                    for _ in range(stolen):
+                        u.deal_damage(damage, Tags.Physical, self)
 
                 yield
-
-            if total:
-
-                extra = self.caster.shields + total - 20
-                if extra > 0 and mirage:
-                    for _ in range(extra//3):
-                        unit = Unit()
-                        unit.name = "Shield Mirage"
-                        unit.asset = ["UnderusedOptions", "Units", "shield_mirage"]
-                        unit.max_hp = 1
-                        unit.tags = [Tags.Arcane]
-                        unit.resists[Tags.Poison] = 0
-                        unit.shields = 3
-                        unit.stationary = True
-                        unit.flying = True
-                        self.summon(unit, radius=5, sort_dist=False)
-                
-                self.caster.add_shields(total)
-
-            yield
 
     if cls is StormNova:
 
@@ -8161,7 +8200,8 @@ def modify_class(cls):
             return ("[Glassify] no longer increases enemies' [ice] resistance.\n"
                     "Whenever a unit is [frozen], inflict ice resonance for the same duration.\n"
                     "Your [sorcery] spells gain [2_damage:damage] for each [glassified] unit and each unit with ice resonance.\n"
-                    "Whenever the remaining duration of [freeze] on a unit is refreshed or extended, the remaining duration of ice resonance will be lengthened to match if it is shorter.\nIf ice resonance is removed prematurely and the unit is still [frozen], it will automatically reapply itself.").format(**self.fmt_dict())
+                    "Whenever the remaining duration of [freeze] on a unit is refreshed or extended, the remaining duration of ice resonance will be lengthened to match if it is shorter.\n"
+                    "If ice resonance is removed prematurely and the unit is still [frozen], it will automatically reapply itself.").format(**self.fmt_dict())
 
         def on_buff_apply(self, evt):
             if isinstance(evt.buff, GlassPetrifyBuff):
@@ -8201,14 +8241,38 @@ def modify_class(cls):
             self.max_charges = 4
             self.level = 2
 
-            self.tags = [Tags.Enchantment, Tags.Nature]
+            self.tags = [Tags.Enchantment, Tags.Holy, Tags.Nature]
             self.upgrades['heal'] = (4, 2)
             self.upgrades['duration'] = (8, 1)
-            self.upgrades['radius'] = (5, 3)
-            self.upgrades["growth"] = (1, 5, "Growth", "Minions in the radius now gain max and current HP each turn equal to 1/4 of this spell's heal amount.\n[Slime] units are instead healed a second time each turn.")
+            self.upgrades['radius'] = (3, 2)
+            self.upgrades["shielding"] = (1, 5, "Shielding Aura", "Minions in the radius have a chance to gain [1_SH:shields] per turn, to a max of [3_SH:shields].\nThe chance is equal to the minion's current HP percentage.")
 
         def cast_instant(self, x, y):
             self.caster.apply_buff(RegenAuraBuff(self), self.get_stat('duration'))
+
+    if cls is MinionRepair:
+
+        def on_init(self):
+            self.tags = [Tags.Nature, Tags.Holy]
+            self.level = 4
+            self.name = "Minion Regeneration"
+            self.global_triggers[EventOnPreDamaged] = lambda evt: on_pre_damaged(self, evt)
+
+        def get_description(self):
+            return ("Each turn, heal each of your minions for [2_HP:heal].\n"
+                    "Whenever one of your minions is about to be healed by any source other than this skill, it is healed again for [2_HP:heal].").format(**self.fmt_dict())
+
+        def on_advance(self):
+            for unit in list(self.owner.level.units):
+                if unit is not self.owner and not are_hostile(unit, self.owner):
+                    unit.deal_damage(-2, Tags.Heal, self)
+
+        def on_pre_damaged(self, evt):
+            if evt.damage_type != Tags.Heal or evt.damage >= 0 or evt.source is self:
+                return
+            if are_hostile(evt.unit, self.owner) or evt.unit is self.owner:
+                return
+            evt.unit.deal_damage(-2, Tags.Heal, self)
 
     for func_name, func in [(key, value) for key, value in locals().items() if callable(value)]:
         if hasattr(cls, func_name):
