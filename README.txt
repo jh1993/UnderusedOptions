@@ -293,9 +293,11 @@ Silver Spear:
 - Blessed Silver (4 SP): The holy area damage of Silver Spear now also applies to undead and demon enemies.
 
 Suspend Mortality:
+- Now a level 5 spell with global range. Now applies reincarnation as a passive effect, with no duration limit and cannot be dispelled.
 - Can no longer be cast on units that already have reincarnations, unless you have the Additive upgrade (see below).
+- Max Charges (2 SP): +8 max charges.
 - Additive (4 SP): If the target already has reincarnations, you can now cast this spell on the target to add its number of lives to said reincarnations.
-- Eternity (7 SP): Suspend Mortality now adds reincarnations as a passive effect, which is permanent and cannot be dispelled.
+- Automatic (5 SP): The first time you summon a minion each turn, you automatically cast Suspend Mortality on it, if possible. This consumes charges as usual.
 
 Underworld Passage:
 - Underworld Seeker (3 SP): You can now spend 1 extra charge to cast this spell even if you are not next to a chasm.

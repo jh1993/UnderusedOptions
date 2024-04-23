@@ -15,6 +15,34 @@ import sys, math, random
 
 curr_module = sys.modules[__name__]
 
+class AutomaticSuspendMortality(Upgrade):
+
+    def on_init(self):
+        self.name = "Automatic"
+        self.level = 5
+        self.description = "The first time you summon a minion each turn, you automatically cast Suspend Mortality on it, if possible.\nThis consumes charges as usual."
+        self.triggered = False
+        self.global_triggers[EventOnUnitAdded] = self.on_unit_added
+        # This is necessary to not trigger twice when on minions that are summoned when you enter a realm.
+        self.just_entered = False
+    
+    def on_pre_advance(self):
+        if self.just_entered:
+            self.just_entered = False
+        else:
+            self.triggered = False
+    
+    def on_unit_added(self, evt):
+        if evt.unit.is_player_controlled:
+            self.just_entered = True
+            return
+        if self.triggered or are_hostile(evt.unit, self.owner):
+            return
+        if not self.prereq.can_pay_costs() or not self.prereq.can_cast(evt.unit.x, evt.unit.y):
+            return
+        self.triggered = True
+        self.owner.level.act_cast(self.owner, self.prereq, evt.unit.x, evt.unit.y)
+
 class ShieldBatteryBuff(Buff):
 
     def on_init(self):
@@ -4309,17 +4337,17 @@ def modify_class(cls):
             self.tags = [Tags.Dark, Tags.Holy, Tags.Enchantment]
 
             self.lives = 1
-            self.duration = 40
-            self.level = 3
+            self.level = 5
 
             self.max_charges = 8
 
             self.requires_los = False
-            self.range = 8
+            self.range = RANGE_GLOBAL
 
             self.upgrades['lives'] = (3, 2)
+            self.upgrades["max_charges"] = (8, 2)
             self.upgrades["additive"] = (1, 4, "Additive", "If the target already has reincarnations, you can now cast this spell on the target to add its number of lives to said reincarnations.")
-            self.upgrades["eternity"] = (1, 7, "Eternity", "Suspend Mortality now adds reincarnations as a passive effect, which is permanent and cannot be dispelled.")
+            self.add_upgrade(AutomaticSuspendMortality())
 
         def can_cast(self, x, y):
             if not Spell.can_cast(self, x, y):
@@ -4330,7 +4358,7 @@ def modify_class(cls):
             return not unit.has_buff(ReincarnationBuff) or self.get_stat("additive")
 
         def get_description(self):
-            return ("Target unit gains the ability to reincarnate on death [{lives}_times:holy] for [{duration}_turns:duration].\n"
+            return ("Target unit gains the ability to reincarnate on death [{lives}_times:holy]. This is a passive effect that cannot be dispelled.\n"
                     "Cannot be cast on targets that already have reincarnations.").format(**self.fmt_dict())
 
         def cast_instant(self, x, y):
@@ -4338,25 +4366,17 @@ def modify_class(cls):
             unit = self.caster.level.get_unit_at(x, y)
             if not unit:
                 return
+            self.caster.level.show_effect(x, y, Tags.Holy)
+            self.caster.level.show_effect(x, y, Tags.Dark)
             
             existing = unit.get_buff(ReincarnationBuff)
             if existing:
-                if self.get_stat("additive"):
-                    existing.lives += self.get_stat('lives')
-                    existing.name = "Reincarnation %i" % existing.lives
-                    if self.get_stat("eternity"):
-                        existing.buff_type = BUFF_TYPE_PASSIVE
-                        existing.turns_left = 0
-                    elif existing.turns_left > 0:
-                        existing.turns_left = max(existing.turns_left, self.get_stat("duration"))
+                existing.lives += self.get_stat('lives')
                 return
             
             buff = ReincarnationBuff(self.get_stat('lives'))
-            duration = self.get_stat("duration")
-            if self.get_stat("eternity"):
-                buff.buff_type = BUFF_TYPE_PASSIVE
-                duration = 0
-            unit.apply_buff(buff, duration)
+            buff.buff_type = BUFF_TYPE_PASSIVE
+            unit.apply_buff(buff)
 
     if cls is UnderworldPortal:
 
