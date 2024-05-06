@@ -330,7 +330,7 @@ Chimera Familiar:
 - The chimera's base HP is increased to 26, the same as those of enemy chaos chimeras. Its default attacks have 5 damage and 5 range.
 - The chimera now starts with 75% fire and lightning resistance, and the Minion Resists upgrade is replaced by a 3 SP upgrade that gives +25% fire, +25% lightning, and +100% physical resistances (fire lion and lightning snake get +50% of the resistance they don't have instead of +25% to both).
 - Dark/Nature/Arcane mimicry removed.
-- Wild Metamorphosis (7 SP): The chimera now copies two of your spells per turn. The fire lion and lightning snake that the chimera transforms into upon reaching 0 HP can now also copy your spells. The fire lion can only copy your fire and chaos spells. The lightning snake can only copy your lightning and chaos spells. Each of them can only cast one spell per turn.
+- Doublecast (7 SP): The chimera now copies two of your spells per turn. The fire lion and lightning snake that the chimera transforms into upon reaching 0 HP can now also copy your spells. The fire lion can only copy your fire and chaos spells. The lightning snake can only copy your lightning and chaos spells. Each of them can only cast one spell per turn.
 - Wild Metamorphosis (1 SP): Chimera Familiar randomly gains 7 minion health, 3 minion damage, or 1 minion range. This upgrade can be purchased an unlimited number of times.
 
 Conductance:
