@@ -412,7 +412,7 @@ Sight of Blood:
 
 Siphon Shields:
 - Shield Burn upgrade replaced by Shield Shatter (4 SP), which deals physical damage (to benefit from Purestrike). Cost increased to 4 SP, but it now makes a separate hit for each SH siphoned, meaning it can remove up to twice the SH. Damage of each hit also benefits from damage bonuses.
-- Shield Battery (3 SP): If you already have 20 SH< then every additional SH stolen will instead give you a stack of shield battery. Each stack of shield battery is consumed at the end of your turn to give you 1 SH if you have less than 20 SH.
+- Shield Battery (3 SP): If you already have 20 SH then every additional SH stolen will instead give you a stack of shield battery. Each stack of shield battery is consumed at the end of your turn to give you 1 SH if you have less than 20 SH.
 
 Storm Burst:
 - Damage is halved but now deals both ice and lightning damage.
@@ -429,7 +429,7 @@ Void Drake:
 - Essence Drake upgrade replaced by Essence Breath (4 SP): The Void Drake's breath no longer damages allies, and instead increases temporary allies' remaining durations by 1 turn.
 
 Wall of Ice:
-- Ice Mirror (4 SP): When an ice elemental is damaged by an enemy, that enemy has a chance to be [frozen] for [1_turn:duration], equal to the ice elemental's percentage of missing HP.
+- Ice Mirror (4 SP): When an ice elemental is damaged by an enemy, that enemy has a chance to be frozen for 1 turn, equal to the ice elemental's percentage of missing HP.
 - Forceful Construction (4 SP): "Wall of Ice no longer requires line of sight to cast. Wall and chasm tiles in the affected area are converted to floor tiles before summoning the ice elementals. Units in the affected area take 22 ice damage and are frozen for 3 turns. If a unit is killed then an ice elemental is summoned in its tile.
 
 Watcher Form:
