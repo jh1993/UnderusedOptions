@@ -508,7 +508,7 @@ Spider Queen:
 - Corpse Hatchery (4 SP): The spider queen now spawns an arachnid abomination on death, which will spawn a number of fully grown spiders on death equal to twice the queen's normal spawning amount.
 
 Dragon Roar:
-- Retroactive (4 SP): You now gain Dragon Aura when you cast this spell, during which all [dragon] minions you summon will automatically gain Dragon Roar for the remaining duration.
+- Retroactive (4 SP): You now gain Dragon Aura when you cast this spell, during which all dragon minions you summon will automatically gain Dragon Roar for the remaining duration.
 
 Gold Drake:
 - Dragon Mage spell changed to Heavenly Blast with 3 turns cooldown. Cost increased to 5 SP.
@@ -623,7 +623,7 @@ Frostbite:
 - SP cost reduced to 5.
 
 Ice Tap: 
-- Now instead inflicts an ice tap debuff equal to the duration of the freeze inflicted, which persists after unfreezing. If freeze duration is refreshed or extended, ice tap duration will be adjusted to match if shorter. If frostbite is removed prematurely and the enemy is still [frozen], it will automatically reapply itself.
+- Now instead inflicts an ice tap debuff equal to the duration of the freeze inflicted, which persists after unfreezing. If freeze duration is refreshed or extended, ice tap duration will be adjusted to match if shorter. If frostbite is removed prematurely and the enemy is still frozen, it will automatically reapply itself.
 - Now casts the triggering spell on every valid enemy target with ice tap (based on the spell's own range, and can ignore line of sight if the spell can), removing ice tap and freeze in the process.
 - Now only copies the first arcane spell you cast each turn, for consistency.
 
