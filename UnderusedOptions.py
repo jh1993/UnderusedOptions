@@ -4547,7 +4547,7 @@ def modify_class(cls):
 
         def get_description(self):
             return ("Summon a void orb next to the caster.\n"
-                    "The orb melts deals [{minion_damage}_arcane:arcane] damage each turn and melts walls in a radius of [{radius}_tiles:radius].\n"
+                    "The orb deals [{minion_damage}_arcane:arcane] damage each turn and melts walls in a radius of [{radius}_tiles:radius].\n"
                     "The orb has no will of its own, each turn it will float one tile towards the target.\n"
                     "The orb can be destroyed by lightning damage.").format(**self.fmt_dict())
 
