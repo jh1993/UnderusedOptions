@@ -140,7 +140,7 @@ Toxin Burst:
 Aether Swap:
 - Restriction of not working on arcane-immune targets removed.
 - If targeting an ally, give the target 1 SH instead of dealing damage.
-- Patsy Swap (5 SP): You can now target yourself with this spell to give yourself a stack of Swapper's Scheme, which consumes another charge of the spell and counts as casting the spell twice. Whenever you are about to take damage, you automatically consume a stack of Swapper's Scheme to swap with a random valid enemy target of this spell. You gain 1 SH, which ignores the normal 20 SH limit, while the target takes damage from both Aether Swap and the damage that you took.
+- Patsy Swap (5 SP): You can now target yourself with this spell to give yourself a stack of Swapper's Scheme, which consumes another charge of the spell and counts as casting the spell twice. Whenever you are about to take damage, you automatically consume a stack of Swapper's Scheme to swap with a random valid enemy target of this spell, then negate that damage, while the target takes damage from both Aether Swap and the damage that you took. Damage negation applies before SH.
 - Glitch Swap (5 SP): You can now target an empty tile with this spell to swap with a unit that does not exist, which consumes another charge of the spell and counts as casting the spell twice. This summons a glitch phantom at your old location, which is an arcane minion with 1 SH and the same max HP as you that can cast Aether Swap with the same upgrades, skills, and shrine as your own. The glitch phantom has a fixed lifetime of 1 turn.
 
 Basilisk Armor:
@@ -519,7 +519,8 @@ Imp Swarm:
 - Fire Swarm (6 SP): Imp swarm summons firestorm imps, chaos imps, and ash imps instead of fire, spark, and iron imps. Not compatible with other swarm upgrades.
 
 Mystic Memory:
-- Recent Memory (3 SP): Mystic Memory will now prioritize the spell you cast last turn, if that spell has no charges remaining.
+- Now prioritizes your highest level spell that has no charges remaining.
+- Mystic Residue: Whenever you use a mana potion, gain a stack of Mystic Residue. If this spell has no charges remaining, Mystic Residue stacks can be consumed to cast it instead.
 
 Searing Orb:
 - Damage is now fixed instead of benefitting from minion damage bonuses, since it was balanced around the assumption that the only minion damage bonuses it could get are Arch Conjurer and Claw shrine, which may no longer be true with mods.
@@ -550,9 +551,7 @@ Word of Ice:
 - Damage (5 SP): +30 damage.
 
 Arcane Accounting:
-- Level increased to 5.
-- Now has a chance to trigger on every arcane spell cast, equal to the spell's percentage of missing charges. Cannot be triggered by spells with no max charges.
-- Arcane Credit now instead lasts 2 turns (starting from the next turn) with only 50% chance to refund 1 spell charge. Duration can be extended by Permanence.
+- Arcane Credit is no longer removed when you cast a spell, instead lasting for the whole turn. All spells that consume multiple charges on cast have been changed to trigger on-cast effects an equal number of times, meaning the extra charges consumed will be fully refunded.
 
 Arcane Shield:
 - SH limit increased to 2.

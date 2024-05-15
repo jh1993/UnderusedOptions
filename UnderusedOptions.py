@@ -8,12 +8,32 @@ from Consumables import *
 
 import mods.Bugfixes.Bugfixes
 import mods.NoMoreScams.NoMoreScams
-from mods.BugfixesExtended.BugfixesExtended import RemoveBuffOnPreAdvance, MinionBuffAura, drain_max_hp_kill, increase_cooldown, HydraBeam, FreezeDependentBuff, EventOnShieldDamaged
+from mods.BugfixesExtended.BugfixesExtended import RemoveBuffOnPreAdvance, MinionBuffAura, drain_max_hp_kill, increase_cooldown, HydraBeam, FreezeDependentBuff, EventOnShieldDamaged, DamageNegation
 from mods.NoMoreScams.NoMoreScams import is_immune, FloatingEyeBuff, is_conj_skill_summon
 
 import sys, math, random
 
 curr_module = sys.modules[__name__]
+
+class MysticResidueBuff(Buff):
+
+    def on_init(self):
+        self.name = "Mystic Residue"
+        self.color = Tags.Arcane.color
+        self.stack_type = STACK_INTENSITY
+
+class MysticResidue(Upgrade):
+
+    def on_init(self):
+        self.name = "Mystic Residue"
+        self.level = 3
+        self.description = "Whenever you use a mana potion, gain a stack of Mystic Residue.\nIf this spell has no charges remaining, Mystic Residue stacks can be consumed to cast it instead."
+        self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
+    
+    def on_spell_cast(self, evt):
+        if not isinstance(evt.spell, SpellCouponSpell):
+            return
+        self.owner.apply_buff(MysticResidueBuff())
 
 class AutomaticSuspendMortality(Upgrade):
 
@@ -591,10 +611,7 @@ class DarknessBuff(Spells.DarknessBuff):
                 return
             if random.random() >= 0.5:
                 return
-            if hasattr(evt.unit, "negates"):
-                evt.unit.negates.append(evt)
-            else:
-                evt.unit.negates = [evt]
+            DamageNegation(evt).add_to_unit(self.owner)
         elif self.fractal:
             if not hostile or not blind or evt.damage <= 1 or evt.damage_type != Tags.Dark:
                 return
@@ -1243,17 +1260,6 @@ class ConjureMemoriesBuff(Buff):
             self.owner.level.show_effect(target.x, target.y, Tags.Translocation)
             self.owner.level.add_obj(unit, target.x, target.y, trigger_summon_event=False)
 
-class RecentMemory(Upgrade):
-    def on_init(self):
-        self.name = "Recent Memory"
-        self.level = 3
-        self.description = "Mystic Memory will now prioritize the spell you cast last turn, if that spell has no charges remaining."
-        self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
-        self.recent_spell = None
-    def on_spell_cast(self, evt):
-        if evt.spell in self.owner.spells and evt.spell is not self.prereq:
-            self.recent_spell = evt.spell
-
 class InfernoEngineBuff(DamageAuraBuff):
 
     def __init__(self, radius):
@@ -1440,23 +1446,16 @@ class SwappersSchemeBuff(Buff):
 
     def __init__(self, spell):
         self.spell = spell
-        self.stacks = 1
         Buff.__init__(self)
     
     def on_init(self):
-        self.name = "Swapper's Scheme %i" % self.stacks
+        self.name = "Swapper's Scheme"
         self.color = Tags.Translocation.color
         self.owner_triggers[EventOnPreDamaged] = self.on_pre_damaged
-    
-    def on_attempt_apply(self, owner):
-        for buff in owner.buffs:
-            if isinstance(buff, SwappersSchemeBuff):
-                buff.stacks += 1
-                buff.name = "Swapper's Scheme %i" % buff.stacks
-                return False
-        return True
+        self.stack_type = STACK_INTENSITY
 
     def on_pre_damaged(self, evt):
+
         if evt.damage <= 0:
             return
         penetration = evt.penetration if hasattr(evt, "penetration") else 0
@@ -1468,19 +1467,17 @@ class SwappersSchemeBuff(Buff):
         unit = self.owner.level.get_unit_at(target.x, target.y)
         if not unit:
             return
-        self.owner.shields += 1
-        self.owner.level.queue_spell(self.spell.cast(target.x, target.y))
-        self.owner.level.queue_spell(self.deal_damage(unit, evt))
-        if self.stacks <= 1:
+        
+        def pay_costs():
             self.owner.remove_buff(self)
-        else:
-            self.stacks -= 1
-            self.name = "Swapper's Scheme %i" % self.stacks
+            self.owner.level.queue_spell(self.deal_damage(unit, evt))
+        DamageNegation(evt, pay_costs=pay_costs).add_to_unit(self.owner)
     
     def deal_damage(self, target, evt):
+        yield from self.spell.cast(target.x, target.y)
         penetration = evt.penetration if hasattr(evt, "penetration") else 0
-        target.deal_damage(evt.damage, evt.damage_type, evt.source, penetration=penetration)
-        yield
+        ignore_sh = evt.ignore_sh if hasattr(evt, "ignore_sh") else False
+        target.deal_damage(evt.damage, evt.damage_type, evt.source, penetration=penetration, ignore_sh=ignore_sh)
 
 def BoneBarrageBoneShambler(self, hp, extra_damage):
     unit = BoneShambler(hp)
@@ -2938,7 +2935,7 @@ def modify_class(cls):
             self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "Aether Swap can be cast without line of sight")
             self.upgrades['range'] = (3, 1)
             self.upgrades['max_charges'] = (10, 3)
-            self.upgrades["patsy"] = (1, 5, "Patsy Swap", "You can now target yourself with this spell to give yourself a stack of Swapper's Scheme, which consumes another charge of the spell and counts as casting the spell twice.\nWhenever you are about to take damage, you automatically consume a stack of Swapper's Scheme to swap with a random valid enemy target of this spell. You gain [1_SH:shields], which ignores the normal [20_SH:shields] limit, while the target takes damage from both Aether Swap and the damage that you took.")
+            self.upgrades["patsy"] = (1, 5, "Patsy Swap", "You can now target yourself with this spell to give yourself a stack of Swapper's Scheme, which consumes another charge of the spell and counts as casting the spell twice.\nWhenever you are about to take damage, you automatically consume a stack of Swapper's Scheme to swap with a random valid enemy target of this spell, then negate that damage, while the target takes damage from both Aether Swap and the damage that you took.\nDamage negation applies before [SH:shields].")
             self.upgrades["glitch"] = (1, 5, "Glitch Swap", "You can now target an empty tile with this spell to swap with a unit that does not exist, which consumes another charge of the spell and counts as casting the spell twice.\nThis summons a glitch phantom at your old location, which is an [arcane] minion with [1_SH:shields] and the same max HP as you that can cast Aether Swap with the same upgrades, skills, and shrine as your own. The glitch phantom has a fixed lifetime of [1_turn:minion_duration].")
 
             self.tags = [Tags.Arcane, Tags.Translocation, Tags.Sorcery]
@@ -6483,18 +6480,28 @@ def modify_class(cls):
             self.range = 0
 
             self.upgrades['max_charges'] = (1, 2)
-            self.add_upgrade(RecentMemory())
+            self.add_upgrade(MysticResidue())
+
+        def can_pay_costs(self):
+            return Spell.can_pay_costs(self) or self.caster.has_buff(MysticResidueBuff)
+        
+        def pay_costs(self):
+            if self.cur_charges:
+                Spell.pay_costs(self)
+                return
+            buff = self.caster.get_buff(MysticResidueBuff)
+            if buff:
+                self.caster.remove_buff(buff)
+
+        def get_description(self):
+            return "Regain all charges of your highest-leveled spell which currently has no remaining charges, excluding this spell."
 
         def cast_instant(self, x, y):
             spells = [s for s in self.caster.spells if s is not self and s.cur_charges == 0]
             if not spells:
                 return
-            
-            recent = self.caster.get_buff(RecentMemory)
-            if recent and recent.recent_spell and recent.recent_spell.cur_charges == 0:
-                choice = recent.recent_spell
-            else:
-                choice = random.choice(spells)
+            random.shuffle(spells)
+            choice = max(spells, key=lambda spell: spell.level)            
             choice.cur_charges = choice.get_stat('max_charges')
 
     if cls is SearingOrb:
@@ -6801,35 +6808,21 @@ def modify_class(cls):
 
     if cls is ArcaneCredit:
 
-        def on_init(self):
-            self.name = "Arcane Credit"
-            self.owner_triggers[EventOnSpellCast] = self.on_cast
-            self.color = Tags.Arcane.color
-            self.description = "Every non [arcane] spell has a 50% chance to refund 1 charge on cast."
+        def get_description(self):
+            return ""
 
         def on_cast(self, evt):
-            if Tags.Arcane not in evt.spell.tags and random.random() < 0.5:
+            if Tags.Arcane not in evt.spell.tags:
                 evt.spell.cur_charges = min(evt.spell.cur_charges + 1, evt.spell.get_stat('max_charges'))
 
     if cls is ArcaneAccountant:
 
-        def on_init(self):
-            self.tags = [Tags.Arcane]
-            self.level = 5
-            self.name = "Arcane Accounting"
-            self.duration = 2
-            self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
-
         def get_description(self):
-            return "Whenever you cast an [arcane] spell, you have a chance to gain Arcane Credit for [%i_turns:duration], equal to the spell's percentage of missing charges.\nWhile you have Arcane Credit, all non-arcane spells have a 50%% chance to refund a charge on cast.\nCannot be triggered by spells that have no max charges." % self.get_stat("duration")
+            return "Whenever you cast an [arcane] spell, if it has no charges remaining, you gain Arcane Credit next turn.\nWhile you have Arcane Credit, all non-arcane spells refund a charge on cast."
 
         def on_spell_cast(self, evt):
-            if Tags.Arcane in evt.spell.tags:
-                max_charges = evt.spell.get_stat("max_charges")
-                if not max_charges:
-                    return
-                if random.random() < (max_charges - evt.spell.cur_charges)/max_charges:
-                    self.owner.apply_buff(ArcaneCredit(), self.get_stat("duration") + 1)
+            if Tags.Arcane in evt.spell.tags and evt.spell.max_charges and evt.spell.cur_charges == 0:
+                self.owner.apply_buff(ArcaneCredit(), 2)
 
     if cls is Faestone:
 
