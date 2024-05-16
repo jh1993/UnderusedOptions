@@ -8,7 +8,7 @@ from Consumables import *
 
 import mods.Bugfixes.Bugfixes
 import mods.NoMoreScams.NoMoreScams
-from mods.BugfixesExtended.BugfixesExtended import RemoveBuffOnPreAdvance, MinionBuffAura, drain_max_hp_kill, increase_cooldown, HydraBeam, FreezeDependentBuff, EventOnShieldDamaged, DamageNegation
+from mods.BugfixesExtended.BugfixesExtended import RemoveBuffOnPreAdvance, MinionBuffAura, drain_max_hp_kill, increase_cooldown, HydraBeam, FreezeDependentBuff, EventOnShieldDamaged, DamageNegation, ChannelDependentBuff
 from mods.NoMoreScams.NoMoreScams import is_immune, FloatingEyeBuff, is_conj_skill_summon
 
 import sys, math, random
@@ -1497,25 +1497,13 @@ def BoneBarrageBoneShambler(self, hp, extra_damage):
         buff.spawner = lambda: BoneBarrageBoneShambler(self, unit.max_hp//2, extra_damage)
     return unit
 
-class ChaosSiegeBuff(Buff):
+class ChaosSiegeBuff(ChannelDependentBuff):
     
     def on_init(self):
+        ChannelDependentBuff.on_init(self)
         self.name = "Chaos Siege"
         self.color = Tags.Chaos.color
-        self.stack_type = STACK_INTENSITY
         self.spell_bonuses[ChaosBarrage]["num_targets"] = 2
-        self.passed = True
-        self.owner_triggers[EventOnPass] = self.on_pass
-
-    def on_pre_advance(self):
-        self.passed = False
-
-    def on_advance(self):
-        if not self.passed:
-            self.owner.remove_buff(self)
-
-    def on_pass(self, evt):
-        self.passed = True
 
 class SummonedVoidDrakeBreath(VoidBreath):
 
@@ -7512,13 +7500,12 @@ def modify_class(cls):
             self.upgrades['max_charges'] = (4, 1)
             self.upgrades['damage'] = (4, 5)
             self.upgrades['num_targets'] = (5, 4, "Extra Bolts")
-            self.upgrades["siege"] = (1, 5, "Chaos Siege", "Chaos Barrage becomes a channeled spell.\nEach turn you channel this spell, you randomly take [4_fire:fire], [4_lightning:lightning], or [4_physical:physical] damage per siege stack you have, and gain a siege stack, which causes Chaos Barrage to fire 2 more shards.\nSiege stacks are lost when you stop channeling, or if you cast this spell manually again.\nIf you never channel beyond the initial cast, you will never take damage from this upgrade.")
+            self.upgrades["siege"] = (1, 5, "Chaos Siege", "Chaos Barrage becomes a channeled spell.\nEach turn you channel this spell, you randomly take [4_fire:fire], [4_lightning:lightning], or [4_physical:physical] damage per siege stack you have, and gain a siege stack, which causes Chaos Barrage to fire 2 more shards.\nSiege stacks are lost when you stop channeling.")
 
         def cast(self, x, y, channel_cast=False):
 
             siege = self.get_stat('siege')
             if siege and not channel_cast:
-                self.caster.remove_buffs(ChaosSiegeBuff)
                 self.caster.apply_buff(ChannelBuff(self.cast, Point(x, y)))
                 return
 
