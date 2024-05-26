@@ -507,6 +507,9 @@ Spider Queen:
 - Now has a minion health upgrade in line with Ring of Spiders.
 - Corpse Hatchery (4 SP): The spider queen now spawns an arachnid abomination on death, which will spawn a number of fully grown spiders on death equal to twice the queen's normal spawning amount.
 
+Teleport:
+- Void Teleport reduced to 3 SP.
+
 Dragon Roar:
 - Retroactive (4 SP): You now gain Dragon Aura when you cast this spell, during which all dragon minions you summon will automatically gain Dragon Roar for the remaining duration.
 

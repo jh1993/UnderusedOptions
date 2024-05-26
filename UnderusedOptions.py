@@ -3057,6 +3057,19 @@ def modify_class(cls):
 
     if cls is Teleport:
 
+        def on_init(self):
+            self.range = 15
+            self.requires_los = False
+            self.name = "Teleport"
+            self.max_charges = 1
+
+            self.tags = [Tags.Sorcery, Tags.Arcane, Tags.Translocation]
+            self.level = 5
+
+            self.upgrades['max_charges'] = (2, 3)
+            self.upgrades['range'] = (8, 2)
+            self.upgrades['void_teleport'] = (1, 3, "Void Teleport", "Teleport deals [arcane] damage to all enemy units in line of sight of the targeted tile equal to its maximum number of charges.")
+
         def cast(self, x, y):
             start_loc = Point(self.caster.x, self.caster.y)
 
