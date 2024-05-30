@@ -606,8 +606,7 @@ Houndlord:
 - Using a mana potion now tries to replenish the number of hounds to the maximum.
 
 Hypocrisy:
-- Now only lasts a fixed 1 turn, but is no longer removed when you cast an unqualifying spell. Now applies Hypocrisy of a level equal to the triggering spell, instead of the triggering spell's level minus 1.
-- Holy Hypocrisy now gives a damage bonus to holy spells and skills equal to twice its level, while you have it. But it is still consumed when you cast a holy spell of lower level, which cannot benefit from this damage bonus, meaning that only spells of equal or higher level benefit from the damage bonus. Dark Hypocrisy behaves similarly.
+- Completely overhauled. Now applies duration-stacking holy hypocrisy equal to spell level when dealing damage with holy spells, and dark hypocrisy similarly with dark spells. When both types of hypocrisy are applied, consume them to deal holy and dark damage equal to each's respective duration, and apply duration-stacking blind equal to combined duration.
 
 Righteous March:
 - Each enemy in LoS of the target now also has a 50% chance to take 1 fixed holy damage.

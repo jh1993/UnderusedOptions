@@ -15,6 +15,48 @@ import sys, math, random
 
 curr_module = sys.modules[__name__]
 
+class HolyHypocrisyBuff(Buff):
+
+    def __init__(self, upgrade):
+        self.upgrade = upgrade
+        Buff.__init__(self)
+    
+    def on_init(self):
+        self.name = "Holy Hypocrisy"
+        self.asset = ["UnderusedOptions", "Statuses", "holy_hypocrisy"]
+        self.buff_type = BUFF_TYPE_CURSE
+        self.color = Tags.Holy.color
+        self.stack_type = STACK_DURATION
+    
+    def on_applied(self, owner):
+        buff = self.owner.get_buff(DarkHypocrisyBuff)
+        if not buff:
+            return
+        self.owner.remove_buff(buff)
+        self.owner.level.queue_spell(self.upgrade.hypocrisy_damage(self.owner, self.turns_left, buff.turns_left))
+        return ABORT_BUFF_APPLY
+
+class DarkHypocrisyBuff(Buff):
+
+    def __init__(self, upgrade):
+        self.upgrade = upgrade
+        Buff.__init__(self)
+    
+    def on_init(self):
+        self.name = "Dark Hypocrisy"
+        self.asset = ["UnderusedOptions", "Statuses", "dark_hypocrisy"]
+        self.buff_type = BUFF_TYPE_CURSE
+        self.color = Tags.Dark.color
+        self.stack_type = STACK_DURATION
+    
+    def on_applied(self, owner):
+        buff = self.owner.get_buff(HolyHypocrisyBuff)
+        if not buff:
+            return
+        self.owner.remove_buff(buff)
+        self.owner.level.queue_spell(self.upgrade.hypocrisy_damage(self.owner, buff.turns_left, self.turns_left))
+        return ABORT_BUFF_APPLY
+
 class MysticResidueBuff(Buff):
 
     def on_init(self):
@@ -7194,33 +7236,40 @@ def modify_class(cls):
 
     if cls is Hypocrisy:
 
-        def on_spell_cast(self, evt):
-            if evt.spell.level < 1:
+        def on_init(self):
+            self.name = "Hypocrisy"
+            self.tags = [Tags.Dark, Tags.Holy]
+            self.level = 5
+            self.global_triggers[EventOnDamaged] = lambda evt: on_damaged(self, evt)
+            self.hypocrisy_damage = lambda target, holy, dark: hypocrisy_damage(self, target, holy, dark)
+
+        def on_damaged(self, evt):
+            if not are_hostile(evt.unit, self.owner):
                 return
-            for tag in [Tags.Dark, Tags.Holy]:
-                if tag not in evt.spell.tags:
-                    continue
-                btag = Tags.Holy if tag == Tags.Dark else Tags.Dark
-                self.owner.apply_buff(HypocrisyStack(btag, evt.spell.level), 2)
+            if not isinstance(evt.source, Spell) or evt.source.level < 1 or evt.source.caster is not self.owner:
+                return
+            if Tags.Holy in evt.source.tags:
+                evt.unit.apply_buff(HolyHypocrisyBuff(self), evt.source.level)
+            if Tags.Dark in evt.source.tags:
+                evt.unit.apply_buff(DarkHypocrisyBuff(self), evt.source.level)
+
+        def hypocrisy_damage(self, target, holy, dark):
+            total = holy + dark
+            target.deal_damage(holy, Tags.Holy, self)
+            target.deal_damage(dark, Tags.Dark, self)
+            if not total:
+                return
+            buff = target.get_buff(BlindBuff)
+            if buff:
+                buff.turns_left += total
+            else:
+                target.apply_buff(BlindBuff(), total)
+            yield
 
         def get_description(self):
-            return ("Whenever you cast a [holy] spell, you gain Dark Hypocrisy of that spell's level for [1_turn:duration], which gives all your [dark] spells and skills a [damage] bonus equal to twice its level while you have it. Whenever you cast a [dark] spell whose level is less than that, Dark Hypocrisy is immediately consumed to refund 1 charge of this spell.\n"
-                    "Whenever you cast a [dark] spell, you gain Holy Hypocrisy of that spell's level for [1_turn:duration], which has similar effects.\n"
-                    "The duration of Hypocrisy is fixed and unaffected by bonuses.").format(**self.fmt_dict())
-
-    if cls is HypocrisyStack:
-
-        def on_init(self):
-            self.name = "%s Hypocrisy %d" % (self.tag.name, self.level)
-            self.color = self.tag.color
-            self.tag_bonuses[self.tag]["damage"] = self.level*2
-            self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
-
-        def on_spell_cast(self, evt):
-            if self.tag in evt.spell.tags and evt.spell.level <= self.level:
-                evt.spell.cur_charges += 1
-                evt.spell.cur_charges = min(evt.spell.cur_charges, evt.spell.get_stat('max_charges'))
-                self.owner.remove_buff(self)
+            return ("When an enemy takes damage from one of your [holy] spells, apply holy hypocrisy to that enemy with stacking duration equal to the spell's level.\n"
+                    "When an enemy takes damage from one of your [dark] spells, apply dark hypocrisy to that enemy with stacking duration equal to the spell's level.\n"
+                    "When an enemy has both holy and dark hypocrisy applied, consume both to deal [holy] damage equal to holy hypocrisy duration, [dark] damage equal to dark hypocrisy duration, and apply duration-stacking [blind] equal to their combined duration.").format(**self.fmt_dict())
 
     if cls is StormCaller:
 
@@ -8291,5 +8340,5 @@ def modify_class(cls):
         if hasattr(cls, func_name):
             setattr(cls, func_name, func)
 
-for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, FaestoneBuff, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, AcidFumes, FrozenFragility, Teleblink, Houndlord, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, HypocrisyStack, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord, SummonSpiderQueen, DeathChill, DeathChillDebuff, ThornyPrisonSpell, SummonBlueLion, FlameGateBuff, FlameGateSpell, ArcaneShield, MarchOfTheRighteous, MagnetizeBuff, PlagueOfFilth, IgnitePoison, LightningBoltSpell, Iceball, ToxinBurst, IceTap, Crystallographer, RegenAuraSpell, MinionRepair]:
+for cls in [DeathBolt, FireballSpell, MagicMissile, PoisonSting, SummonWolfSpell, AnnihilateSpell, Blazerip, BloodlustSpell, DispersalSpell, FireEyeBuff, EyeOfFireSpell, IceEyeBuff, EyeOfIceSpell, LightningEyeBuff, EyeOfLightningSpell, RageEyeBuff, EyeOfRageSpell, Flameblast, Freeze, HealMinionsSpell, HolyBlast, HallowFlesh, mods.Bugfixes.Bugfixes.RotBuff, VoidMaw, InvokeSavagerySpell, MeltSpell, MeltBuff, PetrifySpell, SoulSwap, TouchOfDeath, ToxicSpore, VoidRip, CockatriceSkinSpell, BlindingLightSpell, Teleport, BlinkSpell, AngelicChorus, Darkness, MindDevour, Dominate, EarthquakeSpell, FlameBurstSpell, SummonFrostfireHydra, CallSpirits, SummonGiantBear, HolyFlame, HolyShieldSpell, ProtectMinions, LightningHaloSpell, LightningHaloBuff, MercurialVengeance, MercurizeSpell, MercurizeBuff, ArcaneVisionSpell, NightmareSpell, NightmareBuff, PainMirrorSpell, PainMirror, SealedFateBuff, SealFate, ShrapnelBlast, BestowImmortality, UnderworldPortal, VoidBeamSpell, VoidOrbSpell, BlizzardSpell, BoneBarrageSpell, ChimeraFarmiliar, ConductanceSpell, ConjureMemories, DeathGazeSpell, DispersionFieldSpell, DispersionFieldBuff, EssenceFlux, SummonFieryTormentor, SummonIceDrakeSpell, LightningFormSpell, StormSpell, OrbControlSpell, Permenance, PurityBuff, PuritySpell, PyrostaticPulse, SearingSealSpell, SearingSealBuff, SummonSiegeGolemsSpell, FeedingFrenzySpell, ShieldSiphon, StormNova, SummonStormDrakeSpell, IceWall, WatcherFormBuff, WatcherFormSpell, WheelOfFate, BallLightning, CantripCascade, IceWind, DeathCleaveBuff, DeathCleaveSpell, FaeCourt, SummonFloatingEye, FloatingEyeBuff, FlockOfEaglesSpell, SummonIcePhoenix, MegaAnnihilateSpell, PyrostaticHexSpell, PyroStaticHexBuff, RingOfSpiders, SlimeformSpell, DragonRoarSpell, SummonGoldDrakeSpell, ImpGateSpell, MysticMemory, SearingOrb, SummonKnights, MeteorShower, MulticastBuff, MulticastSpell, SpikeballFactory, WordOfIce, ArcaneCredit, ArcaneAccountant, Faestone, FaestoneBuff, GhostfireUpgrade, Hibernation, HibernationBuff, HolyWater, UnholyAlliance, WhiteFlame, AcidFumes, FrozenFragility, Teleblink, Houndlord, StormCaller, Boneguard, Frostbite, InfernoEngines, LightningWarp, OrbLord, DragonScalesSkill, DragonScalesBuff, SilverSpearSpell, Hypocrisy, VenomBeastHealing, ChaosBarrage, SummonVoidDrakeSpell, MagnetizeSpell, MetalLord, SummonSpiderQueen, DeathChill, DeathChillDebuff, ThornyPrisonSpell, SummonBlueLion, FlameGateBuff, FlameGateSpell, ArcaneShield, MarchOfTheRighteous, MagnetizeBuff, PlagueOfFilth, IgnitePoison, LightningBoltSpell, Iceball, ToxinBurst, IceTap, Crystallographer, RegenAuraSpell, MinionRepair]:
     modify_class(cls)
