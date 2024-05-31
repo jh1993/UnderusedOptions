@@ -351,6 +351,10 @@ Conjure Memories:
 Death Gaze:
 - Now also an eye spell.
 
+Death Shock:
+- Base num targets is now 4.
+- Same Target Cascades (3 SP): If a target survives the initial hit, the remaining cascades will hit the same target until it dies. Not compatible with Infinite Cascades.
+
 Dispersion Field:
 - Channeling Guard (3 SP): If you are channeling a spell, Dispersion Field will stun each affected enemy for 1 turn before teleporting it away. The stun duration is fixed and unaffected by bonuses.
 
