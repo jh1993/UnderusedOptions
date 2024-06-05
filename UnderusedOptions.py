@@ -15,6 +15,34 @@ import sys, math, random
 
 curr_module = sys.modules[__name__]
 
+class MegaAnnihilateSunder(Buff):
+
+    def __init__(self, tag):
+        Buff.__init__(self)
+        self.name = "%s Sunder" % tag.name
+        self.asset = ["UnderusedOptions", "Statuses", "amplified_%s" % tag.name.lower()]
+        self.color = tag.color
+        self.buff_type = BUFF_TYPE_CURSE
+        self.stack_type = STACK_INTENSITY
+        self.resists[tag] = -100
+
+class PyrostaticPulseWallbreaker(Upgrade):
+
+    def on_init(self):
+        self.name = "Wallbreaker"
+        self.level = 4
+        self.spell_bonuses[PyrostaticPulse]["requires_los"] = -1
+        self.spell_bonuses[PyrostaticPulse]["wallbreaker"] = 1
+        self.description = "Pyrostatic Pulse no longer requires line of sight, and now destroys all walls on affected tiles."
+
+class PyrostaticPowerBuff(ChannelDependentBuff):
+
+    def on_init(self):
+        ChannelDependentBuff.on_init(self)
+        self.name = "Pyrostatic Power"
+        self.color = Tags.Chaos.color
+        self.spell_bonuses[PyrostaticPulse]["damage"] = 2
+
 class HolyHypocrisyBuff(Buff):
 
     def __init__(self, upgrade):
@@ -1873,17 +1901,14 @@ def modify_class(cls):
             self.damage = 16
             self.tags = [Tags.Chaos, Tags.Sorcery]
             self.level = 2
-            self.arcane = 0
-            self.dark = 0
 
-            self.upgrades['cascade'] =  (1, 3, 'Cascade', 'Hits from Annihilate will jump to targets up to [{cascade_range}_tiles:cascade_range] away if the main target is killed or if targeting an empty tile. This ignores line of sight.')
             self.upgrades['nightmare'] =  (1, 2, 'Nightmare Annihilation', 'Annihilate also deals [arcane] and [dark] damage.')
-            self.upgrades["micro"] = (1, 2, "Micro Annihilate", "Annihilate will deal [1_fire:fire], [1_lightning:lightning], and [1_physical:physical] damage before its other hits. This damage is fixed, and cannot be increased using shrines, skills, or buffs.\nIf you have the Nightmare Annihilation upgrade, this will deal [dark] and [arcane] damage as well.")
+            self.upgrades["micro"] = (1, 2, "Micro Annihilate", "Annihilate will deal [1_fire:fire], [1_lightning:lightning], and [1_physical:physical] damage before its other hits.\nThis damage is fixed, and cannot be increased using shrines, skills, or buffs.\nIf you have the Nightmare Annihilation upgrade, this will deal [dark] and [arcane] damage as well.")
+            self.upgrades["chain"] = (1, 5, "Chain Cast", "Each cast of Annihilate has a 75% chance to cast itself again at a random valid enemy target, as long as Annihilate has enough charges.\nThis does not work if the spell is copied by a minion.")
             self.upgrades['max_charges'] = (16, 6)
 
         def cast(self, x, y):
-            
-            cur_target = Point(x, y)
+
             dtypes = [Tags.Fire, Tags.Lightning, Tags.Physical]
             if self.get_stat('arcane'):
                 dtypes.append(Tags.Arcane)
@@ -1892,26 +1917,41 @@ def modify_class(cls):
             if self.get_stat("nightmare"):
                 dtypes.extend([Tags.Arcane, Tags.Dark])
             
-            damage = self.get_stat('damage')
-            cascade = self.get_stat("cascade")
-            cascade_range = self.get_stat("cascade_range", base=4)
-            inescapable = self.get_stat("inescapable")
-            micro = [True, False] if self.get_stat("micro") else [False]
-
-            for is_micro in micro:
+            target = self.caster.level.get_unit_at(x, y)
+            if not target:
                 for dtype in dtypes:
-                    if cascade and not self.caster.level.get_unit_at(cur_target.x, cur_target.y):
-                        other_targets = [t for t in self.caster.level.get_units_in_ball(cur_target, cascade_range) if are_hostile(t, self.caster)]
-                        if other_targets:
-                            cur_target = random.choice(other_targets)
-                    if inescapable:
-                        unit = self.caster.level.get_unit_at(cur_target.x, cur_target.y)
-                        if unit:
-                            unit.shields = 0
-                            for buff in list(unit.buffs):
-                                if buff.buff_type == BUFF_TYPE_BLESS:
-                                    unit.remove_buff(buff)
-                    self.caster.level.deal_damage(cur_target.x, cur_target.y, damage if not is_micro else 1, dtype, self)
+                    self.caster.level.show_effect(x, y, dtype)
+                return
+            
+            damage = self.get_stat('damage')
+            if self.get_stat("overwhelm"):
+                total = damage + target.cur_hp
+                chance = damage/total if total else 1
+                for _ in range(target.shields):
+                    if random.random() < chance:
+                        target.shields -= 1
+                        self.caster.level.show_effect(target.x, target.y, Tags.Shield_Expire)
+                for buff in list(target.buffs):
+                    if buff.buff_type != BUFF_TYPE_BLESS or random.random() >= chance:
+                        continue
+                    target.remove_buff(buff)
+
+            if self.get_stat("micro"):
+                for dtype in dtypes:
+                    self.caster.level.deal_damage(target.x, target.y, 1, dtype, self)
+
+            sunder = self.get_stat("sunder")
+            for dtype in dtypes:
+                self.caster.level.deal_damage(target.x, target.y, damage, dtype, self)
+                if sunder:
+                    target.apply_buff(MegaAnnihilateSunder(dtype))
+            
+            if self.caster.is_player_controlled and self.can_pay_costs() and self.get_stat("chain") and random.random() < 0.75:
+                target = self.get_ai_target()
+                if not target:
+                    return
+                self.caster.level.act_cast(self.caster, self, target.x, target.y)
+           
             yield
 
     if cls is Blazerip:
@@ -5260,22 +5300,38 @@ def modify_class(cls):
 
             self.upgrades['range'] = (4, 2)
             self.upgrades['damage'] = (4, 3)
-            self.upgrades['max_charges'] = (8, 2)
-            self.upgrades["annihilation"] = (1, 7, "Annihilation Pulse", "Pyrostatic Pulse also deals [physical], [arcane], and [dark] damage.\nEach cast of Pyrostatic Pulse consumes an additional charge and counts as casting the spell twice.")
+            self.upgrades["channel"] = (1, 5, "Channeled Pulse", "Pyrostatic Pulse becomes a channeled spell, and gains [2_damage:damage] per turn channeled.", "pulse")
+            self.upgrades["annihilation"] = (1, 7, "Annihilation Pulse", "Pyrostatic Pulse also deals [physical], [arcane], and [dark] damage.\nEach cast of Pyrostatic Pulse consumes an additional charge and counts as casting the spell twice.", "pulse")
+            self.add_upgrade(PyrostaticPulseWallbreaker())
 
         def get_description(self):
             return ("Deal [{damage}_fire:fire] damage and [{damage}_lightning:lightning] damage in a beam and tiles adjacent to the beam.").format(**self.fmt_dict())
 
-        def cast_instant(self, x, y):
+        def cast(self, x, y, channel_cast=False):
+
+            channel = self.get_stat("channel")
+            if channel and not channel_cast:
+                self.caster.apply_buff(ChannelBuff(self.cast, Point(x, y)))
+                return
+
             damage = self.get_stat("damage")
             dtypes = [Tags.Fire, Tags.Lightning]
             if self.get_stat("annihilation"):
                 dtypes.extend([Tags.Physical, Tags.Arcane, Tags.Dark])
                 self.cur_charges = max(0, self.cur_charges - 1)
                 self.caster.level.event_manager.raise_event(EventOnSpellCast(self, self.caster, x, y), self.caster)
+            
+            wallbreaker = self.get_stat("wallbreaker")
             for p in self.get_impacted_tiles(x, y):
                 for dtype in dtypes:
                     self.caster.level.deal_damage(p.x, p.y, damage, dtype, self)
+                if wallbreaker and self.caster.level.tiles[p.x][p.y].is_wall():
+                    self.caster.level.make_floor(p.x, p.y)
+            
+            if channel:
+                self.caster.apply_buff(PyrostaticPowerBuff())
+            
+            yield
 
     if cls is SearingSealSpell:
 
@@ -6212,10 +6268,10 @@ def modify_class(cls):
             self.tags = [Tags.Chaos, Tags.Sorcery]
             self.level = 5
 
-            self.upgrades['cascade'] =  (1, 3, 'Cascade', 'Hits from Annihilate will jump to targets up to [{cascade_range}_tiles:cascade_range] away if the main target is killed or if targeting an empty tile. This ignores line of sight.')
             self.upgrades['dark'] =  (1, 2, 'Dark Annihilation', 'Mega Annihilate also deals [dark] damage.')
             self.upgrades['arcane'] =  (1, 2, 'Arcane Annihilation', 'Mega Annihilate also deals [arcane] damage.')
-            self.upgrades["inescapable"] = (1, 7, "Inescapable Annihilation", "Mega Annihilate will now remove all [SH:shields] and buffs from the target before dealing damage.")
+            self.upgrades["overwhelm"] = (1, 3, "Overwhelm", "Each of the target's [SH:shields] and buffs now has a chance to be removed before Mega Annihilate deals damage.\nThe chance is equal to this spell's [damage] stat divided by the sum of its [damage] stat and the target's current HP.")
+            self.upgrades["sunder"] = (1, 5, "Sunder", "Each hit of Mega Annihilate now also permanently reduces the target's resistance to its damage type by 100. This stacks.")
             self.upgrades['damage'] = (99, 4)
 
     if cls is PyrostaticHexSpell:

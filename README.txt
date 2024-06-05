@@ -37,9 +37,11 @@ Wolf:
 - Wolf Pack cost reduced to 7, because I don't think anything should cost more than 7 SP; 7 SP should be enough for this upgrade anyways. It also counts as casting the spell twice, to make you not lose out on Thorn Garden and Icy Spriggan shrine procs. Number of wolves summoned now benefits from num summons bonuses.
 
 Annihilate:
+- Cascade upgrade removed, because the way it ignores line of sight while the spell itself requires line of sight is confusing, and it goes against the spell's identity as single-target damage.
 - Max charges upgrade now costs 6 SP and gives +16 charges.
 - Arcane Annihilation and Dark Annihilation merged into one upgrade that costs 2 SP, so you can save SP at a circle.
 - Micro Annihilate (2 SP): Annihilate will deal 1 fire, 1 lightning, and 1 physical damage before its other hits. This damage is fixed, and cannot be increased using shrines, skills, or buffs. If you have the Nightmare Annihilation upgrade, this will deal dark and arcane damage as well.
+- Chain Cast (5 SP): Each cast of Annihilate has a 75% chance to cast itself again at a random valid enemy target, as long as Annihilate has enough charges. This does not work if the spell is copied by a minion.
 
 Blazerip:
 - Fractal Rip (6 SP): Each hit of Blazerip now has a 10% chance of triggering another Blazerip on that tile. This can still happen even if an empty tile is hit. Each rip can trigger at most one additional rip.
@@ -394,7 +396,9 @@ Purity:
 
 Pyrostatic Pulse:
 - Damage is halved but now deals both fire and lightning damage.
-- Annihilation Pulse (7 SP): Pyrostatic Pulse also deals physical, arcane, and dark damage. Each cast of Pyrostatic Pulse consumes an additional charge and counts as casting the spell twice.
+- Max charges upgrade replaced by Wallbreaker (4 SP): Pyrostatic Pulse no longer requires line of sight, and now destroys all walls on affected tiles.
+- Channeled Pulse (5 SP): Pyrostatic Pulse becomes a channeled spell, and gains 2 damage:damage per turn channeled. Not compatible with Annihilation Pulse.
+- Annihilation Pulse (7 SP): Pyrostatic Pulse also deals physical, arcane, and dark damage. Each cast of Pyrostatic Pulse consumes an additional charge and counts as casting the spell twice. Not compatible with Channeled Pulse.
 
 Searing Seal:
 - Life Fuel (4 SP): Each turn, Searing Seal now deals fire damage to you equal to 25% of your current HP, then heals you for the damage dealt.
@@ -484,7 +488,9 @@ Ice Phoenix:
 - Icy Judgment (5 SP): Half of all of the ice phoenix's ice damage will be redealt as holy damage.
 
 Mega Annihilate:
-- Inescapable Annihilation (7 SP): Mega Annihilate will now remove all SH and buffs from the target before dealing damage.
+- Cascade upgrade removed, for the same reason as Annihilate.
+- Overwhelm (3 SP): Each of the target's SH and buffs now has a chance to be removed before Mega Annihilate deals damage. The chance is equal to this spell's damage stat divided by the sum of its damage stat and the target's current HP.
+- Sunder (5 SP): Each hit of Mega Annihilate now also permanently reduces the target's resistance to its damage type by 100. This stacks.
 
 Pyrostatic Curse:
 - Base radius increased to 5 and base duration increased to 6.
