@@ -6787,7 +6787,7 @@ def modify_class(cls):
         def on_spell_cast(self, evt):
             if evt.spell.item:
                 return
-            if Tags.Sorcery not in evt.spell.tags:
+            if Tags.Sorcery not in evt.spell.tags or not evt.spell.can_cast(evt.x, evt.y):
                 return
             if self.can_copy:
                 self.can_copy = False
