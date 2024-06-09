@@ -47,7 +47,7 @@ Blazerip:
 - Fractal Rip (6 SP): Each hit of Blazerip now has a 10% chance of triggering another Blazerip on that tile. This can still happen even if an empty tile is hit. Each rip can trigger at most one additional rip.
 
 Boiling Blood:
-- Retroactive (4 SP): You now gain Bloodlust Aura when you cast this spell, during which all minions you summon will automatically gain Boiling Blood for the remaining duration.
+- Overhauled. Is now a global buff that grants bloodrage to minions when they deal fire/physical damage. This results in cleaner code, and has more synergy with other bloodrage support in my mods.
 
 Chaos Barrage:
 - Chaos Siege (5 SP): Chaos Barrage becomes a channeled spell. Each turn you channel this spell, you randomly take 4 fire, 4 lightning, or 4 physical damage per siege stack you have, and gain a siege stack, which causes Chaos Barrage to fire 2 more shards. Siege stacks are lost when you stop channeling. Not compatible with Chaos Calibration.
