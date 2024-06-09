@@ -51,7 +51,7 @@ Boiling Blood:
 
 Chaos Barrage:
 - Chaos Siege (5 SP): Chaos Barrage becomes a channeled spell. Each turn you channel this spell, you randomly take 4 fire, 4 lightning, or 4 physical damage per siege stack you have, and gain a siege stack, which causes Chaos Barrage to fire 2 more shards. Siege stacks are lost when you stop channeling. Not compatible with Chaos Calibration.
-- Chaos Calibration (4 SP): The bolts of Chaos Barrage now deal damage in beams. Each turn, you gain a stack of calibration, which increases the range of Chaos Barrage by 1 and reduces the angle of its cone by 10 degrees, up to 6 stacks; the cone is initially 60 degrees wide. Casting Chaos Barrage consumes all calibration stacks and prevents you from gaining a stack that turn. Not compatible with Chaos Siege.
+- Chaos Calibration (4 SP): The bolts of Chaos Barrage now deal damage in beams. Each turn, you gain a stack of calibration, which increases the range of Chaos Barrage by 1 and reduces the angle of its cone by 10 degrees, up to 6 stacks; the cone is initially 60 degrees wide. Casting Chaos Barrage causes you to lose all calibration stacks at the end of your turn and not gain a stack that turn. Not compatible with Chaos Siege.
 
 Disperse:
 - Phantom Zone (6 SP): Summon a void ghost in the former location of each unit teleported away. These void ghosts cannot be affected by this spell.

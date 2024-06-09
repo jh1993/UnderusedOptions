@@ -77,13 +77,18 @@ class ChaosCalibrationBuff(Buff):
         self.stack_type = STACK_INTENSITY
         self.spell_bonuses[ChaosBarrage]["range"] = 1
         self.spell_bonuses[ChaosBarrage]["angle"] = -10
+        self.remove = False
+    
+    def on_advance(self):
+        if self.remove:
+            self.owner.remove_buff(self)
 
 class ChaosCalibration(Upgrade):
 
     def on_init(self):
         self.name = "Chaos Calibration"
         self.level = 4
-        self.description = "The bolts of Chaos Barrage now deal damage in beams.\nEach turn, you gain a stack of calibration, which increases the range of Chaos Barrage by 1 and reduces the angle of its cone by 10 degrees, up to 6 stacks; the cone is initially 60 degrees wide.\nCasting Chaos Barrage consumes all calibration stacks and prevents you from gaining a stack that turn.\nChaos Barrage can be upgraded with only 1 behavior upgrade"
+        self.description = "The bolts of Chaos Barrage now deal damage in beams.\nEach turn, you gain a stack of calibration, which increases the range of Chaos Barrage by 1 and reduces the angle of its cone by 10 degrees, up to 6 stacks; the cone is initially 60 degrees wide.\nCasting Chaos Barrage causes you to lose all calibration stacks at the end of your turn and not gain a stack that turn.\nChaos Barrage can be upgraded with only 1 behavior upgrade"
         self.paused = False
         self.exc_class = "behavior"
     
@@ -7728,7 +7733,10 @@ def modify_class(cls):
             
             if calibration:
                 calibration.paused = True
-                self.caster.remove_buffs(ChaosCalibrationBuff)
+                for buff in self.caster.buffs:
+                    if not isinstance(buff, ChaosCalibrationBuff):
+                        continue
+                    buff.remove = True
 
     if cls is SummonVoidDrakeSpell:
 
