@@ -15,6 +15,86 @@ import sys, math, random
 
 curr_module = sys.modules[__name__]
 
+class BoilingBloodThorns(Thorns):
+
+    def __init__(self, damage, dtype, spell):
+        self.spell = spell
+        Thorns.__init__(self, damage, dtype)
+        self.stack_type = STACK_INTENSITY
+        if dtype == Tags.Fire:
+            self.name = "Fireblood Thorns"
+            self.asset = ["UnderusedOptions", "Statuses", "fire_thorns"]
+        if dtype == Tags.Physical:
+            self.name = "Ironblood Thorns"
+            self.asset = ["UnderusedOptions", "Statuses", "physical_thorns"]
+        if dtype == Tags.Holy:
+            self.name = "Goldblood Thorns"
+            self.asset = ["UnderusedOptions", "Statuses", "holy_thorns"]
+        if dtype == Tags.Dark:
+            self.name = "Darkblood Thorns"
+            self.asset = ["UnderusedOptions", "Statuses", "dark_thorns"]
+
+    def do_thorns(self, unit):
+        unit.deal_damage(self.damage, self.dtype, self.spell)
+        yield
+
+class BoilingBloodBuff(Buff):
+
+    def __init__(self, spell):
+        self.spell = spell
+        Buff.__init__(self)
+    
+    def on_init(self):
+        self.name = "Boiling Blood"
+        self.color = Tags.Demon.color
+        self.stack_type = STACK_REPLACE
+        self.dtypes = [Tags.Fire, Tags.Physical]
+        if self.spell.get_stat("holy"):
+            self.dtypes.append(Tags.Holy)
+        if self.spell.get_stat("dark"):
+            self.dtypes.append(Tags.Dark)
+        self.bonus = self.spell.get_stat("bonus")
+        self.duration = self.spell.get_stat("duration")
+        self.thorns = self.spell.get_stat("thorns")
+        self.global_triggers[EventOnDamaged] = self.on_damaged
+    
+    def on_damaged(self, evt):
+        if evt.source.owner.is_player_controlled or are_hostile(evt.source.owner, self.owner):
+            return
+        if evt.damage_type not in self.dtypes:
+            return
+        if isinstance(evt.source, BloodlustSpell):
+            return
+        evt.source.owner.apply_buff(BloodrageBuff(self.bonus), self.duration)
+        if self.thorns:
+            evt.source.owner.apply_buff(BoilingBloodThorns(self.bonus, evt.damage_type, self.spell), self.duration)
+
+class ChaosCalibrationBuff(Buff):
+
+    def on_init(self):
+        self.name = "Chaos Calibration"
+        self.color = Tags.Chaos.color
+        self.stack_type = STACK_INTENSITY
+        self.spell_bonuses[ChaosBarrage]["range"] = 1
+        self.spell_bonuses[ChaosBarrage]["angle"] = -10
+
+class ChaosCalibration(Upgrade):
+
+    def on_init(self):
+        self.name = "Chaos Calibration"
+        self.level = 4
+        self.description = "The bolts of Chaos Barrage now deal damage in beams.\nEach turn, you gain a stack of calibration, which increases the range of Chaos Barrage by 1 and reduces the angle of its cone by 10 degrees, up to 6 stacks; the cone is initially 60 degrees wide.\nCasting Chaos Barrage consumes all calibration stacks and prevents you from gaining a stack that turn.\nChaos Barrage can be upgraded with only 1 behavior upgrade"
+        self.paused = False
+        self.exc_class = "behavior"
+    
+    def on_advance(self):
+        if self.paused:
+            self.paused = False
+            return
+        if self.owner.get_buff_stacks(ChaosCalibrationBuff) >= 6:
+            return
+        self.owner.apply_buff(ChaosCalibrationBuff())
+
 class MegaAnnihilateSunder(Buff):
 
     def __init__(self, tag):
@@ -1994,42 +2074,27 @@ def modify_class(cls):
 
         def on_init(self):
             self.name = "Boiling Blood"
-            self.max_charges = 9
-            self.duration = 7
-            self.extra_damage = 6
+            self.max_charges = 4
+            self.duration = 10
+            self.bonus = 3
             self.range = 0
 
             self.tags = [Tags.Nature, Tags.Enchantment, Tags.Fire]
             self.level = 2
 
-            self.upgrades['extra_damage'] = (6, 3)
-            self.upgrades['duration'] = (7, 2)
-            self.upgrades['holy_fury'] = (1, 3, "Holy Fury", "Boiling Blood also impacts holy abilities")
-            self.upgrades['dark_fury'] = (1, 3, "Dark Fury", "Boiling Blood also impacts dark abilities")
-            self.upgrades["retroactive"] = (1, 4, "Retroactive", "You now gain Bloodlust Aura when you cast this spell, during which all minions you summon will automatically gain Boiling Blood for the remaining duration.")
+            self.upgrades['bonus'] = (3, 4)
+            self.upgrades['duration'] = (5, 3)
+            self.upgrades['holy'] = (1, 3, "Holy Fury", "Boiling Blood is also triggered by [holy] damage.")
+            self.upgrades['dark'] = (1, 3, "Dark Fury", "Boiling Blood is also triggered by [dark] damage.")
+            self.upgrades["thorns"] = (1, 4, "Blood Thorns", "Boiling Blood now also grants stacking melee retaliation of the triggering damage type, with the same damage and duration as bloodrage granted by this spell.\nThis melee retaliation counts as damage dealt by the Boiling Blood spell itself, and cannot trigger Boiling Blood.")
 
         def cast(self, x, y):
-
-            def buff_func():
-                buff = BloodlustBuff(self)
-                buff.extra_damage = extra_damage
-                return buff
-
-            duration = self.get_stat("duration")
-            extra_damage = self.get_stat("extra_damage")
-            
-            if self.get_stat("retroactive"):
-                buff = MinionBuffAura(buff_func, lambda unit: True, "Bloodlust Aura", "minions")
-                buff.stack_type = STACK_INTENSITY
-                self.caster.apply_buff(buff, duration)
-                return
-            
-            for unit in self.caster.level.units:
-                if not self.caster.level.are_hostile(self.caster, unit) and unit is not self.caster:
-                    buff = buff_func()
-                    unit.apply_buff(buff, duration)
-            
+            self.caster.apply_buff(BoilingBloodBuff(self), self.get_stat("duration"))            
             yield
+
+        def get_description(self):
+            return ("For [{duration}_turns:duration], whenever one of your minions deals [fire] or [physical] damage, it gains a stack of bloodrage.\n"
+                    "Bloodrage lasts [{duration}_turns:duration] and increases all attack damage by [{bonus}:damage].").format(**self.fmt_dict())
 
     if cls is DispersalSpell:
 
@@ -7609,7 +7674,7 @@ def modify_class(cls):
             self.range = 7
             self.damage = 9
             self.num_targets = 8
-            self.angle = math.pi / 6
+            self.angle = 60
             self.max_charges = 8
             self.tags = [Tags.Chaos, Tags.Sorcery]
 
@@ -7618,7 +7683,13 @@ def modify_class(cls):
             self.upgrades['max_charges'] = (4, 1)
             self.upgrades['damage'] = (4, 5)
             self.upgrades['num_targets'] = (5, 4, "Extra Bolts")
-            self.upgrades["siege"] = (1, 5, "Chaos Siege", "Chaos Barrage becomes a channeled spell.\nEach turn you channel this spell, you randomly take [4_fire:fire], [4_lightning:lightning], or [4_physical:physical] damage per siege stack you have, and gain a siege stack, which causes Chaos Barrage to fire 2 more shards.\nSiege stacks are lost when you stop channeling.")
+            self.upgrades["siege"] = (1, 5, "Chaos Siege", "Chaos Barrage becomes a channeled spell.\nEach turn you channel this spell, you randomly take [4_fire:fire], [4_lightning:lightning], or [4_physical:physical] damage per siege stack you have, and gain a siege stack, which causes Chaos Barrage to fire 2 more shards.\nSiege stacks are lost when you stop channeling.", "behavior")
+            self.add_upgrade(ChaosCalibration())
+
+        def get_cone_burst(self, x, y):
+            target = Point(x, y)
+            burst = Burst(self.caster.level, self.caster, self.get_stat('range'), burst_cone_params=BurstConeParams(target, self.get_stat("angle")*math.pi/360))
+            return [p for stage in burst for p in stage if self.caster.level.can_see(self.caster.x, self.caster.y, p.x, p.y)]
 
         def cast(self, x, y, channel_cast=False):
 
@@ -7630,6 +7701,7 @@ def modify_class(cls):
             possible_targets = [self.caster.level.get_unit_at(p.x, p.y) for p in self.get_cone_burst(x, y)]
             possible_targets = [t for t in possible_targets if t and t != self.caster]
             damage = self.get_stat('damage')
+            calibration = self.owner.get_buff(ChaosCalibration)
 
             for _ in range(self.get_stat('num_targets')):
                 
@@ -7638,21 +7710,25 @@ def modify_class(cls):
                     break
 
                 cur_enemy = random.choice(possible_targets)
-                cur_element = random.choice([Tags.Fire, Tags.Lightning, Tags.Physical])
 
-                start = Point(self.caster.x, self.caster.y)
-                target = Point(cur_enemy.x, cur_enemy.y)
-                path = Bolt(self.caster.level, start, target)
-                for p in path:
-                    self.caster.level.show_effect(p.x, p.y, cur_element, minor=True)
+                if not calibration:
+                    for p in Bolt(self.caster.level, self.caster, cur_enemy):
+                        self.caster.level.show_effect(p.x, p.y, random.choice([Tags.Fire, Tags.Lightning, Tags.Physical]), minor=True)
+                        yield
+                    cur_enemy.deal_damage(damage, random.choice([Tags.Fire, Tags.Lightning, Tags.Physical]), self)
+                else:
+                    for p in Bolt(self.caster.level, self.caster, cur_enemy):
+                        self.caster.level.deal_damage(p.x, p.y, damage, random.choice([Tags.Fire, Tags.Lightning, Tags.Physical]), self)
                     yield
-
-                self.caster.level.deal_damage(target.x, target.y, damage, cur_element, self)
             
             if siege:
                 for _ in range(self.caster.get_buff_stacks(ChaosSiegeBuff)):
                     self.caster.deal_damage(4, random.choice([Tags.Fire, Tags.Lightning, Tags.Physical]), self)
                 self.caster.apply_buff(ChaosSiegeBuff())
+            
+            if calibration:
+                calibration.paused = True
+                self.caster.remove_buffs(ChaosCalibrationBuff)
 
     if cls is SummonVoidDrakeSpell:
 
