@@ -4621,9 +4621,9 @@ def modify_class(cls):
 
             self.upgrades['range'] = (5, 2)
             self.upgrades['minion_damage'] = (9, 3)
-            self.upgrades['orb_walk'] = (1, 3, "Void Walk", "Targeting an existing Void Orb with another detonates it, dealing its damage and melting walls in a radius equal to twice the orb's radius.\nYou are then teleported to that location if possible.\nThis has a chance to refund a charge of Void Orb, equal to the orb's remaining duration divided by maximum duration.")
+            self.upgrades['orb_walk'] = (1, 3, "Void Walk", "Targeting an existing Void Orb with another detonates it, dealing its damage and melting walls in a burst with double radius.\nYou are then teleported to that location if possible.\nThis has a chance to refund a charge of Void Orb, equal to the orb's remaining duration divided by maximum duration.")
             self.add_upgrade(VoidOrbRedGiant())
-            self.upgrades["dark"] = (1, 5, "Black Hole", "Each turn, Void Orb pulls all nearby enemies [1_tile:range] toward itself before dealing damage; the pull range is three times the orb's radius.\nVoid Orb also deals [dark] damage.")
+            self.upgrades["dark"] = (1, 5, "Black Hole", "Each turn, Void Orb pulls all enemies in a double radius burst toward itself by [1_tile:range] before dealing damage.\nThe pull starts at the outermost edges of the burst, so an enemy may be pulled multiple times.\nVoid Orb also deals [dark] damage.")
 
         def on_orb_walk(self, existing):
 
@@ -4673,14 +4673,21 @@ def modify_class(cls):
                 dtypes.append(Tags.Fire)
             if self.get_stat("dark"):
                 dtypes.append(Tags.Dark)
-                units = [self.caster.level.get_unit_at(p.x, p.y) for stage in Burst(self.caster.level, next_point, radius*3, ignore_walls=True) for p in stage]
-                units = [u for u in units if u and are_hostile(u, self.caster)]
-                random.shuffle(units)
-                for unit in units:
-                    pull(unit, next_point, 1)
             level.queue_spell(boom(self, next_point, radius, damage, dtypes, orb))
 
+
         def boom(self, origin, radius, damage, dtypes, orb):
+
+            if Tags.Dark in dtypes:
+                for stage in reversed(list(Burst(self.caster.level, origin, radius*2, ignore_walls=True))):
+                    for p in stage:
+                        self.caster.level.show_effect(p.x, p.y, Tags.Dark, minor=True)
+                        unit = self.caster.level.get_unit_at(p.x, p.y)
+                        if not unit or not are_hostile(unit, self.caster):
+                            continue
+                        pull(unit, origin, 1)
+                    yield
+
             for stage in Burst(self.caster.level, origin, radius, ignore_walls=True):
                 for p in stage:
                     unit = self.caster.level.get_unit_at(p.x, p.y)
