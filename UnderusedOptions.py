@@ -7573,10 +7573,6 @@ def modify_class(cls):
                 if not are_hostile(unit, self.owner):
                     continue
                 unit.apply_buff(WarpLightningBuff())
-            yield
-            self.owner.level.queue_spell(zap(self, evt))
-
-        def zap(self, evt):
             damage = self.get_stat('damage')
             for unit in list(self.owner.level.units):
                 if not are_hostile(unit, self.owner) or not unit.has_buff(WarpLightningBuff):
