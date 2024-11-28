@@ -2156,7 +2156,7 @@ def modify_class(cls):
                 if not unit or not are_hostile(unit, self.owner):
                     self.owner.level.show_effect(point.x, point.y, self.element)
                 else:
-                    unit.deal_damage(self.damage, self.element, self.spell)
+                    unit.deal_damage(self.spell.get_stat("damage", base=self.damage), self.element, self.spell)
 
     if cls is EyeOfFireSpell:
 
@@ -2212,7 +2212,7 @@ def modify_class(cls):
             for point in Bolt(self.owner.level, origin, target):
                 self.owner.level.show_effect(point.x, point.y, self.element, minor=True)
                 yield
-            self.owner.level.deal_damage(target.x, target.y, self.damage, self.element, self.spell)
+            self.owner.level.deal_damage(target.x, target.y, self.spell.get_stat("damage", base=self.damage), self.element, self.spell)
 
         def on_shoot(self, target):
             if not self.spell.get_stat("arc"):
