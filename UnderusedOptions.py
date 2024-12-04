@@ -2768,9 +2768,6 @@ def modify_class(cls):
             self.upgrades['universal'] = (1, 3, "Universal Magnetism", "Magnetize can target non [metallic] units.")
             self.upgrades["planar"] = (1, 4, "Planar Magnetism", "Each turn, after pulling all enemies in its radius, a magnetized target teleports a random enemy outside of its radius into a random tile in its radius.")
 
-        def get_impacted_tiles(self, x, y):
-            return [Point(x, y)]
-
     if cls is MagnetizeBuff:
 
         def on_advance(self):
@@ -7892,9 +7889,6 @@ def modify_class(cls):
             self.upgrades['damage'] = (6, 2)
             self.upgrades['duration'] = (4, 3)
             self.upgrades["friendly"] = (1, 2, "Soothing Chill", "Death Chill now lasts indefinitely and is considered a buff if applied to one of your minions, instead healing it each turn by an amount equal to this spell's [damage] stat.\nThis still allows the minion to release a freezing explosion on death.")
-
-        def get_impacted_tiles(self, x, y):
-            return [Point(x, y)]
 
         def cast_instant(self, x, y):
             unit = self.caster.level.get_unit_at(x, y)

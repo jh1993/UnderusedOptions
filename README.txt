@@ -103,7 +103,6 @@ Invoke Savagery:
 - Stampede (5 SP): If no melee targets are available, each ally will instead try to perform a charge attack with a range of 6 tiles. This attack does not stun.
 
 Magnetize:
-- Now counts as a single-target spell for the purpose of Mass Enchantment from my Missing Synergies mod.
 - Base radius and radius upgrade increased by 1 each.
 - Pull strength and duration upgrades reduced to 2 SP.
 - Universal Magnetism upgrade reduced to 3 SP.
@@ -180,7 +179,6 @@ Darkness:
 - Fractal Night (7 SP): While Darkness is active and you are blind, half of all dark damage dealt to enemies is redealt as dark damage. This uses damage values before resistances, and triggers itself, but rounds down, stopping at 1 damage. Mutually exclusive with other night upgrades.
 
 Death Chill:
-- Now counts as a single-target spell for the purpose of Mass Enchantment from my Missing Synergies mod.
 - Soothing Chill (2 SP): Death Chill now lasts indefinitely and is considered a buff if applied to one of your minions, instead healing it each turn by an amount equal to this spell's damage stat. This still allows the minion to release a freezing explosion on death.
 
 Devour Mind:
