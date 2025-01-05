@@ -7453,7 +7453,7 @@ def modify_class(cls):
         def get_description(self):
             return ("Begin each level accompanied by [{num_summons}:num_summons] bone knights and a bone archer, all of which have 1 reincarnation.\n"
                     "Bone knights have [{minion_health}_HP:minion_health], [1_SH:shields], [100_dark:dark] resist, and [50_ice:ice] resist.\n"
-                    "Bone knights have a melee attack which deals [{minion_damage}_dark:dark] damage and drains 2 max HP, instantly killing those with less; this counts as killing with [dark] damage.\n"
+                    "Bone knights have a melee attack which deals [{minion_damage}_dark:dark] damage and drains 2 max HP; shielded targets instead lose [1_SH:shields]. This can kill and counts as killing with [dark] damage.\n"
                     "The bone archer has a ranged attack with the same damage and [{minion_range}_range:minion_range], which drains 1 max HP similarly.\n"
                     "Missing knights and archers are automatically replenished when you use a mana potion.").format(**self.fmt_dict())
 

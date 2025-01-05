@@ -626,7 +626,7 @@ Storm Caller:
 Bone Guard:
 - Now also summons a bone archer, and all summoned units have +1 reincarnation.
 - Using a mana potion now replenishes the summons.
-- Now drain max HP from all enemies, and instantly kill enemies with less max HP than the drained amount.
+- Now drain max HP from all enemies. The drain can now kill but is blockable by SH.
 
 Frostbite:
 - Now instead inflicts a frostbite debuff equal to the duration of the freeze inflicted, which persists after unfreezing. If freeze duration is refreshed or extended, frostbite duration will be adjusted to match if shorter. If frostbite is removed prematurely and the enemy is still frozen, it will automatically reapply itself.
